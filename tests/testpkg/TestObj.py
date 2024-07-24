@@ -1,0 +1,1 @@
+from smallscript.SObject import *
