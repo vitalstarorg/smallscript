@@ -109,9 +109,7 @@ obj4 = cxt.newInstance('NewMeta').name('obj4')
 ```sh
 pip install git+https://github.com/vitalstarorg/smallscript@v0.0.1
 
-
 # or
-
 
 pip install git+https://github.com/vitalstarorg/smallscript@sobject
 ```

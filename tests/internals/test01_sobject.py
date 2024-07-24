@@ -91,11 +91,9 @@ class Test_SObject(SmallScriptTest):
         sobj1 = context.newInstance('SObject')
         self.assertTrue(sobj1.hasKey('metaclass'))
 
-    @skipUnless('TESTALL' in env, "disabled")
-    @skip
-    def test990_hack1(self):
-        # placeholder for hacking
-        return
+    # def test990_hack1(self):
+    #     # placeholder for hacking
+    #     return
 
 if __name__ == '__main__':
     unittest.main()
