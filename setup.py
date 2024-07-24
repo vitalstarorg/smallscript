@@ -13,7 +13,7 @@ setup(
     url='https://github.com/vitalstarorg/smallscript',
     classifiers=[
         'Programming Language :: Python :: 3',
-        'License :: OSI Approved :: Apache 2.0',
+        'License :: OSI Approved :: Apache Software License',
         'Operating System :: OS Independent',
     ],
 )
