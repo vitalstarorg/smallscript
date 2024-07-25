@@ -4,14 +4,23 @@ ipython_unittest
 plotly==5.19.0
 kaleido==0.2.1
 regex
-jupyterlab==4.1.2 # fix blank plotly figure
+jupyterlab==4.1.2       # fix blank plotly figure
 scikit-learn==1.3.2
 matplotlib==3.7.5
 pandas==2.0.3
 jupyter==1.0.0
 notebook==6.5.5
-xxhash==3.4.1
-twine   # for PyPI upload
+
+# used by smallscript
+xxhash==3.4.1						# BSD 2
+graphviz		            # Common Public License 1.0
+
+# Antlr
+antlr4-python3-runtime  # BSD 3
+antlr4-tools					  # BSD 3
+
+# for PyPI upload
+twine
 
 # Monkey Patching
 hunter  # tracing toolkit

@@ -223,7 +223,7 @@ class SObject:
     def notEmpty(self): return not self.isEmpty()
     def toString(self): return String(self)
     def print(self, suppressed=''):
-        if suppressed == '': print(self.info(), quiet=suppressed!='')
+        if suppressed == '': print(self.info())
 
     def info(self, offset=0):
         buffer = io.StringIO()
