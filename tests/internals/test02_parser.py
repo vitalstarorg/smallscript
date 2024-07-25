@@ -36,7 +36,7 @@ class Test_Parser(SmallScriptTest):
 
         ret = script.toStringTree()
         self.assertEqual(
-            "(smallscript (sequence (exprs (expr (assign (ref obj) (ws  ) := (ws  ) (expr (binHead (unaryHead (operand (lit (parseLit (num 123))))))))))) <EOF>)", ret)
+            "(smallscript (sequence (exprs (expr (assign (ref obj) (ws  ) := (ws  ) (expr (binhead (unaryhead (operand (lit (parselit (num 123))))))))))) <EOF>)", ret)
 
         # Error case
         st = "obj1 'abc'"

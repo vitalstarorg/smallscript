@@ -44,12 +44,12 @@ class SmallScriptListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by SmallScriptParser#tempVar.
-    def enterTempVar(self, ctx:SmallScriptParser.TempVarContext):
+    # Enter a parse tree produced by SmallScriptParser#tempvar.
+    def enterTempvar(self, ctx:SmallScriptParser.TempvarContext):
         pass
 
-    # Exit a parse tree produced by SmallScriptParser#tempVar.
-    def exitTempVar(self, ctx:SmallScriptParser.TempVarContext):
+    # Exit a parse tree produced by SmallScriptParser#tempvar.
+    def exitTempvar(self, ctx:SmallScriptParser.TempvarContext):
         pass
 
 
@@ -71,12 +71,12 @@ class SmallScriptListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by SmallScriptParser#exprList.
-    def enterExprList(self, ctx:SmallScriptParser.ExprListContext):
+    # Enter a parse tree produced by SmallScriptParser#exprlst.
+    def enterExprlst(self, ctx:SmallScriptParser.ExprlstContext):
         pass
 
-    # Exit a parse tree produced by SmallScriptParser#exprList.
-    def exitExprList(self, ctx:SmallScriptParser.ExprListContext):
+    # Exit a parse tree produced by SmallScriptParser#exprlst.
+    def exitExprlst(self, ctx:SmallScriptParser.ExprlstContext):
         pass
 
 
@@ -89,12 +89,12 @@ class SmallScriptListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by SmallScriptParser#ptFin.
-    def enterPtFin(self, ctx:SmallScriptParser.PtFinContext):
+    # Enter a parse tree produced by SmallScriptParser#ptfin.
+    def enterPtfin(self, ctx:SmallScriptParser.PtfinContext):
         pass
 
-    # Exit a parse tree produced by SmallScriptParser#ptFin.
-    def exitPtFin(self, ctx:SmallScriptParser.PtFinContext):
+    # Exit a parse tree produced by SmallScriptParser#ptfin.
+    def exitPtfin(self, ctx:SmallScriptParser.PtfinContext):
         pass
 
 
@@ -125,57 +125,57 @@ class SmallScriptListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by SmallScriptParser#binHead.
-    def enterBinHead(self, ctx:SmallScriptParser.BinHeadContext):
+    # Enter a parse tree produced by SmallScriptParser#binhead.
+    def enterBinhead(self, ctx:SmallScriptParser.BinheadContext):
         pass
 
-    # Exit a parse tree produced by SmallScriptParser#binHead.
-    def exitBinHead(self, ctx:SmallScriptParser.BinHeadContext):
-        pass
-
-
-    # Enter a parse tree produced by SmallScriptParser#unaryHead.
-    def enterUnaryHead(self, ctx:SmallScriptParser.UnaryHeadContext):
-        pass
-
-    # Exit a parse tree produced by SmallScriptParser#unaryHead.
-    def exitUnaryHead(self, ctx:SmallScriptParser.UnaryHeadContext):
+    # Exit a parse tree produced by SmallScriptParser#binhead.
+    def exitBinhead(self, ctx:SmallScriptParser.BinheadContext):
         pass
 
 
-    # Enter a parse tree produced by SmallScriptParser#kwHead.
-    def enterKwHead(self, ctx:SmallScriptParser.KwHeadContext):
+    # Enter a parse tree produced by SmallScriptParser#unaryhead.
+    def enterUnaryhead(self, ctx:SmallScriptParser.UnaryheadContext):
         pass
 
-    # Exit a parse tree produced by SmallScriptParser#kwHead.
-    def exitKwHead(self, ctx:SmallScriptParser.KwHeadContext):
-        pass
-
-
-    # Enter a parse tree produced by SmallScriptParser#kwMsg.
-    def enterKwMsg(self, ctx:SmallScriptParser.KwMsgContext):
-        pass
-
-    # Exit a parse tree produced by SmallScriptParser#kwMsg.
-    def exitKwMsg(self, ctx:SmallScriptParser.KwMsgContext):
+    # Exit a parse tree produced by SmallScriptParser#unaryhead.
+    def exitUnaryhead(self, ctx:SmallScriptParser.UnaryheadContext):
         pass
 
 
-    # Enter a parse tree produced by SmallScriptParser#kwPair.
-    def enterKwPair(self, ctx:SmallScriptParser.KwPairContext):
+    # Enter a parse tree produced by SmallScriptParser#kwhead.
+    def enterKwhead(self, ctx:SmallScriptParser.KwheadContext):
         pass
 
-    # Exit a parse tree produced by SmallScriptParser#kwPair.
-    def exitKwPair(self, ctx:SmallScriptParser.KwPairContext):
+    # Exit a parse tree produced by SmallScriptParser#kwhead.
+    def exitKwhead(self, ctx:SmallScriptParser.KwheadContext):
         pass
 
 
-    # Enter a parse tree produced by SmallScriptParser#ptKey.
-    def enterPtKey(self, ctx:SmallScriptParser.PtKeyContext):
+    # Enter a parse tree produced by SmallScriptParser#kwmsg.
+    def enterKwmsg(self, ctx:SmallScriptParser.KwmsgContext):
         pass
 
-    # Exit a parse tree produced by SmallScriptParser#ptKey.
-    def exitPtKey(self, ctx:SmallScriptParser.PtKeyContext):
+    # Exit a parse tree produced by SmallScriptParser#kwmsg.
+    def exitKwmsg(self, ctx:SmallScriptParser.KwmsgContext):
+        pass
+
+
+    # Enter a parse tree produced by SmallScriptParser#kwpair.
+    def enterKwpair(self, ctx:SmallScriptParser.KwpairContext):
+        pass
+
+    # Exit a parse tree produced by SmallScriptParser#kwpair.
+    def exitKwpair(self, ctx:SmallScriptParser.KwpairContext):
+        pass
+
+
+    # Enter a parse tree produced by SmallScriptParser#ptkey.
+    def enterPtkey(self, ctx:SmallScriptParser.PtkeyContext):
+        pass
+
+    # Exit a parse tree produced by SmallScriptParser#ptkey.
+    def exitPtkey(self, ctx:SmallScriptParser.PtkeyContext):
         pass
 
 
@@ -206,12 +206,12 @@ class SmallScriptListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by SmallScriptParser#rtLit.
-    def enterRtLit(self, ctx:SmallScriptParser.RtLitContext):
+    # Enter a parse tree produced by SmallScriptParser#rtlit.
+    def enterRtlit(self, ctx:SmallScriptParser.RtlitContext):
         pass
 
-    # Exit a parse tree produced by SmallScriptParser#rtLit.
-    def exitRtLit(self, ctx:SmallScriptParser.RtLitContext):
+    # Exit a parse tree produced by SmallScriptParser#rtlit.
+    def exitRtlit(self, ctx:SmallScriptParser.RtlitContext):
         pass
 
 
@@ -224,48 +224,48 @@ class SmallScriptListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by SmallScriptParser#blkParamList.
-    def enterBlkParamList(self, ctx:SmallScriptParser.BlkParamListContext):
+    # Enter a parse tree produced by SmallScriptParser#blkparamlst.
+    def enterBlkparamlst(self, ctx:SmallScriptParser.BlkparamlstContext):
         pass
 
-    # Exit a parse tree produced by SmallScriptParser#blkParamList.
-    def exitBlkParamList(self, ctx:SmallScriptParser.BlkParamListContext):
-        pass
-
-
-    # Enter a parse tree produced by SmallScriptParser#blkParam.
-    def enterBlkParam(self, ctx:SmallScriptParser.BlkParamContext):
-        pass
-
-    # Exit a parse tree produced by SmallScriptParser#blkParam.
-    def exitBlkParam(self, ctx:SmallScriptParser.BlkParamContext):
+    # Exit a parse tree produced by SmallScriptParser#blkparamlst.
+    def exitBlkparamlst(self, ctx:SmallScriptParser.BlkparamlstContext):
         pass
 
 
-    # Enter a parse tree produced by SmallScriptParser#dynDict.
-    def enterDynDict(self, ctx:SmallScriptParser.DynDictContext):
+    # Enter a parse tree produced by SmallScriptParser#blkparam.
+    def enterBlkparam(self, ctx:SmallScriptParser.BlkparamContext):
         pass
 
-    # Exit a parse tree produced by SmallScriptParser#dynDict.
-    def exitDynDict(self, ctx:SmallScriptParser.DynDictContext):
-        pass
-
-
-    # Enter a parse tree produced by SmallScriptParser#dynArr.
-    def enterDynArr(self, ctx:SmallScriptParser.DynArrContext):
-        pass
-
-    # Exit a parse tree produced by SmallScriptParser#dynArr.
-    def exitDynArr(self, ctx:SmallScriptParser.DynArrContext):
+    # Exit a parse tree produced by SmallScriptParser#blkparam.
+    def exitBlkparam(self, ctx:SmallScriptParser.BlkparamContext):
         pass
 
 
-    # Enter a parse tree produced by SmallScriptParser#parseLit.
-    def enterParseLit(self, ctx:SmallScriptParser.ParseLitContext):
+    # Enter a parse tree produced by SmallScriptParser#dyndict.
+    def enterDyndict(self, ctx:SmallScriptParser.DyndictContext):
         pass
 
-    # Exit a parse tree produced by SmallScriptParser#parseLit.
-    def exitParseLit(self, ctx:SmallScriptParser.ParseLitContext):
+    # Exit a parse tree produced by SmallScriptParser#dyndict.
+    def exitDyndict(self, ctx:SmallScriptParser.DyndictContext):
+        pass
+
+
+    # Enter a parse tree produced by SmallScriptParser#dynarr.
+    def enterDynarr(self, ctx:SmallScriptParser.DynarrContext):
+        pass
+
+    # Exit a parse tree produced by SmallScriptParser#dynarr.
+    def exitDynarr(self, ctx:SmallScriptParser.DynarrContext):
+        pass
+
+
+    # Enter a parse tree produced by SmallScriptParser#parselit.
+    def enterParselit(self, ctx:SmallScriptParser.ParselitContext):
+        pass
+
+    # Exit a parse tree produced by SmallScriptParser#parselit.
+    def exitParselit(self, ctx:SmallScriptParser.ParselitContext):
         pass
 
 
@@ -305,30 +305,30 @@ class SmallScriptListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by SmallScriptParser#primKey.
-    def enterPrimKey(self, ctx:SmallScriptParser.PrimKeyContext):
+    # Enter a parse tree produced by SmallScriptParser#primkey.
+    def enterPrimkey(self, ctx:SmallScriptParser.PrimkeyContext):
         pass
 
-    # Exit a parse tree produced by SmallScriptParser#primKey.
-    def exitPrimKey(self, ctx:SmallScriptParser.PrimKeyContext):
-        pass
-
-
-    # Enter a parse tree produced by SmallScriptParser#primText.
-    def enterPrimText(self, ctx:SmallScriptParser.PrimTextContext):
-        pass
-
-    # Exit a parse tree produced by SmallScriptParser#primText.
-    def exitPrimText(self, ctx:SmallScriptParser.PrimTextContext):
+    # Exit a parse tree produced by SmallScriptParser#primkey.
+    def exitPrimkey(self, ctx:SmallScriptParser.PrimkeyContext):
         pass
 
 
-    # Enter a parse tree produced by SmallScriptParser#bareSym.
-    def enterBareSym(self, ctx:SmallScriptParser.BareSymContext):
+    # Enter a parse tree produced by SmallScriptParser#primtxt.
+    def enterPrimtxt(self, ctx:SmallScriptParser.PrimtxtContext):
         pass
 
-    # Exit a parse tree produced by SmallScriptParser#bareSym.
-    def exitBareSym(self, ctx:SmallScriptParser.BareSymContext):
+    # Exit a parse tree produced by SmallScriptParser#primtxt.
+    def exitPrimtxt(self, ctx:SmallScriptParser.PrimtxtContext):
+        pass
+
+
+    # Enter a parse tree produced by SmallScriptParser#baresym.
+    def enterBaresym(self, ctx:SmallScriptParser.BaresymContext):
+        pass
+
+    # Exit a parse tree produced by SmallScriptParser#baresym.
+    def exitBaresym(self, ctx:SmallScriptParser.BaresymContext):
         pass
 
 
@@ -341,57 +341,57 @@ class SmallScriptListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by SmallScriptParser#litArray.
-    def enterLitArray(self, ctx:SmallScriptParser.LitArrayContext):
+    # Enter a parse tree produced by SmallScriptParser#litarr.
+    def enterLitarr(self, ctx:SmallScriptParser.LitarrContext):
         pass
 
-    # Exit a parse tree produced by SmallScriptParser#litArray.
-    def exitLitArray(self, ctx:SmallScriptParser.LitArrayContext):
-        pass
-
-
-    # Enter a parse tree produced by SmallScriptParser#litArrayRest.
-    def enterLitArrayRest(self, ctx:SmallScriptParser.LitArrayRestContext):
-        pass
-
-    # Exit a parse tree produced by SmallScriptParser#litArrayRest.
-    def exitLitArrayRest(self, ctx:SmallScriptParser.LitArrayRestContext):
+    # Exit a parse tree produced by SmallScriptParser#litarr.
+    def exitLitarr(self, ctx:SmallScriptParser.LitarrContext):
         pass
 
 
-    # Enter a parse tree produced by SmallScriptParser#bareLitArr.
-    def enterBareLitArr(self, ctx:SmallScriptParser.BareLitArrContext):
+    # Enter a parse tree produced by SmallScriptParser#litarrcnt.
+    def enterLitarrcnt(self, ctx:SmallScriptParser.LitarrcntContext):
         pass
 
-    # Exit a parse tree produced by SmallScriptParser#bareLitArr.
-    def exitBareLitArr(self, ctx:SmallScriptParser.BareLitArrContext):
-        pass
-
-
-    # Enter a parse tree produced by SmallScriptParser#unaryTail.
-    def enterUnaryTail(self, ctx:SmallScriptParser.UnaryTailContext):
-        pass
-
-    # Exit a parse tree produced by SmallScriptParser#unaryTail.
-    def exitUnaryTail(self, ctx:SmallScriptParser.UnaryTailContext):
+    # Exit a parse tree produced by SmallScriptParser#litarrcnt.
+    def exitLitarrcnt(self, ctx:SmallScriptParser.LitarrcntContext):
         pass
 
 
-    # Enter a parse tree produced by SmallScriptParser#unaryMsg.
-    def enterUnaryMsg(self, ctx:SmallScriptParser.UnaryMsgContext):
+    # Enter a parse tree produced by SmallScriptParser#barelitarr.
+    def enterBarelitarr(self, ctx:SmallScriptParser.BarelitarrContext):
         pass
 
-    # Exit a parse tree produced by SmallScriptParser#unaryMsg.
-    def exitUnaryMsg(self, ctx:SmallScriptParser.UnaryMsgContext):
+    # Exit a parse tree produced by SmallScriptParser#barelitarr.
+    def exitBarelitarr(self, ctx:SmallScriptParser.BarelitarrContext):
         pass
 
 
-    # Enter a parse tree produced by SmallScriptParser#unaryOp.
-    def enterUnaryOp(self, ctx:SmallScriptParser.UnaryOpContext):
+    # Enter a parse tree produced by SmallScriptParser#unarytail.
+    def enterUnarytail(self, ctx:SmallScriptParser.UnarytailContext):
         pass
 
-    # Exit a parse tree produced by SmallScriptParser#unaryOp.
-    def exitUnaryOp(self, ctx:SmallScriptParser.UnaryOpContext):
+    # Exit a parse tree produced by SmallScriptParser#unarytail.
+    def exitUnarytail(self, ctx:SmallScriptParser.UnarytailContext):
+        pass
+
+
+    # Enter a parse tree produced by SmallScriptParser#unarymsg.
+    def enterUnarymsg(self, ctx:SmallScriptParser.UnarymsgContext):
+        pass
+
+    # Exit a parse tree produced by SmallScriptParser#unarymsg.
+    def exitUnarymsg(self, ctx:SmallScriptParser.UnarymsgContext):
+        pass
+
+
+    # Enter a parse tree produced by SmallScriptParser#unaryop.
+    def enterUnaryop(self, ctx:SmallScriptParser.UnaryopContext):
+        pass
+
+    # Exit a parse tree produced by SmallScriptParser#unaryop.
+    def exitUnaryop(self, ctx:SmallScriptParser.UnaryopContext):
         pass
 
 
@@ -413,30 +413,30 @@ class SmallScriptListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by SmallScriptParser#binTail.
-    def enterBinTail(self, ctx:SmallScriptParser.BinTailContext):
+    # Enter a parse tree produced by SmallScriptParser#bintail.
+    def enterBintail(self, ctx:SmallScriptParser.BintailContext):
         pass
 
-    # Exit a parse tree produced by SmallScriptParser#binTail.
-    def exitBinTail(self, ctx:SmallScriptParser.BinTailContext):
-        pass
-
-
-    # Enter a parse tree produced by SmallScriptParser#binMsg.
-    def enterBinMsg(self, ctx:SmallScriptParser.BinMsgContext):
-        pass
-
-    # Exit a parse tree produced by SmallScriptParser#binMsg.
-    def exitBinMsg(self, ctx:SmallScriptParser.BinMsgContext):
+    # Exit a parse tree produced by SmallScriptParser#bintail.
+    def exitBintail(self, ctx:SmallScriptParser.BintailContext):
         pass
 
 
-    # Enter a parse tree produced by SmallScriptParser#binOp.
-    def enterBinOp(self, ctx:SmallScriptParser.BinOpContext):
+    # Enter a parse tree produced by SmallScriptParser#binmsg.
+    def enterBinmsg(self, ctx:SmallScriptParser.BinmsgContext):
         pass
 
-    # Exit a parse tree produced by SmallScriptParser#binOp.
-    def exitBinOp(self, ctx:SmallScriptParser.BinOpContext):
+    # Exit a parse tree produced by SmallScriptParser#binmsg.
+    def exitBinmsg(self, ctx:SmallScriptParser.BinmsgContext):
+        pass
+
+
+    # Enter a parse tree produced by SmallScriptParser#binop.
+    def enterBinop(self, ctx:SmallScriptParser.BinopContext):
+        pass
+
+    # Exit a parse tree produced by SmallScriptParser#binop.
+    def exitBinop(self, ctx:SmallScriptParser.BinopContext):
         pass
 
 

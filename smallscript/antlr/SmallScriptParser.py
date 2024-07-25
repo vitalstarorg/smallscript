@@ -190,60 +190,60 @@ class SmallScriptParser ( Parser ):
     RULE_sequence = 1
     RULE_ws = 2
     RULE_temps = 3
-    RULE_tempVar = 4
+    RULE_tempvar = 4
     RULE_expr = 5
     RULE_exprs = 6
-    RULE_exprList = 7
+    RULE_exprlst = 7
     RULE_cascade = 8
-    RULE_ptFin = 9
+    RULE_ptfin = 9
     RULE_msg = 10
     RULE_assign = 11
     RULE_ref = 12
-    RULE_binHead = 13
-    RULE_unaryHead = 14
-    RULE_kwHead = 15
-    RULE_kwMsg = 16
-    RULE_kwPair = 17
-    RULE_ptKey = 18
+    RULE_binhead = 13
+    RULE_unaryhead = 14
+    RULE_kwhead = 15
+    RULE_kwmsg = 16
+    RULE_kwpair = 17
+    RULE_ptkey = 18
     RULE_operand = 19
     RULE_subexpr = 20
     RULE_lit = 21
-    RULE_rtLit = 22
+    RULE_rtlit = 22
     RULE_blk = 23
-    RULE_blkParamList = 24
-    RULE_blkParam = 25
-    RULE_dynDict = 26
-    RULE_dynArr = 27
-    RULE_parseLit = 28
+    RULE_blkparamlst = 24
+    RULE_blkparam = 25
+    RULE_dyndict = 26
+    RULE_dynarr = 27
+    RULE_parselit = 28
     RULE_num = 29
     RULE_char = 30
     RULE_string = 31
     RULE_primitive = 32
-    RULE_primKey = 33
-    RULE_primText = 34
-    RULE_bareSym = 35
+    RULE_primkey = 33
+    RULE_primtxt = 34
+    RULE_baresym = 35
     RULE_symbol = 36
-    RULE_litArray = 37
-    RULE_litArrayRest = 38
-    RULE_bareLitArr = 39
-    RULE_unaryTail = 40
-    RULE_unaryMsg = 41
-    RULE_unaryOp = 42
+    RULE_litarr = 37
+    RULE_litarrcnt = 38
+    RULE_barelitarr = 39
+    RULE_unarytail = 40
+    RULE_unarymsg = 41
+    RULE_unaryop = 42
     RULE_keywords = 43
     RULE_var = 44
-    RULE_binTail = 45
-    RULE_binMsg = 46
-    RULE_binOp = 47
+    RULE_bintail = 45
+    RULE_binmsg = 46
+    RULE_binop = 47
 
-    ruleNames =  [ "smallscript", "sequence", "ws", "temps", "tempVar", 
-                   "expr", "exprs", "exprList", "cascade", "ptFin", "msg", 
-                   "assign", "ref", "binHead", "unaryHead", "kwHead", "kwMsg", 
-                   "kwPair", "ptKey", "operand", "subexpr", "lit", "rtLit", 
-                   "blk", "blkParamList", "blkParam", "dynDict", "dynArr", 
-                   "parseLit", "num", "char", "string", "primitive", "primKey", 
-                   "primText", "bareSym", "symbol", "litArray", "litArrayRest", 
-                   "bareLitArr", "unaryTail", "unaryMsg", "unaryOp", "keywords", 
-                   "var", "binTail", "binMsg", "binOp" ]
+    ruleNames =  [ "smallscript", "sequence", "ws", "temps", "tempvar", 
+                   "expr", "exprs", "exprlst", "cascade", "ptfin", "msg", 
+                   "assign", "ref", "binhead", "unaryhead", "kwhead", "kwmsg", 
+                   "kwpair", "ptkey", "operand", "subexpr", "lit", "rtlit", 
+                   "blk", "blkparamlst", "blkparam", "dyndict", "dynarr", 
+                   "parselit", "num", "char", "string", "primitive", "primkey", 
+                   "primtxt", "baresym", "symbol", "litarr", "litarrcnt", 
+                   "barelitarr", "unarytail", "unarymsg", "unaryop", "keywords", 
+                   "var", "bintail", "binmsg", "binop" ]
 
     EOF = Token.EOF
     NUMEXP=1
@@ -503,11 +503,11 @@ class SmallScriptParser ( Parser ):
             else:
                 return self.getToken(SmallScriptParser.PIPE, i)
 
-        def tempVar(self, i:int=None):
+        def tempvar(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(SmallScriptParser.TempVarContext)
+                return self.getTypedRuleContexts(SmallScriptParser.TempvarContext)
             else:
-                return self.getTypedRuleContext(SmallScriptParser.TempVarContext,i)
+                return self.getTypedRuleContext(SmallScriptParser.TempvarContext,i)
 
 
         def ws(self, i:int=None):
@@ -554,7 +554,7 @@ class SmallScriptParser ( Parser ):
 
 
                     self.state = 120
-                    self.tempVar()
+                    self.tempvar()
 
                 else:
                     raise NoViableAltException(self)
@@ -581,7 +581,7 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class TempVarContext(ParserRuleContext):
+    class TempvarContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -592,23 +592,23 @@ class SmallScriptParser ( Parser ):
             return self.getToken(SmallScriptParser.IDENT, 0)
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_tempVar
+            return SmallScriptParser.RULE_tempvar
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterTempVar" ):
-                listener.enterTempVar(self)
+            if hasattr( listener, "enterTempvar" ):
+                listener.enterTempvar(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitTempVar" ):
-                listener.exitTempVar(self)
+            if hasattr( listener, "exitTempvar" ):
+                listener.exitTempvar(self)
 
 
 
 
-    def tempVar(self):
+    def tempvar(self):
 
-        localctx = SmallScriptParser.TempVarContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 8, self.RULE_tempVar)
+        localctx = SmallScriptParser.TempvarContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 8, self.RULE_tempvar)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 130
@@ -637,12 +637,12 @@ class SmallScriptParser ( Parser ):
             return self.getTypedRuleContext(SmallScriptParser.CascadeContext,0)
 
 
-        def kwHead(self):
-            return self.getTypedRuleContext(SmallScriptParser.KwHeadContext,0)
+        def kwhead(self):
+            return self.getTypedRuleContext(SmallScriptParser.KwheadContext,0)
 
 
-        def binHead(self):
-            return self.getTypedRuleContext(SmallScriptParser.BinHeadContext,0)
+        def binhead(self):
+            return self.getTypedRuleContext(SmallScriptParser.BinheadContext,0)
 
 
         def primitive(self):
@@ -686,13 +686,13 @@ class SmallScriptParser ( Parser ):
             elif la_ == 3:
                 self.enterOuterAlt(localctx, 3)
                 self.state = 134
-                self.kwHead()
+                self.kwhead()
                 pass
 
             elif la_ == 4:
                 self.enterOuterAlt(localctx, 4)
                 self.state = 135
-                self.binHead()
+                self.binhead()
                 pass
 
             elif la_ == 5:
@@ -722,11 +722,11 @@ class SmallScriptParser ( Parser ):
             return self.getTypedRuleContext(SmallScriptParser.ExprContext,0)
 
 
-        def exprList(self, i:int=None):
+        def exprlst(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(SmallScriptParser.ExprListContext)
+                return self.getTypedRuleContexts(SmallScriptParser.ExprlstContext)
             else:
-                return self.getTypedRuleContext(SmallScriptParser.ExprListContext,i)
+                return self.getTypedRuleContext(SmallScriptParser.ExprlstContext,i)
 
 
         def getRuleIndex(self):
@@ -757,7 +757,7 @@ class SmallScriptParser ( Parser ):
             _la = self._input.LA(1)
             while _la==15:
                 self.state = 140
-                self.exprList()
+                self.exprlst()
                 self.state = 145
                 self._errHandler.sync(self)
                 _la = self._input.LA(1)
@@ -771,7 +771,7 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class ExprListContext(ParserRuleContext):
+    class ExprlstContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -790,23 +790,23 @@ class SmallScriptParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_exprList
+            return SmallScriptParser.RULE_exprlst
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterExprList" ):
-                listener.enterExprList(self)
+            if hasattr( listener, "enterExprlst" ):
+                listener.enterExprlst(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitExprList" ):
-                listener.exitExprList(self)
+            if hasattr( listener, "exitExprlst" ):
+                listener.exitExprlst(self)
 
 
 
 
-    def exprList(self):
+    def exprlst(self):
 
-        localctx = SmallScriptParser.ExprListContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 14, self.RULE_exprList)
+        localctx = SmallScriptParser.ExprlstContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 14, self.RULE_exprlst)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
@@ -838,19 +838,19 @@ class SmallScriptParser ( Parser ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def kwHead(self):
-            return self.getTypedRuleContext(SmallScriptParser.KwHeadContext,0)
+        def kwhead(self):
+            return self.getTypedRuleContext(SmallScriptParser.KwheadContext,0)
 
 
-        def binHead(self):
-            return self.getTypedRuleContext(SmallScriptParser.BinHeadContext,0)
+        def binhead(self):
+            return self.getTypedRuleContext(SmallScriptParser.BinheadContext,0)
 
 
-        def ptFin(self, i:int=None):
+        def ptfin(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(SmallScriptParser.PtFinContext)
+                return self.getTypedRuleContexts(SmallScriptParser.PtfinContext)
             else:
-                return self.getTypedRuleContext(SmallScriptParser.PtFinContext,i)
+                return self.getTypedRuleContext(SmallScriptParser.PtfinContext,i)
 
 
         def msg(self, i:int=None):
@@ -893,12 +893,12 @@ class SmallScriptParser ( Parser ):
             la_ = self._interp.adaptivePredict(self._input,10,self._ctx)
             if la_ == 1:
                 self.state = 152
-                self.kwHead()
+                self.kwhead()
                 pass
 
             elif la_ == 2:
                 self.state = 153
-                self.binHead()
+                self.binhead()
                 pass
 
 
@@ -916,7 +916,7 @@ class SmallScriptParser ( Parser ):
 
 
                     self.state = 159
-                    self.ptFin()
+                    self.ptfin()
                     self.state = 161
                     self._errHandler.sync(self)
                     la_ = self._interp.adaptivePredict(self._input,12,self._ctx)
@@ -943,7 +943,7 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class PtFinContext(ParserRuleContext):
+    class PtfinContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -954,23 +954,23 @@ class SmallScriptParser ( Parser ):
             return self.getToken(SmallScriptParser.SEMI, 0)
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_ptFin
+            return SmallScriptParser.RULE_ptfin
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPtFin" ):
-                listener.enterPtFin(self)
+            if hasattr( listener, "enterPtfin" ):
+                listener.enterPtfin(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPtFin" ):
-                listener.exitPtFin(self)
+            if hasattr( listener, "exitPtfin" ):
+                listener.exitPtfin(self)
 
 
 
 
-    def ptFin(self):
+    def ptfin(self):
 
-        localctx = SmallScriptParser.PtFinContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 18, self.RULE_ptFin)
+        localctx = SmallScriptParser.PtfinContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 18, self.RULE_ptfin)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 169
@@ -991,20 +991,20 @@ class SmallScriptParser ( Parser ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def kwMsg(self):
-            return self.getTypedRuleContext(SmallScriptParser.KwMsgContext,0)
+        def kwmsg(self):
+            return self.getTypedRuleContext(SmallScriptParser.KwmsgContext,0)
 
 
-        def unaryTail(self):
-            return self.getTypedRuleContext(SmallScriptParser.UnaryTailContext,0)
+        def unarytail(self):
+            return self.getTypedRuleContext(SmallScriptParser.UnarytailContext,0)
 
 
         def ws(self):
             return self.getTypedRuleContext(SmallScriptParser.WsContext,0)
 
 
-        def binTail(self):
-            return self.getTypedRuleContext(SmallScriptParser.BinTailContext,0)
+        def bintail(self):
+            return self.getTypedRuleContext(SmallScriptParser.BintailContext,0)
 
 
         def getRuleIndex(self):
@@ -1032,7 +1032,7 @@ class SmallScriptParser ( Parser ):
             if la_ == 1:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 171
-                self.kwMsg()
+                self.kwmsg()
                 pass
 
             elif la_ == 2:
@@ -1042,7 +1042,7 @@ class SmallScriptParser ( Parser ):
                 la_ = self._interp.adaptivePredict(self._input,14,self._ctx)
                 if la_ == 1:
                     self.state = 172
-                    self.unaryTail()
+                    self.unarytail()
 
 
                 self.state = 176
@@ -1058,7 +1058,7 @@ class SmallScriptParser ( Parser ):
                 la_ = self._interp.adaptivePredict(self._input,16,self._ctx)
                 if la_ == 1:
                     self.state = 178
-                    self.binTail()
+                    self.bintail()
 
 
                 pass
@@ -1191,49 +1191,49 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class BinHeadContext(ParserRuleContext):
+    class BinheadContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def unaryHead(self):
-            return self.getTypedRuleContext(SmallScriptParser.UnaryHeadContext,0)
+        def unaryhead(self):
+            return self.getTypedRuleContext(SmallScriptParser.UnaryheadContext,0)
 
 
-        def binTail(self):
-            return self.getTypedRuleContext(SmallScriptParser.BinTailContext,0)
+        def bintail(self):
+            return self.getTypedRuleContext(SmallScriptParser.BintailContext,0)
 
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_binHead
+            return SmallScriptParser.RULE_binhead
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterBinHead" ):
-                listener.enterBinHead(self)
+            if hasattr( listener, "enterBinhead" ):
+                listener.enterBinhead(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitBinHead" ):
-                listener.exitBinHead(self)
+            if hasattr( listener, "exitBinhead" ):
+                listener.exitBinhead(self)
 
 
 
 
-    def binHead(self):
+    def binhead(self):
 
-        localctx = SmallScriptParser.BinHeadContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 26, self.RULE_binHead)
+        localctx = SmallScriptParser.BinheadContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 26, self.RULE_binhead)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 195
-            self.unaryHead()
+            self.unaryhead()
             self.state = 197
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,20,self._ctx)
             if la_ == 1:
                 self.state = 196
-                self.binTail()
+                self.bintail()
 
 
         except RecognitionException as re:
@@ -1245,7 +1245,7 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class UnaryHeadContext(ParserRuleContext):
+    class UnaryheadContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -1260,28 +1260,28 @@ class SmallScriptParser ( Parser ):
             return self.getTypedRuleContext(SmallScriptParser.WsContext,0)
 
 
-        def unaryTail(self):
-            return self.getTypedRuleContext(SmallScriptParser.UnaryTailContext,0)
+        def unarytail(self):
+            return self.getTypedRuleContext(SmallScriptParser.UnarytailContext,0)
 
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_unaryHead
+            return SmallScriptParser.RULE_unaryhead
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterUnaryHead" ):
-                listener.enterUnaryHead(self)
+            if hasattr( listener, "enterUnaryhead" ):
+                listener.enterUnaryhead(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitUnaryHead" ):
-                listener.exitUnaryHead(self)
+            if hasattr( listener, "exitUnaryhead" ):
+                listener.exitUnaryhead(self)
 
 
 
 
-    def unaryHead(self):
+    def unaryhead(self):
 
-        localctx = SmallScriptParser.UnaryHeadContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 28, self.RULE_unaryHead)
+        localctx = SmallScriptParser.UnaryheadContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 28, self.RULE_unaryhead)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 199
@@ -1299,7 +1299,7 @@ class SmallScriptParser ( Parser ):
             la_ = self._interp.adaptivePredict(self._input,22,self._ctx)
             if la_ == 1:
                 self.state = 203
-                self.unaryTail()
+                self.unarytail()
 
 
         except RecognitionException as re:
@@ -1311,45 +1311,45 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class KwHeadContext(ParserRuleContext):
+    class KwheadContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def unaryHead(self):
-            return self.getTypedRuleContext(SmallScriptParser.UnaryHeadContext,0)
+        def unaryhead(self):
+            return self.getTypedRuleContext(SmallScriptParser.UnaryheadContext,0)
 
 
-        def kwMsg(self):
-            return self.getTypedRuleContext(SmallScriptParser.KwMsgContext,0)
+        def kwmsg(self):
+            return self.getTypedRuleContext(SmallScriptParser.KwmsgContext,0)
 
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_kwHead
+            return SmallScriptParser.RULE_kwhead
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterKwHead" ):
-                listener.enterKwHead(self)
+            if hasattr( listener, "enterKwhead" ):
+                listener.enterKwhead(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitKwHead" ):
-                listener.exitKwHead(self)
+            if hasattr( listener, "exitKwhead" ):
+                listener.exitKwhead(self)
 
 
 
 
-    def kwHead(self):
+    def kwhead(self):
 
-        localctx = SmallScriptParser.KwHeadContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 30, self.RULE_kwHead)
+        localctx = SmallScriptParser.KwheadContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 30, self.RULE_kwhead)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 206
-            self.unaryHead()
+            self.unaryhead()
             self.state = 207
-            self.kwMsg()
+            self.kwmsg()
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -1359,7 +1359,7 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class KwMsgContext(ParserRuleContext):
+    class KwmsgContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -1373,31 +1373,31 @@ class SmallScriptParser ( Parser ):
                 return self.getTypedRuleContext(SmallScriptParser.WsContext,i)
 
 
-        def kwPair(self, i:int=None):
+        def kwpair(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(SmallScriptParser.KwPairContext)
+                return self.getTypedRuleContexts(SmallScriptParser.KwpairContext)
             else:
-                return self.getTypedRuleContext(SmallScriptParser.KwPairContext,i)
+                return self.getTypedRuleContext(SmallScriptParser.KwpairContext,i)
 
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_kwMsg
+            return SmallScriptParser.RULE_kwmsg
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterKwMsg" ):
-                listener.enterKwMsg(self)
+            if hasattr( listener, "enterKwmsg" ):
+                listener.enterKwmsg(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitKwMsg" ):
-                listener.exitKwMsg(self)
+            if hasattr( listener, "exitKwmsg" ):
+                listener.exitKwmsg(self)
 
 
 
 
-    def kwMsg(self):
+    def kwmsg(self):
 
-        localctx = SmallScriptParser.KwMsgContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 32, self.RULE_kwMsg)
+        localctx = SmallScriptParser.KwmsgContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 32, self.RULE_kwmsg)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
@@ -1414,7 +1414,7 @@ class SmallScriptParser ( Parser ):
             _la = self._input.LA(1)
             while True:
                 self.state = 212
-                self.kwPair()
+                self.kwpair()
                 self.state = 214
                 self._errHandler.sync(self)
                 la_ = self._interp.adaptivePredict(self._input,24,self._ctx)
@@ -1438,19 +1438,19 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class KwPairContext(ParserRuleContext):
+    class KwpairContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def ptKey(self):
-            return self.getTypedRuleContext(SmallScriptParser.PtKeyContext,0)
+        def ptkey(self):
+            return self.getTypedRuleContext(SmallScriptParser.PtkeyContext,0)
 
 
-        def binHead(self):
-            return self.getTypedRuleContext(SmallScriptParser.BinHeadContext,0)
+        def binhead(self):
+            return self.getTypedRuleContext(SmallScriptParser.BinheadContext,0)
 
 
         def ws(self, i:int=None):
@@ -1461,28 +1461,28 @@ class SmallScriptParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_kwPair
+            return SmallScriptParser.RULE_kwpair
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterKwPair" ):
-                listener.enterKwPair(self)
+            if hasattr( listener, "enterKwpair" ):
+                listener.enterKwpair(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitKwPair" ):
-                listener.exitKwPair(self)
+            if hasattr( listener, "exitKwpair" ):
+                listener.exitKwpair(self)
 
 
 
 
-    def kwPair(self):
+    def kwpair(self):
 
-        localctx = SmallScriptParser.KwPairContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 34, self.RULE_kwPair)
+        localctx = SmallScriptParser.KwpairContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 34, self.RULE_kwpair)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 220
-            self.ptKey()
+            self.ptkey()
             self.state = 222
             self._errHandler.sync(self)
             _la = self._input.LA(1)
@@ -1492,7 +1492,7 @@ class SmallScriptParser ( Parser ):
 
 
             self.state = 224
-            self.binHead()
+            self.binhead()
             self.state = 226
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,27,self._ctx)
@@ -1510,7 +1510,7 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class PtKeyContext(ParserRuleContext):
+    class PtkeyContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -1521,23 +1521,23 @@ class SmallScriptParser ( Parser ):
             return self.getToken(SmallScriptParser.KEYWORD, 0)
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_ptKey
+            return SmallScriptParser.RULE_ptkey
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPtKey" ):
-                listener.enterPtKey(self)
+            if hasattr( listener, "enterPtkey" ):
+                listener.enterPtkey(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPtKey" ):
-                listener.exitPtKey(self)
+            if hasattr( listener, "exitPtkey" ):
+                listener.exitPtkey(self)
 
 
 
 
-    def ptKey(self):
+    def ptkey(self):
 
-        localctx = SmallScriptParser.PtKeyContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 36, self.RULE_ptKey)
+        localctx = SmallScriptParser.PtkeyContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 36, self.RULE_ptkey)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 228
@@ -1702,12 +1702,12 @@ class SmallScriptParser ( Parser ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def rtLit(self):
-            return self.getTypedRuleContext(SmallScriptParser.RtLitContext,0)
+        def rtlit(self):
+            return self.getTypedRuleContext(SmallScriptParser.RtlitContext,0)
 
 
-        def parseLit(self):
-            return self.getTypedRuleContext(SmallScriptParser.ParseLitContext,0)
+        def parselit(self):
+            return self.getTypedRuleContext(SmallScriptParser.ParselitContext,0)
 
 
         def getRuleIndex(self):
@@ -1735,12 +1735,12 @@ class SmallScriptParser ( Parser ):
             if token in [10, 30, 32]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 245
-                self.rtLit()
+                self.rtlit()
                 pass
             elif token in [1, 2, 3, 4, 8, 25, 29, 37]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 246
-                self.parseLit()
+                self.parselit()
                 pass
             else:
                 raise NoViableAltException(self)
@@ -1754,19 +1754,19 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class RtLitContext(ParserRuleContext):
+    class RtlitContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def dynDict(self):
-            return self.getTypedRuleContext(SmallScriptParser.DynDictContext,0)
+        def dyndict(self):
+            return self.getTypedRuleContext(SmallScriptParser.DyndictContext,0)
 
 
-        def dynArr(self):
-            return self.getTypedRuleContext(SmallScriptParser.DynArrContext,0)
+        def dynarr(self):
+            return self.getTypedRuleContext(SmallScriptParser.DynarrContext,0)
 
 
         def blk(self):
@@ -1774,23 +1774,23 @@ class SmallScriptParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_rtLit
+            return SmallScriptParser.RULE_rtlit
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterRtLit" ):
-                listener.enterRtLit(self)
+            if hasattr( listener, "enterRtlit" ):
+                listener.enterRtlit(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitRtLit" ):
-                listener.exitRtLit(self)
+            if hasattr( listener, "exitRtlit" ):
+                listener.exitRtlit(self)
 
 
 
 
-    def rtLit(self):
+    def rtlit(self):
 
-        localctx = SmallScriptParser.RtLitContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 44, self.RULE_rtLit)
+        localctx = SmallScriptParser.RtlitContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 44, self.RULE_rtlit)
         try:
             self.state = 252
             self._errHandler.sync(self)
@@ -1798,12 +1798,12 @@ class SmallScriptParser ( Parser ):
             if token in [30]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 249
-                self.dynDict()
+                self.dyndict()
                 pass
             elif token in [32]:
                 self.enterOuterAlt(localctx, 2)
                 self.state = 250
-                self.dynArr()
+                self.dynarr()
                 pass
             elif token in [10]:
                 self.enterOuterAlt(localctx, 3)
@@ -1835,8 +1835,8 @@ class SmallScriptParser ( Parser ):
         def BLK_END(self):
             return self.getToken(SmallScriptParser.BLK_END, 0)
 
-        def blkParamList(self):
-            return self.getTypedRuleContext(SmallScriptParser.BlkParamListContext,0)
+        def blkparamlst(self):
+            return self.getTypedRuleContext(SmallScriptParser.BlkparamlstContext,0)
 
 
         def ws(self):
@@ -1875,7 +1875,7 @@ class SmallScriptParser ( Parser ):
             la_ = self._interp.adaptivePredict(self._input,33,self._ctx)
             if la_ == 1:
                 self.state = 255
-                self.blkParamList()
+                self.blkparamlst()
 
 
             self.state = 259
@@ -1905,7 +1905,7 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class BlkParamListContext(ParserRuleContext):
+    class BlkparamlstContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -1915,11 +1915,11 @@ class SmallScriptParser ( Parser ):
         def PIPE(self):
             return self.getToken(SmallScriptParser.PIPE, 0)
 
-        def blkParam(self, i:int=None):
+        def blkparam(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(SmallScriptParser.BlkParamContext)
+                return self.getTypedRuleContexts(SmallScriptParser.BlkparamContext)
             else:
-                return self.getTypedRuleContext(SmallScriptParser.BlkParamContext,i)
+                return self.getTypedRuleContext(SmallScriptParser.BlkparamContext,i)
 
 
         def ws(self, i:int=None):
@@ -1930,23 +1930,23 @@ class SmallScriptParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_blkParamList
+            return SmallScriptParser.RULE_blkparamlst
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterBlkParamList" ):
-                listener.enterBlkParamList(self)
+            if hasattr( listener, "enterBlkparamlst" ):
+                listener.enterBlkparamlst(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitBlkParamList" ):
-                listener.exitBlkParamList(self)
+            if hasattr( listener, "exitBlkparamlst" ):
+                listener.exitBlkparamlst(self)
 
 
 
 
-    def blkParamList(self):
+    def blkparamlst(self):
 
-        localctx = SmallScriptParser.BlkParamListContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 48, self.RULE_blkParamList)
+        localctx = SmallScriptParser.BlkparamlstContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 48, self.RULE_blkparamlst)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
@@ -1964,7 +1964,7 @@ class SmallScriptParser ( Parser ):
 
 
                     self.state = 269
-                    self.blkParam()
+                    self.blkparam()
 
                 else:
                     raise NoViableAltException(self)
@@ -1991,7 +1991,7 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class BlkParamContext(ParserRuleContext):
+    class BlkparamContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -2002,23 +2002,23 @@ class SmallScriptParser ( Parser ):
             return self.getToken(SmallScriptParser.BLK_PARAM, 0)
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_blkParam
+            return SmallScriptParser.RULE_blkparam
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterBlkParam" ):
-                listener.enterBlkParam(self)
+            if hasattr( listener, "enterBlkparam" ):
+                listener.enterBlkparam(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitBlkParam" ):
-                listener.exitBlkParam(self)
+            if hasattr( listener, "exitBlkparam" ):
+                listener.exitBlkparam(self)
 
 
 
 
-    def blkParam(self):
+    def blkparam(self):
 
-        localctx = SmallScriptParser.BlkParamContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 50, self.RULE_blkParam)
+        localctx = SmallScriptParser.BlkparamContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 50, self.RULE_blkparam)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 279
@@ -2032,7 +2032,7 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class DynDictContext(ParserRuleContext):
+    class DyndictContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -2057,23 +2057,23 @@ class SmallScriptParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_dynDict
+            return SmallScriptParser.RULE_dyndict
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDynDict" ):
-                listener.enterDynDict(self)
+            if hasattr( listener, "enterDyndict" ):
+                listener.enterDyndict(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDynDict" ):
-                listener.exitDynDict(self)
+            if hasattr( listener, "exitDyndict" ):
+                listener.exitDyndict(self)
 
 
 
 
-    def dynDict(self):
+    def dyndict(self):
 
-        localctx = SmallScriptParser.DynDictContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 52, self.RULE_dynDict)
+        localctx = SmallScriptParser.DyndictContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 52, self.RULE_dyndict)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
@@ -2114,7 +2114,7 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class DynArrContext(ParserRuleContext):
+    class DynarrContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -2139,23 +2139,23 @@ class SmallScriptParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_dynArr
+            return SmallScriptParser.RULE_dynarr
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterDynArr" ):
-                listener.enterDynArr(self)
+            if hasattr( listener, "enterDynarr" ):
+                listener.enterDynarr(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitDynArr" ):
-                listener.exitDynArr(self)
+            if hasattr( listener, "exitDynarr" ):
+                listener.exitDynarr(self)
 
 
 
 
-    def dynArr(self):
+    def dynarr(self):
 
-        localctx = SmallScriptParser.DynArrContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 54, self.RULE_dynArr)
+        localctx = SmallScriptParser.DynarrContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 54, self.RULE_dynarr)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
@@ -2196,15 +2196,15 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class ParseLitContext(ParserRuleContext):
+    class ParselitContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def bareSym(self):
-            return self.getTypedRuleContext(SmallScriptParser.BareSymContext,0)
+        def baresym(self):
+            return self.getTypedRuleContext(SmallScriptParser.BaresymContext,0)
 
 
         def num(self):
@@ -2215,8 +2215,8 @@ class SmallScriptParser ( Parser ):
             return self.getTypedRuleContext(SmallScriptParser.CharContext,0)
 
 
-        def litArray(self):
-            return self.getTypedRuleContext(SmallScriptParser.LitArrayContext,0)
+        def litarr(self):
+            return self.getTypedRuleContext(SmallScriptParser.LitarrContext,0)
 
 
         def string(self):
@@ -2224,23 +2224,23 @@ class SmallScriptParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_parseLit
+            return SmallScriptParser.RULE_parselit
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterParseLit" ):
-                listener.enterParseLit(self)
+            if hasattr( listener, "enterParselit" ):
+                listener.enterParselit(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitParseLit" ):
-                listener.exitParseLit(self)
+            if hasattr( listener, "exitParselit" ):
+                listener.exitParselit(self)
 
 
 
 
-    def parseLit(self):
+    def parselit(self):
 
-        localctx = SmallScriptParser.ParseLitContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 56, self.RULE_parseLit)
+        localctx = SmallScriptParser.ParselitContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 56, self.RULE_parselit)
         try:
             self.state = 310
             self._errHandler.sync(self)
@@ -2248,7 +2248,7 @@ class SmallScriptParser ( Parser ):
             if token in [25]:
                 self.enterOuterAlt(localctx, 1)
                 self.state = 305
-                self.bareSym()
+                self.baresym()
                 pass
             elif token in [1, 2, 3, 4]:
                 self.enterOuterAlt(localctx, 2)
@@ -2263,7 +2263,7 @@ class SmallScriptParser ( Parser ):
             elif token in [29]:
                 self.enterOuterAlt(localctx, 4)
                 self.state = 308
-                self.litArray()
+                self.litarr()
                 pass
             elif token in [8]:
                 self.enterOuterAlt(localctx, 5)
@@ -2430,12 +2430,12 @@ class SmallScriptParser ( Parser ):
         def P_START(self):
             return self.getToken(SmallScriptParser.P_START, 0)
 
-        def primKey(self):
-            return self.getTypedRuleContext(SmallScriptParser.PrimKeyContext,0)
+        def primkey(self):
+            return self.getTypedRuleContext(SmallScriptParser.PrimkeyContext,0)
 
 
-        def primText(self):
-            return self.getTypedRuleContext(SmallScriptParser.PrimTextContext,0)
+        def primtxt(self):
+            return self.getTypedRuleContext(SmallScriptParser.PrimtxtContext,0)
 
 
         def P_END(self):
@@ -2469,7 +2469,7 @@ class SmallScriptParser ( Parser ):
             self.state = 318
             self.match(SmallScriptParser.P_START)
             self.state = 319
-            self.primKey()
+            self.primkey()
             self.state = 321
             self._errHandler.sync(self)
             _la = self._input.LA(1)
@@ -2479,7 +2479,7 @@ class SmallScriptParser ( Parser ):
 
 
             self.state = 323
-            self.primText()
+            self.primtxt()
             self.state = 324
             self.match(SmallScriptParser.P_END)
         except RecognitionException as re:
@@ -2491,7 +2491,7 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class PrimKeyContext(ParserRuleContext):
+    class PrimkeyContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -2502,23 +2502,23 @@ class SmallScriptParser ( Parser ):
             return self.getToken(SmallScriptParser.KEYWORD, 0)
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_primKey
+            return SmallScriptParser.RULE_primkey
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPrimKey" ):
-                listener.enterPrimKey(self)
+            if hasattr( listener, "enterPrimkey" ):
+                listener.enterPrimkey(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPrimKey" ):
-                listener.exitPrimKey(self)
+            if hasattr( listener, "exitPrimkey" ):
+                listener.exitPrimkey(self)
 
 
 
 
-    def primKey(self):
+    def primkey(self):
 
-        localctx = SmallScriptParser.PrimKeyContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 66, self.RULE_primKey)
+        localctx = SmallScriptParser.PrimkeyContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 66, self.RULE_primkey)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 326
@@ -2532,7 +2532,7 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class PrimTextContext(ParserRuleContext):
+    class PrimtxtContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -2543,23 +2543,23 @@ class SmallScriptParser ( Parser ):
             return self.getToken(SmallScriptParser.STRING, 0)
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_primText
+            return SmallScriptParser.RULE_primtxt
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterPrimText" ):
-                listener.enterPrimText(self)
+            if hasattr( listener, "enterPrimtxt" ):
+                listener.enterPrimtxt(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitPrimText" ):
-                listener.exitPrimText(self)
+            if hasattr( listener, "exitPrimtxt" ):
+                listener.exitPrimtxt(self)
 
 
 
 
-    def primText(self):
+    def primtxt(self):
 
-        localctx = SmallScriptParser.PrimTextContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 68, self.RULE_primText)
+        localctx = SmallScriptParser.PrimtxtContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 68, self.RULE_primtxt)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 328
@@ -2573,7 +2573,7 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class BareSymContext(ParserRuleContext):
+    class BaresymContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -2587,23 +2587,23 @@ class SmallScriptParser ( Parser ):
             return self.getToken(SmallScriptParser.IDENT, 0)
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_bareSym
+            return SmallScriptParser.RULE_baresym
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterBareSym" ):
-                listener.enterBareSym(self)
+            if hasattr( listener, "enterBaresym" ):
+                listener.enterBaresym(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitBareSym" ):
-                listener.exitBareSym(self)
+            if hasattr( listener, "exitBaresym" ):
+                listener.exitBaresym(self)
 
 
 
 
-    def bareSym(self):
+    def baresym(self):
 
-        localctx = SmallScriptParser.BareSymContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 70, self.RULE_bareSym)
+        localctx = SmallScriptParser.BaresymContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 70, self.RULE_baresym)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 330
@@ -2709,7 +2709,7 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class LitArrayContext(ParserRuleContext):
+    class LitarrContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -2719,34 +2719,34 @@ class SmallScriptParser ( Parser ):
         def LITARR_START(self):
             return self.getToken(SmallScriptParser.LITARR_START, 0)
 
-        def litArrayRest(self):
-            return self.getTypedRuleContext(SmallScriptParser.LitArrayRestContext,0)
+        def litarrcnt(self):
+            return self.getTypedRuleContext(SmallScriptParser.LitarrcntContext,0)
 
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_litArray
+            return SmallScriptParser.RULE_litarr
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterLitArray" ):
-                listener.enterLitArray(self)
+            if hasattr( listener, "enterLitarr" ):
+                listener.enterLitarr(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitLitArray" ):
-                listener.exitLitArray(self)
+            if hasattr( listener, "exitLitarr" ):
+                listener.exitLitarr(self)
 
 
 
 
-    def litArray(self):
+    def litarr(self):
 
-        localctx = SmallScriptParser.LitArrayContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 74, self.RULE_litArray)
+        localctx = SmallScriptParser.LitarrContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 74, self.RULE_litarr)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 342
             self.match(SmallScriptParser.LITARR_START)
             self.state = 343
-            self.litArrayRest()
+            self.litarrcnt()
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -2756,7 +2756,7 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class LitArrayRestContext(ParserRuleContext):
+    class LitarrcntContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -2773,18 +2773,18 @@ class SmallScriptParser ( Parser ):
                 return self.getTypedRuleContext(SmallScriptParser.WsContext,i)
 
 
-        def parseLit(self, i:int=None):
+        def parselit(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(SmallScriptParser.ParseLitContext)
+                return self.getTypedRuleContexts(SmallScriptParser.ParselitContext)
             else:
-                return self.getTypedRuleContext(SmallScriptParser.ParseLitContext,i)
+                return self.getTypedRuleContext(SmallScriptParser.ParselitContext,i)
 
 
-        def bareLitArr(self, i:int=None):
+        def barelitarr(self, i:int=None):
             if i is None:
-                return self.getTypedRuleContexts(SmallScriptParser.BareLitArrContext)
+                return self.getTypedRuleContexts(SmallScriptParser.BarelitarrContext)
             else:
-                return self.getTypedRuleContext(SmallScriptParser.BareLitArrContext,i)
+                return self.getTypedRuleContext(SmallScriptParser.BarelitarrContext,i)
 
 
         def symbol(self, i:int=None):
@@ -2795,23 +2795,23 @@ class SmallScriptParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_litArrayRest
+            return SmallScriptParser.RULE_litarrcnt
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterLitArrayRest" ):
-                listener.enterLitArrayRest(self)
+            if hasattr( listener, "enterLitarrcnt" ):
+                listener.enterLitarrcnt(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitLitArrayRest" ):
-                listener.exitLitArrayRest(self)
+            if hasattr( listener, "exitLitarrcnt" ):
+                listener.exitLitarrcnt(self)
 
 
 
 
-    def litArrayRest(self):
+    def litarrcnt(self):
 
-        localctx = SmallScriptParser.LitArrayRestContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 76, self.RULE_litArrayRest)
+        localctx = SmallScriptParser.LitarrcntContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 76, self.RULE_litarrcnt)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
@@ -2832,12 +2832,12 @@ class SmallScriptParser ( Parser ):
                 la_ = self._interp.adaptivePredict(self._input,50,self._ctx)
                 if la_ == 1:
                     self.state = 348
-                    self.parseLit()
+                    self.parselit()
                     pass
 
                 elif la_ == 2:
                     self.state = 349
-                    self.bareLitArr()
+                    self.barelitarr()
                     pass
 
                 elif la_ == 3:
@@ -2869,7 +2869,7 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class BareLitArrContext(ParserRuleContext):
+    class BarelitarrContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -2879,34 +2879,34 @@ class SmallScriptParser ( Parser ):
         def OPEN_PAREN(self):
             return self.getToken(SmallScriptParser.OPEN_PAREN, 0)
 
-        def litArrayRest(self):
-            return self.getTypedRuleContext(SmallScriptParser.LitArrayRestContext,0)
+        def litarrcnt(self):
+            return self.getTypedRuleContext(SmallScriptParser.LitarrcntContext,0)
 
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_bareLitArr
+            return SmallScriptParser.RULE_barelitarr
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterBareLitArr" ):
-                listener.enterBareLitArr(self)
+            if hasattr( listener, "enterBarelitarr" ):
+                listener.enterBarelitarr(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitBareLitArr" ):
-                listener.exitBareLitArr(self)
+            if hasattr( listener, "exitBarelitarr" ):
+                listener.exitBarelitarr(self)
 
 
 
 
-    def bareLitArr(self):
+    def barelitarr(self):
 
-        localctx = SmallScriptParser.BareLitArrContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 78, self.RULE_bareLitArr)
+        localctx = SmallScriptParser.BarelitarrContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 78, self.RULE_barelitarr)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 363
             self.match(SmallScriptParser.OPEN_PAREN)
             self.state = 364
-            self.litArrayRest()
+            self.litarrcnt()
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -2916,15 +2916,15 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class UnaryTailContext(ParserRuleContext):
+    class UnarytailContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def unaryMsg(self):
-            return self.getTypedRuleContext(SmallScriptParser.UnaryMsgContext,0)
+        def unarymsg(self):
+            return self.getTypedRuleContext(SmallScriptParser.UnarymsgContext,0)
 
 
         def ws(self, i:int=None):
@@ -2934,32 +2934,32 @@ class SmallScriptParser ( Parser ):
                 return self.getTypedRuleContext(SmallScriptParser.WsContext,i)
 
 
-        def unaryTail(self):
-            return self.getTypedRuleContext(SmallScriptParser.UnaryTailContext,0)
+        def unarytail(self):
+            return self.getTypedRuleContext(SmallScriptParser.UnarytailContext,0)
 
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_unaryTail
+            return SmallScriptParser.RULE_unarytail
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterUnaryTail" ):
-                listener.enterUnaryTail(self)
+            if hasattr( listener, "enterUnarytail" ):
+                listener.enterUnarytail(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitUnaryTail" ):
-                listener.exitUnaryTail(self)
+            if hasattr( listener, "exitUnarytail" ):
+                listener.exitUnarytail(self)
 
 
 
 
-    def unaryTail(self):
+    def unarytail(self):
 
-        localctx = SmallScriptParser.UnaryTailContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 80, self.RULE_unaryTail)
+        localctx = SmallScriptParser.UnarytailContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 80, self.RULE_unarytail)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 366
-            self.unaryMsg()
+            self.unarymsg()
             self.state = 368
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,53,self._ctx)
@@ -2973,7 +2973,7 @@ class SmallScriptParser ( Parser ):
             la_ = self._interp.adaptivePredict(self._input,54,self._ctx)
             if la_ == 1:
                 self.state = 370
-                self.unaryTail()
+                self.unarytail()
 
 
             self.state = 374
@@ -2993,15 +2993,15 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class UnaryMsgContext(ParserRuleContext):
+    class UnarymsgContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def unaryOp(self):
-            return self.getTypedRuleContext(SmallScriptParser.UnaryOpContext,0)
+        def unaryop(self):
+            return self.getTypedRuleContext(SmallScriptParser.UnaryopContext,0)
 
 
         def ws(self):
@@ -3009,23 +3009,23 @@ class SmallScriptParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_unaryMsg
+            return SmallScriptParser.RULE_unarymsg
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterUnaryMsg" ):
-                listener.enterUnaryMsg(self)
+            if hasattr( listener, "enterUnarymsg" ):
+                listener.enterUnarymsg(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitUnaryMsg" ):
-                listener.exitUnaryMsg(self)
+            if hasattr( listener, "exitUnarymsg" ):
+                listener.exitUnarymsg(self)
 
 
 
 
-    def unaryMsg(self):
+    def unarymsg(self):
 
-        localctx = SmallScriptParser.UnaryMsgContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 82, self.RULE_unaryMsg)
+        localctx = SmallScriptParser.UnarymsgContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 82, self.RULE_unarymsg)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
@@ -3038,7 +3038,7 @@ class SmallScriptParser ( Parser ):
 
 
             self.state = 379
-            self.unaryOp()
+            self.unaryop()
         except RecognitionException as re:
             localctx.exception = re
             self._errHandler.reportError(self, re)
@@ -3048,7 +3048,7 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class UnaryOpContext(ParserRuleContext):
+    class UnaryopContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -3059,23 +3059,23 @@ class SmallScriptParser ( Parser ):
             return self.getToken(SmallScriptParser.IDENT, 0)
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_unaryOp
+            return SmallScriptParser.RULE_unaryop
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterUnaryOp" ):
-                listener.enterUnaryOp(self)
+            if hasattr( listener, "enterUnaryop" ):
+                listener.enterUnaryop(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitUnaryOp" ):
-                listener.exitUnaryOp(self)
+            if hasattr( listener, "exitUnaryop" ):
+                listener.exitUnaryop(self)
 
 
 
 
-    def unaryOp(self):
+    def unaryop(self):
 
-        localctx = SmallScriptParser.UnaryOpContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 84, self.RULE_unaryOp)
+        localctx = SmallScriptParser.UnaryopContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 84, self.RULE_unaryop)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 381
@@ -3186,49 +3186,49 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class BinTailContext(ParserRuleContext):
+    class BintailContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def binMsg(self):
-            return self.getTypedRuleContext(SmallScriptParser.BinMsgContext,0)
+        def binmsg(self):
+            return self.getTypedRuleContext(SmallScriptParser.BinmsgContext,0)
 
 
-        def binTail(self):
-            return self.getTypedRuleContext(SmallScriptParser.BinTailContext,0)
+        def bintail(self):
+            return self.getTypedRuleContext(SmallScriptParser.BintailContext,0)
 
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_binTail
+            return SmallScriptParser.RULE_bintail
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterBinTail" ):
-                listener.enterBinTail(self)
+            if hasattr( listener, "enterBintail" ):
+                listener.enterBintail(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitBinTail" ):
-                listener.exitBinTail(self)
+            if hasattr( listener, "exitBintail" ):
+                listener.exitBintail(self)
 
 
 
 
-    def binTail(self):
+    def bintail(self):
 
-        localctx = SmallScriptParser.BinTailContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 90, self.RULE_binTail)
+        localctx = SmallScriptParser.BintailContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 90, self.RULE_bintail)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 390
-            self.binMsg()
+            self.binmsg()
             self.state = 392
             self._errHandler.sync(self)
             la_ = self._interp.adaptivePredict(self._input,58,self._ctx)
             if la_ == 1:
                 self.state = 391
-                self.binTail()
+                self.bintail()
 
 
         except RecognitionException as re:
@@ -3240,19 +3240,19 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class BinMsgContext(ParserRuleContext):
+    class BinmsgContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def binOp(self):
-            return self.getTypedRuleContext(SmallScriptParser.BinOpContext,0)
+        def binop(self):
+            return self.getTypedRuleContext(SmallScriptParser.BinopContext,0)
 
 
-        def unaryHead(self):
-            return self.getTypedRuleContext(SmallScriptParser.UnaryHeadContext,0)
+        def unaryhead(self):
+            return self.getTypedRuleContext(SmallScriptParser.UnaryheadContext,0)
 
 
         def operand(self):
@@ -3267,23 +3267,23 @@ class SmallScriptParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_binMsg
+            return SmallScriptParser.RULE_binmsg
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterBinMsg" ):
-                listener.enterBinMsg(self)
+            if hasattr( listener, "enterBinmsg" ):
+                listener.enterBinmsg(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitBinMsg" ):
-                listener.exitBinMsg(self)
+            if hasattr( listener, "exitBinmsg" ):
+                listener.exitBinmsg(self)
 
 
 
 
-    def binMsg(self):
+    def binmsg(self):
 
-        localctx = SmallScriptParser.BinMsgContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 92, self.RULE_binMsg)
+        localctx = SmallScriptParser.BinmsgContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 92, self.RULE_binmsg)
         self._la = 0 # Token type
         try:
             self.enterOuterAlt(localctx, 1)
@@ -3296,7 +3296,7 @@ class SmallScriptParser ( Parser ):
 
 
             self.state = 397
-            self.binOp()
+            self.binop()
             self.state = 399
             self._errHandler.sync(self)
             _la = self._input.LA(1)
@@ -3310,7 +3310,7 @@ class SmallScriptParser ( Parser ):
             la_ = self._interp.adaptivePredict(self._input,61,self._ctx)
             if la_ == 1:
                 self.state = 401
-                self.unaryHead()
+                self.unaryhead()
                 pass
 
             elif la_ == 2:
@@ -3328,7 +3328,7 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class BinOpContext(ParserRuleContext):
+    class BinopContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -3339,23 +3339,23 @@ class SmallScriptParser ( Parser ):
             return self.getToken(SmallScriptParser.BIN_OP, 0)
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_binOp
+            return SmallScriptParser.RULE_binop
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterBinOp" ):
-                listener.enterBinOp(self)
+            if hasattr( listener, "enterBinop" ):
+                listener.enterBinop(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitBinOp" ):
-                listener.exitBinOp(self)
+            if hasattr( listener, "exitBinop" ):
+                listener.exitBinop(self)
 
 
 
 
-    def binOp(self):
+    def binop(self):
 
-        localctx = SmallScriptParser.BinOpContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 94, self.RULE_binOp)
+        localctx = SmallScriptParser.BinopContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 94, self.RULE_binop)
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 405

@@ -34,7 +34,7 @@ class TDD(SmallScriptTest):
         #### AST graph in form of text
         ret = script.toStringTree()
         self.assertEqual(
-            "(smallscript (sequence (exprs (expr (assign (ref obj) (ws  ) := (ws  ) (expr (binHead (unaryHead (operand (lit (parseLit (num 123))))))))))) <EOF>)", ret)
+            "(smallscript (sequence (exprs (expr (assign (ref obj) (ws  ) := (ws  ) (expr (binhead (unaryhead (operand (lit (parselit (num 123))))))))))) <EOF>)", ret)
 
         #### AST graph of the syntax can be shown on nbs/antlr.ipynb
         dot = script.dotGraph()
