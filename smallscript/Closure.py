@@ -27,10 +27,11 @@ from antlr4.tree.Trees import Trees
 from smallscript.antlr.SmallScriptLexer import SmallScriptLexer as Lexer
 from smallscript.antlr.SmallScriptParser import SmallScriptParser as Parser
 from smallscript.antlr.SmallScriptListener import SmallScriptListener as Listener
+from smallscript.Step import Step
 from smallscript.SObject import *
 
 class ScriptErrorListener(SObject, ErrorListener):
-    errormsg = Holder()
+    errormsg = Holder().name('errormsg')
     def clear(self): return self.errormsg("")
     def hasError(self): return true_ if self.errormsg().notNil() else false_
     def __repr__(self): return f"error: {self.errormsg()}" if self.hasError() else "no error"
@@ -45,7 +46,8 @@ class DOTGrapher(Listener):
 
     def enterEveryRule(self, ctx):
         rule_name = Parser.ruleNames[ctx.getRuleIndex()]
-        node_label = f"{rule_name}: {Trees.getNodeText(ctx, Parser.ruleNames)}"
+        # node_label = f"{rule_name}: {Trees.getNodeText(ctx, Parser.ruleNames)}"
+        node_label = f"{rule_name}: {ctx.getText()}"
         self.graph.node(str(id(ctx)), node_label)
 
     def exitEveryRule(self, ctx):
@@ -61,10 +63,10 @@ class DOTGrapher(Listener):
             self.graph.edge(str(id(ctx)), str(id(child)))
 
 class Script(SObject):
-    text = Holder().type('String')
-    parser = Holder()
-    errorHandler = Holder()
-    ast = Holder()
+    text = Holder().name('text').type('String')
+    parser = Holder().name('parser')
+    errorHandler = Holder().name('errorHandler')
+    smallscriptCxt = Holder().name('smallscriptCxt')
 
     def __init__(self): self.reset()
     def reset(self): return self.errorHandler(ScriptErrorListener())
@@ -86,13 +88,18 @@ class Script(SObject):
         parser.addErrorListener(errorHandler)
         ast = parser.smallscript()
         self.parser(parser)
-        self.ast(ast)
+        self.smallscriptCxt(ast)
         return self
+
+    def firstStep(self):
+        sscxt = self.smallscriptCxt()
+        ssStep = Step().name('smallscript').ruleCxt(sscxt)
+        return ssStep
 
     def dotGraph(self):
         listener = DOTGrapher()
         walker = ParseTreeWalker()
-        walker.walk(listener, self.ast())
+        walker.walk(listener, self.smallscriptCxt())
         return listener.graph
 
     def run(self):
@@ -118,7 +125,7 @@ class Script(SObject):
 
     def toStringTree(self):
         parser = self.parser()
-        ast = self.ast()
+        ast = self.smallscriptCxt()
         ret = ast.toStringTree(recog=parser)
         return String(ret)
 
@@ -144,3 +151,55 @@ class Script(SObject):
             text = f"smallscript: <no error>\n{self.text()}"
         return text
 
+        # 'smallscript': 'String',
+        # 'args': 'List',
+        # 'runnerList': 'List',
+        # 'scope': 'Scope',       # internal scope object from the last runner in runnerList.
+
+        # 'context': 'Context',
+        # 'smallscript': 'String',
+        # 'args': 'List',
+        # 'closure': 'nil',
+        # 'pythonscript': 'String',
+        # 'pythonerror': 'String',
+        # 'pythonfinal': 'String',
+        # 'pythonmethod': 'nil',
+        # 'methods': 'Map',
+class Method(SObject):
+    smallscript = Holder().name('smallscript').type('String')
+    script = Holder().name('script').type('Script')
+    precompiled = Holder().name('precompiled')
+
+    def compile(self, smallscript=""):
+        smallscript = self.asSObj(smallscript)
+        if smallscript.isEmpty():
+            smallscript = self.smallscript()
+        script = self.script().compile(smallscript)
+        # if script.hasError():
+        #     return nil
+        ssStep = script.firstStep()
+        precompiled = ssStep.precompile()
+        self.precompiled(precompiled)
+        return self
+
+
+    def compileThis(self, smallscript = ""):
+        """Try to compile to python func whatever is available."""
+        # script = self.asObj(smallscript)
+        # if script.notEmpty():
+        #     self.smallscript(script)
+        # if self.smallscript().notEmpty():
+        #     self.encode()
+        # if self.closure().not_nil():
+        #     # method may acquire closure first, so refill the smallscript in return.
+        #     if self.smallscript().isEmpty():
+        #         self.smallscript(self.closure().smallscript())
+        #     self.args(self.closure().args())
+        #     self.decode()
+        # if self.pythonscript().notEmpty():
+        #     self.compile()
+        return self
+
+    def info(self):
+        info = self.script().info()
+        return info

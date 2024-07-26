@@ -165,15 +165,8 @@ class SObject:
     def setValue(self, attname, value):
         masq = self._keyName('masquerade')
         obj = self._get(masq, nil) if self._has(masq) else self
-        if not isinstance(value, SObject):
-            stype = type(value).__name__
-            if stype in pytypes:
-                if isinstance(value, bool):
-                    value = true_ if value else false_
-                else:
-                    pClass = pytypes[stype]
-                    value = pClass(value)
-        return obj._set(obj._keyName(attname), value)
+        sobj = self.asSObj(value)
+        return obj._set(obj._keyName(attname), sobj)
 
     def getOrSet(self, attname, value ='', default =''):  # can't use nil as default
         masq = self._keyName('masquerade')
@@ -216,6 +209,17 @@ class SObject:
         #     instance.metaclass(self.metaclass())
         return instance
 
+    def asSObj(self, pyobj):
+        if isinstance(pyobj, SObject): return pyobj
+        if isinstance(pyobj, bool): return true_ if pyobj else false_
+        if pyobj is None: return nil
+        stype = type(pyobj).__name__
+        value = pyobj
+        if stype in pytypes:
+            pClass = pytypes[stype]
+            value = pClass(pyobj)
+        return value
+
     def lastDigits(self, n=4): return hex(id(self)).upper()[-n:]
     def isNil(self): return false_
     def notNil(self): return not self.isNil()
@@ -240,7 +244,8 @@ class SObject:
         output = buffer.getvalue()
         return String(output)
 
-    def __repr__(self): return f"{self.name()}:{self.metaname()} {self.lastDigits()}"
+    def desc(self): return self.name()  # description of this object
+    def __repr__(self): return f"{self.desc()}:{self.metaname()} {self.lastDigits()}"
 
 class Holder(SObject):
     """
@@ -292,8 +297,7 @@ class Holder(SObject):
             return getOrSet
         return self
 
-    def __repr__(self):
-        return f"{self.name()},{self.type()}:{self.metaname()} {self.lastDigits()}"
+    def desc(self): return f"{self.name()},{self.type()}"
 
     #### Private helper methods
     def _addHolders(self, holders):
@@ -302,6 +306,12 @@ class Holder(SObject):
         return self
 class Primitive(SObject):
     """Base class for SObject primitives."""
+    def metaclass(self, metaclass = ''):
+        # Don't allow setting metaclass for primitive
+        if metaclass != '': return self
+        return metaclass(metaclass)
+
+    def setValue(self, attname, value): return self
     def asString(self): return self.toString()
     def info(self): return self.asString()
 
@@ -340,7 +350,6 @@ class True_(Primitive):
         global true_
         if not 'true_' in globals():
             true_ = super().__new__(cls)
-            true_.name('true')
         return true_
 
     def __bool__(self): return True # true_ won't work for 'not', it has to return Python bool
@@ -348,6 +357,7 @@ class True_(Primitive):
     def isFalse(self): return false_
     # def isTrue(self): return true_ if self == true_ else false_ # only @true.is_true will return true.
     def isTrue(self): return true_
+    def desc(self): return "true"
 
 class False_(Primitive):
     """SObject false class with singleton false_."""
@@ -362,11 +372,12 @@ class False_(Primitive):
     def createEmpty(self): return self
     def isFalse(self): return true_
     def isTrue(self): return false_
+    def desc(self): return "false"
 
 true_ = True_()
 false_ = False_()
 
-class List(list, SObject):
+class List(list, Primitive):
     """SObject list class."""
     def __init__(self, *args):
         list.__init__(self, *args)
@@ -381,7 +392,7 @@ class List(list, SObject):
     def includes(self, aList):
         return all(item in self for item in aList)
 
-class Map(dict, SObject):
+class Map(dict, Primitive):
     """SObject map class."""
     def __init__(self, *args, **kwargs):
         super(Map, self).__init__(*args, **kwargs)

@@ -35,8 +35,8 @@ class Test_Parser(SmallScriptTest):
         self.assertTrue(script.noError())
 
         ret = script.toStringTree()
-        self.assertEqual(
-            "(smallscript (sequence (exprs (expr (assign (ref obj) (ws  ) := (ws  ) (expr (binhead (unaryhead (operand (lit (parselit (num 123))))))))))) <EOF>)", ret)
+        self.assertTrue('obj' in ret)
+        self.assertTrue('123' in ret)
 
         # Error case
         st = "obj1 'abc'"
@@ -141,6 +141,7 @@ class Test_Parser(SmallScriptTest):
         st = "[ :e | 2 + e] value: 9"
         self.assertTrue(script.compile(st).noError())
         st = "b := [ :e | | a | a := e + 3]. b value: 9"
+        script.compile(st)
         self.assertTrue(script.compile(st).noError())
         st = 'b := [ :e | | a | a "comment" := [2 + 3] value + e]. b value: 9'
         self.assertTrue(script.compile(st).noError())

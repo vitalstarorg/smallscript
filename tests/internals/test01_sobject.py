@@ -54,6 +54,57 @@ class Test_SObject(SmallScriptTest):
         self.assertEqual('Error!!!', ret)
 
     @skipUnless('TESTALL' in env, "disabled")
+    def test120_primitive(self):
+        ### Make sure no one can set value or metaclass for primitives.
+        obj = root.newInstance('String')
+        obj.metaclass(nil)
+        self.assertTrue(len(obj.__dict__) == 0)
+        obj = root.newInstance('True_')
+        obj.metaclass(nil)
+        self.assertTrue(len(obj.__dict__) == 0)
+        obj = root.newInstance('False_')
+        obj.metaclass(nil)
+        self.assertTrue(len(obj.__dict__) == 0)
+        obj = root.newInstance('Map')
+        obj.metaclass(nil)
+        self.assertTrue(len(obj) == 0)
+        self.assertTrue(len(obj.__dict__) == 0)
+        obj = root.newInstance('List')
+        obj.metaclass(nil)
+        self.assertTrue(len(obj.__dict__) == 0)
+        obj = root.newInstance('Number')
+        obj.metaclass(nil)
+        self.assertTrue(len(obj.__dict__) == 0)
+        obj = root.newInstance('Float')
+        obj.metaclass(nil)
+        self.assertTrue(len(obj.__dict__) == 0)
+        return
+
+    @skipUnless('TESTALL' in env, "disabled")
+    def test130_asSObj(self):
+        obj = root.asSObj("abc")
+        self.assertEqual('String', obj.metaname())
+        obj = root.asSObj(True)
+        self.assertEqual('True_', obj.metaname())
+        obj = root.asSObj(False)
+        self.assertEqual('False_', obj.metaname())
+        obj = root.asSObj([1,2,3])
+        self.assertEqual('List', obj.metaname())
+        self.assertEqual([1,2,3], obj)
+        obj = root.asSObj({'a':1,'b':2,'c':3})
+        self.assertEqual('Map', obj.metaname())
+        self.assertEqual({'a':1,'b':2,'c':3}, obj)
+        obj = root.asSObj(123)
+        self.assertEqual('Number', obj.metaname())
+        obj = root.asSObj(0.123)
+        self.assertEqual('Float', obj.metaname())
+        obj = root.asSObj(None)
+        self.assertEqual(nil, obj)
+
+        obj = root.asSObj(self)     # no conversion
+        self.assertTrue(obj, self)
+
+    @skipUnless('TESTALL' in env, "disabled")
     def test510_package(self):
         ### Loading all SObject from tests
         pkg1 = root.loadPackage('tests.internals')
@@ -94,6 +145,8 @@ class Test_SObject(SmallScriptTest):
     # def test990_hack1(self):
     #     # placeholder for hacking
     #     return
+
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -53,6 +53,24 @@ class SmallScriptListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by SmallScriptParser#blkparamlst.
+    def enterBlkparamlst(self, ctx:SmallScriptParser.BlkparamlstContext):
+        pass
+
+    # Exit a parse tree produced by SmallScriptParser#blkparamlst.
+    def exitBlkparamlst(self, ctx:SmallScriptParser.BlkparamlstContext):
+        pass
+
+
+    # Enter a parse tree produced by SmallScriptParser#blkparam.
+    def enterBlkparam(self, ctx:SmallScriptParser.BlkparamContext):
+        pass
+
+    # Exit a parse tree produced by SmallScriptParser#blkparam.
+    def exitBlkparam(self, ctx:SmallScriptParser.BlkparamContext):
+        pass
+
+
     # Enter a parse tree produced by SmallScriptParser#expr.
     def enterExpr(self, ctx:SmallScriptParser.ExprContext):
         pass
@@ -197,12 +215,12 @@ class SmallScriptListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by SmallScriptParser#lit.
-    def enterLit(self, ctx:SmallScriptParser.LitContext):
+    # Enter a parse tree produced by SmallScriptParser#literal.
+    def enterLiteral(self, ctx:SmallScriptParser.LiteralContext):
         pass
 
-    # Exit a parse tree produced by SmallScriptParser#lit.
-    def exitLit(self, ctx:SmallScriptParser.LitContext):
+    # Exit a parse tree produced by SmallScriptParser#literal.
+    def exitLiteral(self, ctx:SmallScriptParser.LiteralContext):
         pass
 
 
@@ -221,24 +239,6 @@ class SmallScriptListener(ParseTreeListener):
 
     # Exit a parse tree produced by SmallScriptParser#blk.
     def exitBlk(self, ctx:SmallScriptParser.BlkContext):
-        pass
-
-
-    # Enter a parse tree produced by SmallScriptParser#blkparamlst.
-    def enterBlkparamlst(self, ctx:SmallScriptParser.BlkparamlstContext):
-        pass
-
-    # Exit a parse tree produced by SmallScriptParser#blkparamlst.
-    def exitBlkparamlst(self, ctx:SmallScriptParser.BlkparamlstContext):
-        pass
-
-
-    # Enter a parse tree produced by SmallScriptParser#blkparam.
-    def enterBlkparam(self, ctx:SmallScriptParser.BlkparamContext):
-        pass
-
-    # Exit a parse tree produced by SmallScriptParser#blkparam.
-    def exitBlkparam(self, ctx:SmallScriptParser.BlkparamContext):
         pass
 
 
