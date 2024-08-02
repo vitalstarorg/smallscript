@@ -23,23 +23,130 @@ env['TESTALL'] = '1'
 from smallscript.SObject import *
 from smallscript.Closure import Script, Method
 from smallscript.Step import *
+from tests.TestBase import *
 
-class Test_IntermediateRep(unittest.TestCase):
+class Test_IntermediateRep(SmallScriptTest):
 
     def test500_method1(self):
-        st = ':e :f | obj := 123'
+        return
+        st = ':e :f | |a b| obj := 123'
         m = Method().compile(st)
+        pkg = root.loadPackage('tests.internals')
+        pkg.importMethods()
+        tobj = TestSObj4()
+        tobj.metaclass().getHolder('method14').print()
+        tobj.method14()
 
         return
 
-    def test990_hack(self):
+    def test990_hack1(self):
+        # return
+        pkg = root.loadPackage('tests')
+        tobj = TestSObj14()
+        meta = tobj.metaclass()
+
+        # meta.getHolder('method14').print()
+
+        self.assertTrue(not tobj.hasKey('attr11'))
+        self.assertEqual('', tobj.attr11())
+        self.assertTrue(tobj.hasKey('attr11'))
+        tobj.attr11('value11')
+        self.assertEqual('value11', tobj.attr11())
+
+        self.assertTrue(not tobj.metaclass().attrs().hasKey('cattr12'))
+        self.assertEqual('', tobj.cattr12())
+        self.assertTrue(tobj.metaclass().attrs().hasKey('cattr12'))
+        tobj.cattr12('value12')
+        self.assertEqual('value12', tobj.cattr12())
+
+        # ret = TestSObj14.method14(1, 2)
+        # ret = TestSObj14.cmethod15(2, 3)
+
+        # ret = TestSObj14.method14
+        # holder1 = TestSObj14.method14.holder
+        holder2 = tobj.metaclass().getHolder('method14')
+        # self.assertTrue(holder1 == holder2)
+        ret = tobj.method14(1, 2)
+        self.assertEqual(3, ret)
+        # holder1 = TestSObj14.method14.holder
+        # self.assertTrue(holder1 == holder2)
+
+        ret = tobj.cmethod15(2, 3)      # class
+        self.assertEqual(6, ret)
+
+        ret = TestSObj14.attr11('value11')
+        self.assertEqual(nil, ret)
+        ret = TestSObj14.cattr12('value12_')
+        self.assertEqual(meta.attrs(), ret)
+        ret = TestSObj14.cattr12()
+        self.assertEqual('value12_', ret)
+
+
+        ret = tobj.method16(1, 2)
+        self.assertEqual(3, ret)
+        ret = TestSObj14.method16(1, 2)
+        self.assertEqual(nil, ret)
+        ret = tobj.method17(3, 2)
+        self.assertEqual(6, ret)
+        ret = TestSObj14.method17(3, 2)
+        self.assertEqual(6, ret)
+
+        return
+        ret = TestSObj14.method14(1, 2)
+        ret = TestSObj14.cmethod15(2, 3)
+
+        meta.attr11('value11')
+        meta.cattr12('value12')
+        meta.method14(1,2,3)
+        meta.cmethod15(1, 2)
+        return
+
+    def test990_hack99(self):
         return
         st = "obj := 123"
         script = Script().compile(st)
         ssStep = script.firstStep()
         precompiled = ssStep.precompile()
         # m = Method().compile(st)
+        return
 
+    def test999(self):
+        return
+        class CustomDescriptor:
+            def __init__(self, *args, **kwargs):
+                self.args = args
+                self.kwargs = kwargs
+
+            def objectReturningMethod(self):
+                class CallableWrapper:
+                    def __init__(self, descriptor):
+                        self.descriptor = descriptor
+                        self.function = None
+
+                    def __call__(self, function):
+                        self.function = function
+                        return self
+
+                    def __get__(self, instance, owner):
+                        def wrapper(*func_args, **func_kwargs):
+                            ret = self.function(owner, *self.descriptor.args, *func_args,
+                                                **self.descriptor.kwargs, **func_kwargs)
+                            return ret
+
+                        return wrapper
+
+                return CallableWrapper(self)
+
+        # Usage
+        class MyClass:
+            class_var = 10
+
+            @CustomDescriptor(additional_arg=42).objectReturningMethod()
+            def custom_method(cls, x, additional_arg):
+                return cls.class_var + additional_arg + x
+
+        # Calling the method
+        print(MyClass.custom_method(5))  # Output: 57 (10 + 42 + 5)
         return
 
 if __name__ == '__main__':

@@ -40,14 +40,14 @@ class SObject:
         if self.hasKey(item):
             value = self.getValue(item)
             holder = Holder().obj(value)
-            return holder
+            return holder.valueFunc()
         return self.unimplemented(item)
 
     def unimplemented(self, item):
         if self.hasKey('undefined'):
             value = self.getValue('undefined')
             holder = Holder().obj(value)
-            return holder
+            return holder.valueFunc()
         return super().__getattribute__(item)
 
     #### Attributes defined by methods before Holder is functioning
@@ -100,11 +100,18 @@ class SObject:
         metaclass = root.metaclassByName(metaname)
         return metaclass
 
-    def getContext(self):
-        return self.metaclass().context()
+    def runThis(self, thisObj):
+        obj = self.asSObj(thisObj)
+        execution = self.getContext().newInstance('Execution')
+        # execution.localGlobals()
+        execution.this(self)
+        # self.visit(execution)
+        ret = obj.visit(execution)
+        return ret
 
-    def getPackage(self):
-        return self.metaclass().package()
+    def visit(self, visitor): return visitor.visitSObj(self)
+    def getContext(self): return self.metaclass().context()
+    def getPackage(self): return self.metaclass().package()
 
     def nearestParent(self, parentName=''):
         if parentName == '':
@@ -252,35 +259,101 @@ class Holder(SObject):
     Holder to an object and can be used to define an attribute. @obj can be both SObject or Python object.
     """
     def type(self, type=''): return self.getOrSet('type', String(type), 'Nil')     # type hint
-    def obj(self, obj=''): return self.getOrSet('obj', obj, nil)                   # optional obj
+    def obj(self, obj=''): return self.getOrSet('obj', obj, nil)                   # optional
+    def pyfunc(self, func=''): return self.getOrSet('pyfunc', func, nil)           # optional
+    def method(self, method=''): return self.getOrSet('method', method, nil)       # optional
+    def forInstance(self, forInstance=''): return self.getOrSet('forInstance', forInstance, true_)
+        # is this holder definition for an instance or a class.
+    def forClass(self): return self.forInstance(false_)
 
-    @classmethod
-    def ssMethod(cls, func):
-        "Wrapper for SObject method."
-        def holderwrapper(self, *args, **kwargs):
-            holder = holderwrapper.holder
-            exeContext = holder.__get__(self)
-            ret = exeContext(*args, **kwargs)
-            return ret
+    # @classmethod
+    # def ssClassMethod(cls, func):
+    #     "Wrapper for SObject method."
+    #     def holderwrapper(self, *args, **kwargs):
+    #         holder = holderwrapper.holder
+    #         if holder.method().isNil():
+    #             # library reload will redefine this holder. We need to lookup from metaclass.
+    #             name = holder.name()
+    #             holder = self.metaclass().getHolder(name).forInstance(false_)
+    #             holderwrapper.holder = holder
+    #         exeContext = holder.__get__(self)
+    #         ret = exeContext(*args, **kwargs)
+    #         return ret
+    #
+    #     holder = Holder().name(func.__name__).type('Method').forInstance(false_)
+    #     holder.pyfunc(func)
+    #     holderwrapper.holder = holder
+    #     return holderwrapper
 
-        holder = Holder().name(func.__name__).type('Method')
-        holder.setValue('pymethod', func)
-        holderwrapper.holder = holder
-        return holderwrapper
+    # class Wrapper(SObject):
+    #     def holder(self, holder=''): return self.getOrSet('holder', holder, nil)
+    #
+    #     def __call__(self, func):
+    #         holder = self.holder().name(func.__name__).type('Method')
+    #         holder.pyfunc(func)
+    #         # print(f"__call__ {holder}")
+    #         # print(f"__call__ {holder.pyfunc()}")
+    #         return self
+    #
+    #     def __get__(self, instance, owner):
+    #         holder = self.holder()
+    #         # print(f"__get__ {holder}")
+    #         # print(f"__get__ {holder.pyfunc()}")
+    #         ret = nil
+    #         method = holder.method()
+    #         if instance is not None:
+    #             if holder.forInstance():
+    #                 ret = instance.runThis(method)
+    #             return ret
+    #         if owner is not None:
+    #             if not holder.forInstance():
+    #                 metaclass = holder.getContext().metaclassByName(holder._metaname(owner))
+    #                 obj = metaclass.attrs()
+    #                 ret = obj.runThis(method)
+    #         return ret
 
-    def __call__(self, *args, **kwargs):
-        return self.obj()
+    # def descriptor(self):
+    #     return Holder.Wrapper().holder(self)
+
+    def valueFunc(self):
+        def value():
+            return self.obj()
+        return value
+
+    # @classmethod
+    # def ssInstanceMethod(cls, func):
+    #     "Wrapper for SObject method."
+    #     def holderwrapper(self, *args, **kwargs):
+    #         holder = holderwrapper.holder
+    #         if holder.method().isNil():
+    #             # library reload will redefine this holder. We need to lookup from metaclass.
+    #             name = holder.name()
+    #             holder = self.metaclass().getHolder(name)
+    #             holderwrapper.holder = holder
+    #         exeContext = holder.__get__(self)
+    #         ret = exeContext(*args, **kwargs)
+    #         return ret
+    #
+    #     holder = Holder().name(func.__name__).type('Method')
+    #     holder.pyfunc(func)
+    #     holderwrapper.holder = holder
+    #     return holderwrapper
+
+    def __call__(self, func):
+        self.name(func.__name__).type('Method')
+        self.pyfunc(func)
+        return self
 
     def __get__(self, obj, owner = None):  # owner is ignored
         """Implement the descriptor protocol."""
-        def getOrSet(value=None):   # can't use nil as default during compilation. Some RunnerNode will pass None.
+        def getOrSetSObj(sobj, value=None):
             attname = self.name()
-            ret = obj
+            ret = sobj
             if value is None:
-                if obj.hasKey(attname):
-                    return obj.getValue(attname)
+                if sobj.hasKey(attname):
+                    return sobj.getValue(attname)
                 else:   # find default value
-                    metaclass = obj.metaclass()
+                    metaclass = sobj.metaclass()
                     if metaclass.notNil():
                         type = self.type()
                         ret = metaclass.context().metaclassByName(type).createEmpty()
@@ -288,22 +361,49 @@ class Holder(SObject):
                             return ret
                         value = ret
                     else:
-                        logging.warning(f"Found no metaclass for type '{type}' defined by {obj.metaname()}.{self.name()}")
+                        logging.warning(f"Found no metaclass for type '{type}' defined by {sobj.metaname()}.{self.name()}")
                         return nil
-            if obj.mutable():
-                obj.setValue(attname, value)
+            if sobj.mutable():
+                sobj.setValue(attname, value)
             return ret
-        if isinstance(obj, SObject):   # just in case holder is accessed from a class.
-            return getOrSet
-        return self
 
-    def desc(self): return f"{self.name()},{self.type()}"
+        def getOrSet(value=None): return getOrSetSObj(obj, value)
+
+        ret = nil
+        method = self.method()
+        if method.isNil():
+            if self.forInstance():
+                if obj is None:
+                    return nil
+                return getOrSet
+            if obj is None:
+                obj = self.getContext().metaclassByName(self._metaname(owner)).attrs()
+            else:
+                obj = obj.metaclass().attrs()
+            return getOrSet
+        else:
+            if obj is not None:
+                if self.forInstance():
+                    ret = obj.runThis(method)
+                else:
+                    ret = obj.metaclass().attrs().runThis(method)
+                return ret
+            if owner is not None:
+                if not self.forInstance():
+                    metaclass = self.getContext().metaclassByName(self._metaname(owner))
+                    obj = metaclass.attrs()
+                    ret = obj.runThis(method)
+        return ret
 
     #### Private helper methods
     def _addHolders(self, holders):
         holders['type'] = Holder().name('type').type('String')
         holders['obj'] = Holder().name('obj').type('Nil')
+        holders['pyfunc'] = Holder().name('pyfunc').type('Nil')
+        holders['method'] = Holder().name('method').type('Nil')
+        holders['forInstance'] = Holder().name('forInstance').type('True_')
         return self
+
 class Primitive(SObject):
     """Base class for SObject primitives."""
     def metaclass(self, metaclass = ''):
@@ -311,6 +411,7 @@ class Primitive(SObject):
         if metaclass != '': return self
         return metaclass(metaclass)
 
+    def visit(self, visitor): return visitor.visitPrimitive(self)
     def setValue(self, attname, value): return self
     def asString(self): return self.toString()
     def info(self): return self.asString()
@@ -322,6 +423,7 @@ class String(str, Primitive):
     def __add__(self, val): return String(f"{self}{val}")
     def __eq__(self, val): return super().__eq__(val)
     def __hash__(self): return super().__hash__()
+    def visit(self, visitor): return visitor.visitString(self)
     def asNumber(self): return Number(int(self))
     def len(self): return len(self)
     def isEmpty(self): return self.len() == 0
@@ -337,6 +439,9 @@ class Nil(SObject):
         if not 'nil' in globals():
             nil = super().__new__(cls)
             nil.name('nil')
+        return nil
+
+    def __call__(self, *args, **kwargs):
         return nil
 
     def createEmpty(self): return self
@@ -411,11 +516,12 @@ class Map(dict, Primitive):
 
 class Metaclass(SObject):
     "Metaclass defines a SObject structure."
-    context = Holder().type('Context')
-    package = Holder().type('Package')
-    factory = Holder().type('Nil')
-    holders = Holder().type('Map')
-    parentNames = Holder().type('List')
+    context = Holder().name('context').type('Context')
+    package = Holder().name('package').type('Package')
+    factory = Holder().name('factory').type('Nil')
+    holders = Holder().name('holders').type('Map')
+    parentNames = Holder().name('parentNames').type('List')
+    attrs = Holder().name('attrs').type('SObject')
 
     def createEmpty(self):
         """create an empty obj for this metaclass, including Metaclass."""
@@ -428,7 +534,6 @@ class Metaclass(SObject):
         return instance
 
     def importFrom(self, sClass):
-        # setattr(sClass, 'py_metaclass', self)
         self._importHolders(sClass)
         self._importMetanames(sClass)
         self._createFactory(sClass)
@@ -436,7 +541,6 @@ class Metaclass(SObject):
 
     def _importHolders(self, sClass):
         "Extracts all attribute definitions from holder objects."
-        # context = self.getValue('context')
         holders = Map()
         if sClass == SObject:
             SObject()._addHolders(holders)
@@ -458,6 +562,14 @@ class Metaclass(SObject):
                     continue
                 if isinstance(item, Holder):
                     holders[attname] = item.name(attname)
+                    continue
+                # if isinstance(item, Holder.Wrapper):
+                #     if hasattr(item, 'holder'):
+                #         holder = item.holder()
+                #         # print(f"_importHolders {holder}")
+                #         holders[attname] = holder.name(attname)
+                #         continue
+
         self.setValue('holders', holders)
         return self
 
@@ -475,6 +587,8 @@ class Metaclass(SObject):
         else: factory = sClass()
         self.setValue('factory', factory)
         return self
+
+    def getHolder(self, name): return self.holders()[name] if name in self.holders() else nil
 
     def holderByName(self, attrname):
         holders = self.holders()
@@ -521,7 +635,7 @@ class Package(SObject):
         return sobjs
 
     def importSObjects(self):
-        "Import SObject definition from Python package."
+        "Import SObject definitions from Python package."
         sClasses = self.listSObjects()
         for sClass in sClasses:
             metaname = self._metaname(sClass)
@@ -529,10 +643,20 @@ class Package(SObject):
             metaclass.importFrom(sClass)
         return self
 
+    def importMethods(self):
+        "Import Method definitions from SObject class."
+        for metaclass in self.metaclasses().values():
+            for holder in metaclass.holders().values():
+                if holder.type() == 'Method' and holder.pyfunc() != nil:
+                    method = self.context().newInstance('Method')
+                    holder.method(method)
+                    pyfunc = holder.pyfunc()
+                    method.takePyFunc(pyfunc)
+        return self
+
     def createMetaclass(self, metaname):
-        # metaclass = Metaclass().name(metaname).package(self).context(self.context())
         context = self.getValue('context')
-        if not self.hasKey('metaclasses'):
+        if not self.hasKey('metaclasses'):  # init metaclasses
             metaclasses = Map()
             self.setValue('metaclasses', metaclasses)
             if self.name() == 'smallscript':
@@ -584,6 +708,7 @@ class Context(SObject):
         pkg = self.newPackage(pkgname)
         if pkg.isEmpty():
             pkg.importSObjects()
+            pkg.importMethods()
         return pkg
 
     def newPackage(self, pkgname):

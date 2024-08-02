@@ -16,6 +16,35 @@
 import unittest
 from smallscript.SObject import *
 
+# WARNING: these test classes shouldn't be defined and loaded from the same test case Python file as the class definition would be load twice, causing inconsistency between the holder in the class definition and metaclass.
+class TestSObj11(SObject):
+    var1 = Holder().name('var1').type('String')
+
+class TestSObj12(Metaclass):
+    ss_metas = "TestSObj12, Metaclass"
+    pass
+
+class TestSObj14(SObject):
+    attr11 = Holder().name('attr11').type('String')
+    cattr12 = Holder().name('cattr12').type('String').forClass()
+
+    @Holder()
+    def method14(self, arg1, arg2):
+        return arg1 + arg2
+
+    @Holder().forClass()
+    def cmethod15(self, arg1, arg2):
+        return arg1 * arg2
+
+    @Holder()
+    def method16(self, arg1, arg2):
+        return arg1 + arg2
+
+    @Holder().forClass()
+    def method17(self, arg1, arg2):
+        return arg1 * arg2
+
+
 setUpClassDone = false_
 class SmallScriptTest(unittest.TestCase):
     @classmethod

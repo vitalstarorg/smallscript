@@ -92,10 +92,13 @@ class Step(SObject):
     def mainStep(self): return nil if self.children().isNil() else self.children().head()
     def keyname(self):
         return self.name() if self.hasKey('name') or self.ruleName().isNil() else self.ruleName()
-
-    def addStep(self, step): self.children()[step.keyname()] = step; return self
+    def addStep(self, name, step): self.children()[name] = step; return self
     def getStep(self, name, default=nil): return self.children().getValue(name, default)
     def isFinal(self): return self.final().notNil()
+
+    def retrieve(self, cxt):
+        name = cxt.parser.ruleNames[cxt.getRuleIndex()]
+        return self.ruleName(name).ruleCxt(cxt)
 
     def precompile(self):
         precompilation = PrecompilationStep()
@@ -104,8 +107,8 @@ class Step(SObject):
         return precompilation
 
     def desc(self):
-        if self.final().notNil(): return self.final()
-        if self.intermediate().notNil(): return self.intermediate()
+        if self.final().notNil(): return f"{self.final()}:{self.ruleName()}"
+        if self.intermediate().notNil(): return f"{self.intermediate()}:{self.ruleName()}"
         return self.keyname()
 
 class AssignStep(Step):
@@ -115,24 +118,19 @@ class AssignStep(Step):
         final = expr.final()
         self.final(final)
         return self
+
 class RefStep(Step):
     def run(self):
         varname = self.intermediate()
         self.final(varname)
         return self
 
-    def desc(self): return f"{self.intermediate()}"
-
 class PrecompilationStep(SObject, StepVisitor):
     currentStep = Holder().name('currentStep')
     instructions = Holder().name('instructions').type('List')
 
     def visitWs(self, cxt): return
-    def visitTerminal(self, tnode):
-        # currentStep = self.currentStep()
-        # text = tnode.symbol.text
-        # currentStep.name(text)
-        return self
+    def visitTerminal(self, tnode): return self
 
     def _scanChildren(self, step, cxt):
         self.currentStep(step)
@@ -147,30 +145,32 @@ class PrecompilationStep(SObject, StepVisitor):
         currentStep = self.currentStep()
         if not isinstance(cxt, RuleContext):
             return self
-        ruleName = self._getRuleName(cxt)
-        if ruleName == 'blkparam':
-            x = 1
-        step.ruleName(ruleName)
+        step.retrieve(cxt)
         self._scanChildren(step, cxt)
         self.currentStep(currentStep)
         if step.children().len() == 1:
-            step = step.children().head()
-        currentStep.addStep(step)
+            currentStep.addStep(step.ruleName(), step.children().head())
+        else:
+            currentStep.addStep(step.ruleName(), step)
         return step
 
-    def visitCommon(self, cxt):
-        step = Step()
-        self._visitCommon(cxt, step)
-        # if not step.isFinal():
-        #     self.instructions().append(step)
+    def visitCommon(self, cxt): return self._visitCommon(cxt, Step())
+
+    def visitTempvar(self, cxt):
+        currentStep = self.currentStep()
+        step = Step().retrieve(cxt)
+        ret = self._retrieveTerminalText(cxt)
+        step.name(ret).final(ret)
+        currentStep.addStep(step.keyname(), step)
+        return self
 
     def visitBlkparam(self, cxt):
         currentStep = self.currentStep()
-        step = Step()
-        text = self._retrieveText(cxt, step)
+        step = Step().retrieve(cxt)
+        text = self._retrieveTerminalText(cxt)
         ret = text[1:]
         step.name(ret).final(ret)
-        currentStep.addStep(step)
+        currentStep.addStep(step.keyname(), step)
         return self
 
     def visitAssign(self, cxt):
@@ -191,18 +191,18 @@ class PrecompilationStep(SObject, StepVisitor):
 
     def _addTextStep(self, cxt, step, final=true_):
         currentStep = self.currentStep()
-        text = self._retrieveText(cxt, step)
+        step.retrieve(cxt)
+        text = self._retrieveTerminalText(cxt)
         if final:
             step.final(text)
         else:
             step.intermediate(text)
-        currentStep.addStep(step)
+        currentStep.addStep(step.ruleName(), step)
         return step
 
-    def _retrieveText(self, cxt, step):
+    def _retrieveTerminalText(self, cxt):
         terminal = cxt.children[0]
         text = terminal.symbol.text
-        step.ruleName(self._getRuleName(cxt))
         return text
 
     # def visitBlk(self, cxt):          # common

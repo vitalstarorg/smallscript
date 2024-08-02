@@ -66,7 +66,8 @@ class Script(SObject):
     text = Holder().name('text').type('String')
     parser = Holder().name('parser')
     errorHandler = Holder().name('errorHandler')
-    smallscriptCxt = Holder().name('smallscriptCxt')
+    firstStep = Holder().name('firstStep').type('Step')
+    # smallscriptCxt = Holder().name('smallscriptCxt')
 
     def __init__(self): self.reset()
     def reset(self): return self.errorHandler(ScriptErrorListener())
@@ -88,18 +89,14 @@ class Script(SObject):
         parser.addErrorListener(errorHandler)
         ast = parser.smallscript()
         self.parser(parser)
-        self.smallscriptCxt(ast)
+        self.firstStep().retrieve(ast)
+        # self.smallscriptCxt(ast)
         return self
-
-    def firstStep(self):
-        sscxt = self.smallscriptCxt()
-        ssStep = Step().name('smallscript').ruleCxt(sscxt)
-        return ssStep
 
     def dotGraph(self):
         listener = DOTGrapher()
         walker = ParseTreeWalker()
-        walker.walk(listener, self.smallscriptCxt())
+        walker.walk(listener, self.firstStep().ruleCxt())
         return listener.graph
 
     def run(self):
@@ -125,7 +122,7 @@ class Script(SObject):
 
     def toStringTree(self):
         parser = self.parser()
-        ast = self.smallscriptCxt()
+        ast = self.firstStep().ruleCxt()
         ret = ast.toStringTree(recog=parser)
         return String(ret)
 
@@ -166,10 +163,15 @@ class Script(SObject):
         # 'pythonmethod': 'nil',
         # 'methods': 'Map',
 class Method(SObject):
+    "Works as a function encapsulation. Its object context is provided during method invocation."
     smallscript = Holder().name('smallscript').type('String')
     script = Holder().name('script').type('Script')
     precompiled = Holder().name('precompiled')
+    params = Holder().name('params').type('List')
+    pyfunc = Holder().name('pyfunc')
+    pysource = Holder().name('pysource')
 
+    def visit(self, visitor): return visitor.visitMethod(self)
     def compile(self, smallscript=""):
         smallscript = self.asSObj(smallscript)
         if smallscript.isEmpty():
@@ -182,6 +184,23 @@ class Method(SObject):
         self.precompiled(precompiled)
         return self
 
+    def takePyFunc(self, pyfunc):
+        self.pyfunc(pyfunc)
+        if pyfunc.__doc__ is not None:
+            self.smallscript(pyfunc.__doc__)
+        try:
+            source = inspect.getsource(pyfunc)
+        except Exception as e:
+            # logging.error("OSError, can't get source", exc_info=True)
+            source = nil
+        if source != nil:
+            self.pysource(source)
+        signature = inspect.signature(pyfunc)
+        funcargs = List([String(param.name) for param in signature.parameters.values()])
+        funcargs = funcargs[1:]
+        self.params(funcargs)
+        self.name(pyfunc.__name__)
+        return self
 
     def compileThis(self, smallscript = ""):
         """Try to compile to python func whatever is available."""
@@ -200,6 +219,32 @@ class Method(SObject):
         #     self.compile()
         return self
 
+    def execute(self, context, *args):
+        func = self.pyfunc()
+        try:
+            ret = func(context, *args)
+        except Exception as e:
+            logging.error("pyfunc() execution", exc_info=True)
+            ret = nil
+        return ret
+
     def info(self):
         info = self.script().info()
         return info
+
+class Execution(SObject):
+    "Execution provides a context linking a sobject with a method i.e. function encapsulation."
+    this = Holder().name('this')
+    context = Holder().name('context').type('Context')
+    method = Holder().name('method').type('Method')
+
+    def __call__(self, *args, **kwargs):
+        method = self.method()
+        params = List([self.asSObj(arg) for arg in args])
+        context = self.context()    # prepareContext()
+        ret = method.execute(context, *params)
+        return ret
+
+    def visitSObj(self, sobj): return self.this(sobj)
+    def visitMethod(self, method): return self.method(method)
+
