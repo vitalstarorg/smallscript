@@ -16,6 +16,26 @@
 import unittest
 from smallscript.SObject import *
 
+class TestSObj1(SObject):
+    var1 = Holder().name('var1').type('String')
+
+class TestSObj2(Metaclass):
+    ss_metas = "TestSObj2, Metaclass"
+    pass
+
+class TestSObj11(SObject):
+    attr11 = Holder().name('attr11').type('String')
+    attr12 = Holder().name('attr12').type('Nil')
+    attr13 = Holder().name('attr13').type('True_')
+    attr14 = Holder().name('attr14').type('False_')
+
+class TestSObj12(TestSObj11):
+    attr21 = Holder().name('attr21').type('Number')
+
+class TestSObj13(SObject):
+    ss_metas = "TestSObj13, TestSObj11, Metaclass"
+    attr31 = Holder().name('attr31').type('List')
+
 setUpClassDone = false_
 class SmallScriptTest(unittest.TestCase):
     @classmethod
