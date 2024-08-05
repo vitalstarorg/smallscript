@@ -17,12 +17,26 @@ import unittest
 from smallscript.SObject import *
 
 # WARNING: these test classes shouldn't be defined and loaded from the same test case Python file as the class definition would be load twice, causing inconsistency between the holder in the class definition and metaclass.
-class TestSObj11(SObject):
+class TestSObj1(SObject):
     var1 = Holder().name('var1').type('String')
 
-class TestSObj12(Metaclass):
-    ss_metas = "TestSObj12, Metaclass"
+class TestSObj2(Metaclass):
+    ss_metas = "TestSObj2, Metaclass"
     pass
+
+class TestSObj11(SObject):
+    attr11 = Holder().name('attr11').type('String')
+    attr12 = Holder().name('attr12').type('Nil')
+    attr13 = Holder().name('attr13').type('True_')
+    attr14 = Holder().name('attr14').type('False_')
+
+class TestSObj12(TestSObj11):
+    attr21 = Holder().name('attr21').type('Number')
+
+class TestSObj13(SObject):
+    ss_metas = "TestSObj13, TestSObj11, Metaclass"
+    attr31 = Holder().name('attr31').type('List')
+
 
 class TestSObj14(SObject):
     attr11 = Holder().name('attr11').type('String')

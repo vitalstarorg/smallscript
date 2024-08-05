@@ -32,10 +32,10 @@ class Test_SObject(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test100_helpers(self):
         sobj = SObject()
-        classnames = sobj._ss_metas(TestSObj11)
-        self.assertEqual(['TestSObj11','SObject'], classnames)
-        classnames = sobj._ss_metas(TestSObj12)
-        self.assertEqual(['TestSObj12','Metaclass'], classnames)
+        classnames = sobj._ss_metas(TestSObj1)
+        self.assertEqual(['TestSObj1','SObject'], classnames)
+        classnames = sobj._ss_metas(TestSObj2)
+        self.assertEqual(['TestSObj2','Metaclass'], classnames)
         classnames = sobj._ss_metas(SObject)
         self.assertEqual(['SObject'], classnames)
         return
@@ -102,7 +102,7 @@ class Test_SObject(SmallScriptTest):
     def test510_package(self):
         ### Loading all SObject from tests
         pkg1 = root.loadPackage('tests')
-        testobj1 = root.metaclassByName('TestSObj11').createEmpty()
+        testobj1 = root.metaclassByName('TestSObj1').createEmpty()
         ret = testobj1.var1()
         self.assertEqual('', testobj1.var1())
         ret = testobj1.var1('value1')
@@ -119,7 +119,7 @@ class Test_SObject(SmallScriptTest):
     def test520_packages(self):
         # Reset the context will wipe out all packages and metaclasses and return nil.
         root.reset().loadPackage('smallscript')
-        tobj1 = TestSObj11()
+        tobj1 = TestSObj1()
         self.assertTrue(tobj1.metaclass().isNil())
 
         ### Two ways to create SObject 1) Python standard instantiation 2) context.newInstance()

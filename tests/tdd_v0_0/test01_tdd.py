@@ -15,25 +15,12 @@
 
 import unittest
 from unittest import skip, skipUnless
-from tests.TestBase import SmallScriptTest
 
 from os import environ as env
 env['TESTALL'] = '1'
 
 from smallscript.SObject import *
-
-class TestSObj1(SObject):
-    attr11 = Holder().name('attr11').type('String')
-    attr12 = Holder().name('attr12').type('Nil')
-    attr13 = Holder().name('attr13').type('True_')
-    attr14 = Holder().name('attr14').type('False_')
-
-class TestSObj2(TestSObj1):
-    attr21 = Holder().name('attr21').type('Number')
-
-class TestSObj3(SObject):
-    ss_metas = "TestSObj3, TestSObj1, Metaclass"
-    attr31 = Holder().name('attr31').type('List')
+from tests.TestBase import *
 
 class TDD(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
@@ -83,8 +70,8 @@ class TDD(SmallScriptTest):
         # @root is the default context, and root.loadPackage('smallscript') by default i.e. smallscript metaclasses are loaded.
 
         # Load the package with its metaclasses
-        pkg = root.loadPackage('tests.tdd_v0_0')
-        tobj1 = TestSObj1()
+        pkg = root.loadPackage('tests')
+        tobj1 = TestSObj11()
         meta1 = tobj1.metaclass()
         self.assertTrue(meta1.notNil())
 
@@ -120,12 +107,12 @@ class TDD(SmallScriptTest):
         self.assertEqual(['attr11', 'attr12', 'attr13', 'attr14'], tobj1.keys())
 
         # Find TestSObj1 metaclass by name and create a new instance by metaclass or by context.
-        meta2 = root.metaclassByName('TestSObj1')
+        meta2 = root.metaclassByName('TestSObj11')
         self.assertEqual(meta1, meta2)                  # same metaclass
-        self.assertEqual('TestSObj1', meta2.name())
+        self.assertEqual('TestSObj11', meta2.name())
         tobj2 = meta2.createEmpty()                     # create a new instance by metaclass
         self.assertTrue(tobj2.notNil())
-        tobj2 = root.newInstance('TestSObj1')           # create a new instance by context
+        tobj2 = root.newInstance('TestSObj11')           # create a new instance by context
         self.assertTrue(tobj2.notNil())
 
         # SObject supports multiple inheritance, working like traits.
@@ -155,9 +142,9 @@ class TDD(SmallScriptTest):
     def test610_inheritance(self):
         ### Testing inheritance and sobj.getSuper()
         # Inherited attributes from TestSObj1 and SObject access through sobj2
-        sobj2 = TestSObj2().name('tobj2')
-        self.assertEqual('TestSObj2', sobj2.metaname())
-        self.assertEqual('TestSObj2', sobj2.metaclass().name())
+        sobj2 = TestSObj12().name('tobj2')
+        self.assertEqual('TestSObj12', sobj2.metaname())
+        self.assertEqual('TestSObj12', sobj2.metaclass().name())
         ret = sobj2.attr21()
         self.assertEqual(0, ret)
         sobj2.attr11('value11').attr21(21)
@@ -171,32 +158,32 @@ class TDD(SmallScriptTest):
 
         # sobj2 could find its parent metaclasses.
         metaTestSObj1 = sobj2.nearestParent()
-        self.assertEqual('TestSObj1', metaTestSObj1.name())
+        self.assertEqual('TestSObj11', metaTestSObj1.name())
         metaSObj = sobj2.nearestParent('SObject')
         self.assertEqual('SObject', metaSObj.name())
         parent = sobj2.nearestParent('Metaclass')
         self.assertEqual(nil, parent)
         metas = sobj2.inheritedMetas().keys()
-        self.assertEqual(['TestSObj2', 'TestSObj1', 'SObject'], metas)
+        self.assertEqual(['TestSObj12', 'TestSObj11', 'SObject'], metas)
 
         # super masquerade as sobj2 as its parent meta Test1SObj, working as if parent class.
         super = sobj2.getSuper()
         self.assertEqual('tobj2', super.name())
-        self.assertEqual('TestSObj1', super.metaname())
+        self.assertEqual('TestSObj11', super.metaname())
         holders = super.inheritedHolders()
         self.assertTrue(holders.keys().includes(['attr11', 'attr12', 'attr13', 'attr14', 'name', 'metaname']))
         self.assertEqual('value11', super.attr11())
         self.assertEqual(nil, super.attr12())
         self.assertEqual(21, super.attr21())    # throu' SObject.__getattr__, using map lookup, not holder
         metas = super.inheritedMetas().keys()
-        self.assertEqual(['TestSObj1', 'SObject'], metas)
+        self.assertEqual(['TestSObj11', 'SObject'], metas)
 
     @skipUnless('TESTALL' in env, "disabled")
     def test620_inheritance(self):
         ### Testing multiple inheritance and sobj.getSuper()
-        sobj3 = root.newInstance('TestSObj3').name('sobj3')
-        self.assertEqual('TestSObj3', sobj3.metaname())
-        self.assertEqual('TestSObj3', sobj3.metaclass().name())
+        sobj3 = root.newInstance('TestSObj13').name('sobj3')
+        self.assertEqual('TestSObj13', sobj3.metaname())
+        self.assertEqual('TestSObj13', sobj3.metaclass().name())
 
         ret = sobj3.attr31()
         self.assertEqual([], ret)
@@ -212,25 +199,25 @@ class TDD(SmallScriptTest):
 
         # sobj2 could find its parent metaclasses.
         metaTestSObj1 = sobj3.nearestParent()
-        self.assertEqual('TestSObj1', metaTestSObj1.name())
+        self.assertEqual('TestSObj11', metaTestSObj1.name())
         metaSObj = sobj3.nearestParent('SObject')
         self.assertEqual('SObject', metaSObj.name())
         metaMeta = sobj3.nearestParent('Metaclass')
         self.assertEqual('Metaclass', metaMeta.name())
         metas = sobj3.inheritedMetas().keys()
-        self.assertEqual(['TestSObj3', 'TestSObj1', 'SObject', 'Metaclass'], metas)
+        self.assertEqual(['TestSObj13', 'TestSObj11', 'SObject', 'Metaclass'], metas)
 
         # super masquerade as sobj3 as its parent meta Test1SObj, working as if parent class.
         super = sobj3.getSuper()        # nearest is Test1SObj
         self.assertEqual('sobj3', super.name())
-        self.assertEqual('TestSObj1', super.metaname())
+        self.assertEqual('TestSObj11', super.metaname())
         holders = super.inheritedHolders()
         self.assertTrue(holders.keys().includes(['attr11', 'attr12', 'attr13', 'attr14', 'name', 'metaname']))
         self.assertEqual('value11', super.attr11())
         self.assertEqual(nil, super.attr12())
         self.assertEqual(['hello', 'world'], super.attr31())    # throu' SObject.__getattr__, using map lookup, not holder
         metas = super.inheritedMetas().keys()
-        self.assertEqual(['TestSObj1', 'SObject'], metas)
+        self.assertEqual(['TestSObj11', 'SObject'], metas)
 
         # super masquerade as sobj3 as its parent meta Metaclass, working as if parent class.
         super = sobj3.getSuper('Metaclass')
