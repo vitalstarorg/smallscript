@@ -26,22 +26,24 @@ class TestSObj12(Metaclass):
 
 class TestSObj14(SObject):
     attr11 = Holder().name('attr11').type('String')
-    cattr12 = Holder().name('cattr12').type('String').forClass()
+    cattr12 = Holder().name('cattr12').type('String').classType()
 
     @Holder()
-    def method14(self, arg1, arg2):
+    def method14(scope, arg1, arg2):
         return arg1 + arg2
 
-    @Holder().forClass()
-    def cmethod15(self, arg1, arg2):
+    @Holder().classType()
+    def cmethod15(scope, arg1, arg2):
         return arg1 * arg2
 
     @Holder()
-    def method16(self, arg1, arg2):
-        return arg1 + arg2
+    def method16(scope, arg1, arg2):
+        self = scope['self']
+        ret = self['attr11'].asNumber()
+        return ret + arg1 + arg2
 
-    @Holder().forClass()
-    def method17(self, arg1, arg2):
+    @Holder().classType()
+    def method17(scope, arg1, arg2):
         return arg1 * arg2
 
 

@@ -65,11 +65,8 @@ class Test_IntermediateRep(SmallScriptTest):
         # ret = TestSObj14.method14
         # holder1 = TestSObj14.method14.holder
         holder2 = tobj.metaclass().getHolder('method14')
-        # self.assertTrue(holder1 == holder2)
         ret = tobj.method14(1, 2)
         self.assertEqual(3, ret)
-        # holder1 = TestSObj14.method14.holder
-        # self.assertTrue(holder1 == holder2)
 
         ret = tobj.cmethod15(2, 3)      # class
         self.assertEqual(6, ret)
@@ -82,8 +79,9 @@ class Test_IntermediateRep(SmallScriptTest):
         self.assertEqual('value12_', ret)
 
 
+        tobj.attr11('100')
         ret = tobj.method16(1, 2)
-        self.assertEqual(3, ret)
+        self.assertEqual(103, ret)
         ret = TestSObj14.method16(1, 2)
         self.assertEqual(nil, ret)
         ret = tobj.method17(3, 2)
@@ -108,45 +106,6 @@ class Test_IntermediateRep(SmallScriptTest):
         ssStep = script.firstStep()
         precompiled = ssStep.precompile()
         # m = Method().compile(st)
-        return
-
-    def test999(self):
-        return
-        class CustomDescriptor:
-            def __init__(self, *args, **kwargs):
-                self.args = args
-                self.kwargs = kwargs
-
-            def objectReturningMethod(self):
-                class CallableWrapper:
-                    def __init__(self, descriptor):
-                        self.descriptor = descriptor
-                        self.function = None
-
-                    def __call__(self, function):
-                        self.function = function
-                        return self
-
-                    def __get__(self, instance, owner):
-                        def wrapper(*func_args, **func_kwargs):
-                            ret = self.function(owner, *self.descriptor.args, *func_args,
-                                                **self.descriptor.kwargs, **func_kwargs)
-                            return ret
-
-                        return wrapper
-
-                return CallableWrapper(self)
-
-        # Usage
-        class MyClass:
-            class_var = 10
-
-            @CustomDescriptor(additional_arg=42).objectReturningMethod()
-            def custom_method(cls, x, additional_arg):
-                return cls.class_var + additional_arg + x
-
-        # Calling the method
-        print(MyClass.custom_method(5))  # Output: 57 (10 + 42 + 5)
         return
 
 if __name__ == '__main__':

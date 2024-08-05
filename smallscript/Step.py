@@ -106,7 +106,7 @@ class Step(SObject):
         precompilation._scanChildren(self, cxt)
         return precompilation
 
-    def desc(self):
+    def describe(self):
         if self.final().notNil(): return f"{self.final()}:{self.ruleName()}"
         if self.intermediate().notNil(): return f"{self.intermediate()}:{self.ruleName()}"
         return self.keyname()

@@ -84,15 +84,19 @@ class SObject:
 
     def name(self, name=''):
         "Set or get name of this object. In case of set, @self is returned to faciliate builder pattern."
-        if name != '': return self.setValue('name', String(name))
+        # print("#1")
+        if name != '':
+            # print("#2")
+            return SObject.setValue(self, 'name', String(name))
+        # print("#3")
         attrname = 'name'
-        if self.hasKey(attrname): return self.getValue(attrname)
+        if self.hasKey(attrname): return SObject.getValue(self, attrname)
         return String(f"a {self.metaname()}")
 
     def metaclass(self, metaclass = ''):
         "Find the metaclass."
         if metaclass != '':
-            return self.setValue('metaclass', metaclass)
+            return SObject.setValue(self, 'metaclass', metaclass)
         _metaclass = self._keyName('metaclass')
         if self._has(_metaclass):
             return self._get(_metaclass,nil)
@@ -146,6 +150,10 @@ class SObject:
     def undefined(self, undefined=''): return self.getOrSet('undefined', undefined, nil) #
 
     #### Attributes accesses: these are Scope key-value access behavior.
+    def __getitem__(self, attname): return self.getValue(attname, nil)
+    def __setitem__(self, attname, value): return self.setValue(attname, value)
+    def __delitem__(self, attname): return self.delValue(attname)
+
     def keys(self):
         masq = self._keyName('masquerade')
         obj = self._get(masq, nil) if self._has(masq) else self
@@ -185,6 +193,11 @@ class SObject:
     def _has(self, keyname): return keyname in self.__dict__    # slightly faster than vars(self)
     def _get(self, keyname, default): return self.__dict__.get(keyname, default)
     def _set(self, keyname, value): self.__dict__[keyname] = value; return self
+    def _del(self, keyname):
+        if self._has(keyname):
+            del self.__dict__[keyname]
+        return self
+
 
     def _varName(self, keyname):
         "Convert internals keyname to public facing name"
@@ -193,11 +206,6 @@ class SObject:
     def _keyName(self, attname):
         """Calculate the internals keyname from public facing attname."""
         return attname if len(attname) > 3 and attname[0:3] == 'ss_' else f'ss_{attname}'
-
-    def _del(self, keyname):
-        if self._has(keyname):
-            del self.__dict__[keyname]
-        return self
 
     #### Private helper methods
     def _addHolders(self, holders):
@@ -210,11 +218,7 @@ class SObject:
 
     #### Helper methods
     def __call__(self, *args, **kwargs): return self.createEmpty()
-    def createEmpty(self):
-        instance = type(self)()
-        # if self.hasKey('metaclass'):
-        #     instance.metaclass(self.metaclass())
-        return instance
+    def createEmpty(self): return type(self)()
 
     def asSObj(self, pyobj):
         if isinstance(pyobj, SObject): return pyobj
@@ -243,16 +247,15 @@ class SObject:
         buffer.write(f"{self.toString()}\n")
         metaclasses = self.inheritedMetas().values()
         for metaclass in metaclasses:
-            # buffer.write(f"  {metaclass.name()} = {metaclass.getValue('name')}\n")
             for holder in metaclass.holders().values():
                 name = holder.name()
                 if self.hasKey(name):
-                    buffer.write(f"  {metaclass.name()}.{name} = {self.getValue(name)}\n")
+                    buffer.write(f"  {metaclass.name()}.{name} = {SObject.getValue(self, name)}\n")
         output = buffer.getvalue()
         return String(output)
 
-    def desc(self): return self.name()  # description of this object
-    def __repr__(self): return f"{self.desc()}:{self.metaname()} {self.lastDigits()}"
+    def describe(self): return self.name()  # description of this object
+    def __repr__(self): return f"{self.describe()}:{self.metaname()} {self.lastDigits()}"
 
 class Holder(SObject):
     """
@@ -262,82 +265,13 @@ class Holder(SObject):
     def obj(self, obj=''): return self.getOrSet('obj', obj, nil)                   # optional
     def pyfunc(self, func=''): return self.getOrSet('pyfunc', func, nil)           # optional
     def method(self, method=''): return self.getOrSet('method', method, nil)       # optional
-    def forInstance(self, forInstance=''): return self.getOrSet('forInstance', forInstance, true_)
-        # is this holder definition for an instance or a class.
-    def forClass(self): return self.forInstance(false_)
-
-    # @classmethod
-    # def ssClassMethod(cls, func):
-    #     "Wrapper for SObject method."
-    #     def holderwrapper(self, *args, **kwargs):
-    #         holder = holderwrapper.holder
-    #         if holder.method().isNil():
-    #             # library reload will redefine this holder. We need to lookup from metaclass.
-    #             name = holder.name()
-    #             holder = self.metaclass().getHolder(name).forInstance(false_)
-    #             holderwrapper.holder = holder
-    #         exeContext = holder.__get__(self)
-    #         ret = exeContext(*args, **kwargs)
-    #         return ret
-    #
-    #     holder = Holder().name(func.__name__).type('Method').forInstance(false_)
-    #     holder.pyfunc(func)
-    #     holderwrapper.holder = holder
-    #     return holderwrapper
-
-    # class Wrapper(SObject):
-    #     def holder(self, holder=''): return self.getOrSet('holder', holder, nil)
-    #
-    #     def __call__(self, func):
-    #         holder = self.holder().name(func.__name__).type('Method')
-    #         holder.pyfunc(func)
-    #         # print(f"__call__ {holder}")
-    #         # print(f"__call__ {holder.pyfunc()}")
-    #         return self
-    #
-    #     def __get__(self, instance, owner):
-    #         holder = self.holder()
-    #         # print(f"__get__ {holder}")
-    #         # print(f"__get__ {holder.pyfunc()}")
-    #         ret = nil
-    #         method = holder.method()
-    #         if instance is not None:
-    #             if holder.forInstance():
-    #                 ret = instance.runThis(method)
-    #             return ret
-    #         if owner is not None:
-    #             if not holder.forInstance():
-    #                 metaclass = holder.getContext().metaclassByName(holder._metaname(owner))
-    #                 obj = metaclass.attrs()
-    #                 ret = obj.runThis(method)
-    #         return ret
-
-    # def descriptor(self):
-    #     return Holder.Wrapper().holder(self)
+    def instanceType(self, instanceType=''): return self.getOrSet('instanceType', instanceType, true_)
+    def classType(self): return self.instanceType(false_)
 
     def valueFunc(self):
         def value():
             return self.obj()
         return value
-
-    # @classmethod
-    # def ssInstanceMethod(cls, func):
-    #     "Wrapper for SObject method."
-    #     def holderwrapper(self, *args, **kwargs):
-    #         holder = holderwrapper.holder
-    #         if holder.method().isNil():
-    #             # library reload will redefine this holder. We need to lookup from metaclass.
-    #             name = holder.name()
-    #             holder = self.metaclass().getHolder(name)
-    #             holderwrapper.holder = holder
-    #         exeContext = holder.__get__(self)
-    #         ret = exeContext(*args, **kwargs)
-    #         return ret
-    #
-    #     holder = Holder().name(func.__name__).type('Method')
-    #     holder.pyfunc(func)
-    #     holderwrapper.holder = holder
-    #     return holderwrapper
 
     def __call__(self, func):
         self.name(func.__name__).type('Method')
@@ -372,7 +306,7 @@ class Holder(SObject):
         ret = nil
         method = self.method()
         if method.isNil():
-            if self.forInstance():
+            if self.instanceType():
                 if obj is None:
                     return nil
                 return getOrSet
@@ -383,13 +317,13 @@ class Holder(SObject):
             return getOrSet
         else:
             if obj is not None:
-                if self.forInstance():
+                if self.instanceType():
                     ret = obj.runThis(method)
                 else:
                     ret = obj.metaclass().attrs().runThis(method)
                 return ret
             if owner is not None:
-                if not self.forInstance():
+                if not self.instanceType():
                     metaclass = self.getContext().metaclassByName(self._metaname(owner))
                     obj = metaclass.attrs()
                     ret = obj.runThis(method)
@@ -401,15 +335,17 @@ class Holder(SObject):
         holders['obj'] = Holder().name('obj').type('Nil')
         holders['pyfunc'] = Holder().name('pyfunc').type('Nil')
         holders['method'] = Holder().name('method').type('Nil')
-        holders['forInstance'] = Holder().name('forInstance').type('True_')
+        holders['instanceType'] = Holder().name('instanceType').type('True_')
         return self
+    def describe(self): return f"{self.name()},{self.type()}"
 
 class Primitive(SObject):
     """Base class for SObject primitives."""
     def metaclass(self, metaclass = ''):
         # Don't allow setting metaclass for primitive
         if metaclass != '': return self
-        return metaclass(metaclass)
+        # return metaclass(metaclass)
+        return super().metaclass()
 
     def visit(self, visitor): return visitor.visitPrimitive(self)
     def setValue(self, attname, value): return self
@@ -462,7 +398,7 @@ class True_(Primitive):
     def isFalse(self): return false_
     # def isTrue(self): return true_ if self == true_ else false_ # only @true.is_true will return true.
     def isTrue(self): return true_
-    def desc(self): return "true"
+    def describe(self): return "true"
 
 class False_(Primitive):
     """SObject false class with singleton false_."""
@@ -470,14 +406,13 @@ class False_(Primitive):
         global false_
         if not 'false_' in globals():
             false_ = super().__new__(cls)
-            false_.name('false')
         return false_
 
     def __bool__(self): return False
     def createEmpty(self): return self
     def isFalse(self): return true_
     def isTrue(self): return false_
-    def desc(self): return "false"
+    def describe(self): return "false"
 
 true_ = True_()
 false_ = False_()
@@ -696,12 +631,11 @@ class Package(SObject):
     #             break
     #     return pkgpath
 
-
 class Context(SObject):
     """
     It provides context for SS methods to function. It provides access to other resources e.g. packages, execution scopes, etc. @root is the root context has maximum access to all resources. Customized context can be created for some executions.
     """
-    packages = Holder().type('Map')
+    packages = Holder().name('packages').type('Map')
 
     def loadPackage(self, pkgname):
         "Load metaclasses from a SObject package."
@@ -747,7 +681,35 @@ class Scope(SObject):
     """
     Scope object defines the variable lookup.
     """
-    pass
+    def vars(self, vars=''): return self.getOrSet('vars', vars, nil)
+    def context(self, context=''): return self.getOrSet('context', context, nil)
+        # Can't use Holder for these as Scope overridden major protocols.
+
+    def keys(self):
+        # if super().hasKey('masquerade'): return super().keys()
+        return self.vars().keys()
+
+    def hasKey(self, attname):
+        # if super().hasKey('masquerade'): return super().hasKey(attname)
+        return self.vars().hasKey(attname)
+
+    def delValue(self, attname):
+        # if super().hasKey('masquerade'): return super().delValue(attname)
+        if self.vars().hasKey(attname):
+            del self.vars()[attname]
+        return self
+
+    def getValue(self, attname, default=nil):
+        if super().hasKey('masquerade'): return super().getValue(attname, default)
+        return self.vars().getValue(attname, default)
+
+    def setValue(self, attname, value):
+        if super().hasKey('masquerade'): return super().setValue(attname, value)
+        vars = self.vars()
+        if vars.isNil():
+            vars = Map()
+            self.vars(vars)
+        return vars.setValue(attname, value)
 
 class Number(int, Primitive):
     def __new__(cls, number = 0): return super(Number, cls).__new__(cls, number)

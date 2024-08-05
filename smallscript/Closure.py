@@ -219,10 +219,10 @@ class Method(SObject):
         #     self.compile()
         return self
 
-    def execute(self, context, *args):
+    def execute(self, scope, *args):
         func = self.pyfunc()
         try:
-            ret = func(context, *args)
+            ret = func(scope, *args)
         except Exception as e:
             logging.error("pyfunc() execution", exc_info=True)
             ret = nil
@@ -241,9 +241,14 @@ class Execution(SObject):
     def __call__(self, *args, **kwargs):
         method = self.method()
         params = List([self.asSObj(arg) for arg in args])
-        context = self.context()    # prepareContext()
-        ret = method.execute(context, *params)
+        scope = self.prepareScope()
+        ret = method.execute(scope, *params)
         return ret
+
+    def prepareScope(self):
+        scope = Scope().context(self.context())
+        scope.setValue('self', self.this())
+        return scope
 
     def visitSObj(self, sobj): return self.this(sobj)
     def visitMethod(self, method): return self.method(method)
