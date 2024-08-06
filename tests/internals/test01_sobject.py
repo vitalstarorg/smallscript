@@ -136,25 +136,6 @@ class Test_SObject(SmallScriptTest):
         sobj1 = context.newInstance('SObject')
         self.assertTrue(sobj1.hasKey('metaclass'))
 
-    # @skipUnless('TESTALL' in env, "disabled")
-    def test600_scope(self):
-        return
-        scope = Scope()
-        self.assertEqual('a Scope', scope.name())  # default name
-        self.assertTrue(not scope.hasKey('name'))    # @name not yet exists
-        ret = scope.name('scope')                     # setter always returns obj
-        self.assertTrue(scope.hasKey('name'))        # @name exists
-        self.assertEqual('sobj', scope.name())       # its value is 'sobj'
-        self.assertEqual(scope, ret)                 # return sobj as to follow the builder pattern
-        self.assertEqual('sobj', scope.getValue('name'))  # alternative way to access attribute
-        scope.delValue('name')                       # remove @name
-        self.assertTrue(not scope.hasKey('name'))    # @name removed
-
-    # def test990_hack1(self):
-    #     # placeholder for hacking
-    #     return
-
-
 
 if __name__ == '__main__':
     unittest.main()

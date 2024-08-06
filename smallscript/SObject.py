@@ -37,14 +37,14 @@ class SObject:
         holder = metaclass.holderByName(item)
         if holder.notNil():
             return holder.__get__(self)
-        if self.hasKey(item):
+        if SObject.hasKey(self, item):
             value = self.getValue(item)
             holder = Holder().obj(value)
             return holder.valueFunc()
         return self.unimplemented(item)
 
     def unimplemented(self, item):
-        if self.hasKey('undefined'):
+        if SObject.hasKey(self, 'undefined'):
             value = self.getValue('undefined')
             holder = Holder().obj(value)
             return holder.valueFunc()
@@ -84,13 +84,10 @@ class SObject:
 
     def name(self, name=''):
         "Set or get name of this object. In case of set, @self is returned to faciliate builder pattern."
-        # print("#1")
         if name != '':
-            # print("#2")
             return SObject.setValue(self, 'name', String(name))
-        # print("#3")
         attrname = 'name'
-        if self.hasKey(attrname): return SObject.getValue(self, attrname)
+        if SObject.hasKey(self, attrname): return SObject.getValue(self, attrname)
         return String(f"a {self.metaname()}")
 
     def metaclass(self, metaclass = ''):
@@ -249,7 +246,7 @@ class SObject:
         for metaclass in metaclasses:
             for holder in metaclass.holders().values():
                 name = holder.name()
-                if self.hasKey(name):
+                if SObject.hasKey(self, name):
                     buffer.write(f"  {metaclass.name()}.{name} = {SObject.getValue(self, name)}\n")
         output = buffer.getvalue()
         return String(output)
@@ -681,7 +678,13 @@ class Scope(SObject):
     """
     Scope object defines the variable lookup.
     """
-    def vars(self, vars=''): return self.getOrSet('vars', vars, nil)
+    def vars(self, vars=''):
+        vars = self.getOrSet('vars', vars, nil)
+        if vars.isNil():
+            vars = Map()
+            self.getOrSet('vars', vars)
+        return vars
+
     def context(self, context=''): return self.getOrSet('context', context, nil)
         # Can't use Holder for these as Scope overridden major protocols.
 
@@ -705,11 +708,7 @@ class Scope(SObject):
 
     def setValue(self, attname, value):
         if super().hasKey('masquerade'): return super().setValue(attname, value)
-        vars = self.vars()
-        if vars.isNil():
-            vars = Map()
-            self.vars(vars)
-        return vars.setValue(attname, value)
+        return self.vars().setValue(attname, value)
 
 class Number(int, Primitive):
     def __new__(cls, number = 0): return super(Number, cls).__new__(cls, number)

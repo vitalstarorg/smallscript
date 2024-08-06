@@ -39,6 +39,7 @@ class TestSObj13(SObject):
 
 
 class TestSObj14(SObject):
+    ss_metas = "TestSObj15"
     attr11 = Holder().name('attr11').type('String')
     cattr12 = Holder().name('cattr12').type('String').classType()
 
@@ -53,13 +54,15 @@ class TestSObj14(SObject):
     @Holder()
     def method16(scope, arg1, arg2):
         self = scope['self']
-        ret = self['attr11'].asNumber()
-        return ret + arg1 + arg2
+        cattr12 = self.cattr12().asNumber()
+        attr11 = self['attr11'].asNumber()
+        return cattr12 + attr11 + arg1 + arg2
 
     @Holder().classType()
-    def method17(scope, arg1, arg2):
-        return arg1 * arg2
-
+    def cmethod17(scope, arg1, arg2):
+        self = scope['self']
+        ret = self['cattr12'].asNumber()
+        return ret + arg1 * arg2
 
 setUpClassDone = false_
 class SmallScriptTest(unittest.TestCase):
