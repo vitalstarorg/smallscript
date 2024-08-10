@@ -66,7 +66,7 @@ class Script(SObject):
     text = Holder().name('text').type('String')
     parser = Holder().name('parser')
     errorHandler = Holder().name('errorHandler')
-    firstStep = Holder().name('firstStep').type('Step')
+    initialStep = Holder().name('initialStep').type('Step')
     # smallscriptCxt = Holder().name('smallscriptCxt')
 
     def __init__(self): self.reset()
@@ -89,14 +89,14 @@ class Script(SObject):
         parser.addErrorListener(errorHandler)
         ast = parser.smallscript()
         self.parser(parser)
-        self.firstStep().retrieve(ast)
+        self.initialStep().retrieve(ast)
         # self.smallscriptCxt(ast)
         return self
 
     def dotGraph(self):
         listener = DOTGrapher()
         walker = ParseTreeWalker()
-        walker.walk(listener, self.firstStep().ruleCxt())
+        walker.walk(listener, self.initialStep().ruleCxt())
         return listener.graph
 
     def run(self):
@@ -122,7 +122,7 @@ class Script(SObject):
 
     def toStringTree(self):
         parser = self.parser()
-        ast = self.firstStep().ruleCxt()
+        ast = self.initialStep().ruleCxt()
         ret = ast.toStringTree(recog=parser)
         return String(ret)
 
@@ -166,7 +166,7 @@ class Method(SObject):
     "Works as a function encapsulation. Its object context is provided during method invocation."
     smallscript = Holder().name('smallscript').type('String')
     script = Holder().name('script').type('Script')
-    precompiler = Holder().name('precompiler').type('Precompiler')
+    interpreter = Holder().name('interpreter').type('Interpreter')
     params = Holder().name('params').type('List')
     tempvars = Holder().name('tempvars').type('List')
     pyfunc = Holder().name('pyfunc')
@@ -203,7 +203,7 @@ class Method(SObject):
             scope[param] = arg
         for tmp in self.tempvars():
             scope[tmp] = nil
-        instructions = self.precompiler().instructions()
+        instructions = self.interpreter().instructions()
         ret = nil
         for instruction in instructions:
             ret = instruction.run(scope)
@@ -218,10 +218,10 @@ class Method(SObject):
         script = self.script().parse(smallscript)
         # if script.hasError():
         #     return nil
-        ssStep = script.firstStep()
-        initial = self.precompiler()
-        ssStep.precompile(initial)
-        sequence = ssStep.getStep('sequence')
+        initialStep = script.initialStep()
+        interpreter = self.interpreter()
+        initialStep.interpret(interpreter)
+        sequence = initialStep.getStep('sequence')
         if sequence.notNil():
             method = sequence.method()
             self.copyFrom(method)

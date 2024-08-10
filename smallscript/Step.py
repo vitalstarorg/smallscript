@@ -102,7 +102,7 @@ class Step(SObject):
         name = cxt.parser.ruleNames[cxt.getRuleIndex()]
         return self.ruleName(name).ruleCxt(cxt)
 
-    def precompile(self, precompiler):
+    def interpret(self, precompiler):
         cxt = self.ruleCxt()
         for childcxt in cxt.getChildren():
             # we want to keep SmallScript untouched without modifying accept(),
@@ -126,13 +126,13 @@ class Step(SObject):
 class SequenceStep(Step):
     method = Holder().name('method').type('Method')
 
-    def precompile(self, precompiler):
-        seqPrecompiler = Precompiler()
+    def interpret(self, precompiler):
+        seqPrecompiler = Interpreter()
         seqPrecompiler.currentStep(self)
-        super().precompile(seqPrecompiler)
+        super().interpret(seqPrecompiler)
         seqPrecompiler.instructions().append(self)
         method = self.method()
-        method.precompiler(seqPrecompiler)
+        method.interpreter(seqPrecompiler)
         bplStep = self.getStep('blkparamlst')
         if bplStep.notNil() and bplStep.notEmpty():
             method.params(bplStep.children().keys())
@@ -172,7 +172,7 @@ class RefStep(Step):
         self.final(obj)
         return obj
 
-class Precompiler(SObject, StepVisitor):
+class Interpreter(SObject, StepVisitor):
     currentStep = Holder().name('currentStep')
     instructions = Holder().name('instructions').type('List')
 
@@ -180,7 +180,7 @@ class Precompiler(SObject, StepVisitor):
         if not isinstance(cxt, RuleContext): return self
         currentStep = self.currentStep()        # save the current step
         childStep.retrieve(cxt)
-        childStep.precompile(self)
+        childStep.interpret(self)
         self.currentStep(currentStep)                  # restore the current step
         return childStep
 

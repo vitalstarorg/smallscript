@@ -113,11 +113,11 @@ class Test_IntermediateRep(SmallScriptTest):
         return
         ss = "obj := 123"
         script = Script().parse(ss)
-        ssStep = script.firstStep()
+        ssStep = script.initialStep()
         # precompiler = ssStep.createPrecompiler()
 
-        precompiler = Precompiler()
-        ssStep.precompile(precompiler)
+        precompiler = Interpreter()
+        ssStep.interpret(precompiler)
 
 
 
