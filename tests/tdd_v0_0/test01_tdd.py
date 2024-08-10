@@ -70,7 +70,7 @@ class TDD(SmallScriptTest):
         # @root is the default context, and root.loadPackage('smallscript') by default i.e. smallscript metaclasses are loaded.
 
         # Load the package with its metaclasses
-        pkg = root.loadPackage('tests')
+        pkg = rootContext.loadPackage('tests')
         tobj1 = TestSObj11()
         meta1 = tobj1.metaclass()
         self.assertTrue(meta1.notNil())
@@ -107,18 +107,18 @@ class TDD(SmallScriptTest):
         self.assertEqual(['attr11', 'attr12', 'attr13', 'attr14'], tobj1.keys())
 
         # Find TestSObj1 metaclass by name and create a new instance by metaclass or by context.
-        meta2 = root.metaclassByName('TestSObj11')
+        meta2 = rootContext.metaclassByName('TestSObj11')
         self.assertEqual(meta1, meta2)                  # same metaclass
         self.assertEqual('TestSObj11', meta2.name())
         tobj2 = meta2.createEmpty()                     # create a new instance by metaclass
         self.assertTrue(tobj2.notNil())
-        tobj2 = root.newInstance('TestSObj11')           # create a new instance by context
+        tobj2 = rootContext.newInstance('TestSObj11')           # create a new instance by context
         self.assertTrue(tobj2.notNil())
 
         # SObject supports multiple inheritance, working like traits.
-        self.assertEqual(root, tobj2.getContext())      # tobj2 context is root
+        self.assertEqual(rootContext, tobj2.getContext())      # tobj2 context is root
         self.assertEqual(pkg, tobj2.getPackage())       # tobj2 has the same package
-        metaSObj = root.metaclassByName('SObject')
+        metaSObj = rootContext.metaclassByName('SObject')
         parents = tobj2.inheritedMetas()
         self.assertEqual([meta2, metaSObj]
                          , parents.values())            # show the class inheritance.
@@ -181,7 +181,7 @@ class TDD(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test620_inheritance(self):
         ### Testing multiple inheritance and sobj.getSuper()
-        sobj3 = root.newInstance('TestSObj13').name('sobj3')
+        sobj3 = rootContext.newInstance('TestSObj13').name('sobj3')
         self.assertEqual('TestSObj13', sobj3.metaname())
         self.assertEqual('TestSObj13', sobj3.metaclass().name())
 
@@ -270,13 +270,13 @@ class TDD(SmallScriptTest):
         self.assertEqual([newMeta, metaMeta, metaSObj], parents.values())
 
         # Shows that SObject, Metaclass are separated from root.
-        meta = root.metaclassByName('SObject')
+        meta = rootContext.metaclassByName('SObject')
         self.assertEqual(metaSObj.name(), meta.name())
         self.assertNotEqual(metaSObj, meta)
-        meta = root.metaclassByName('Metaclass')
+        meta = rootContext.metaclassByName('Metaclass')
         self.assertEqual(metaMeta.name(), meta.name())
         self.assertNotEqual(metaMeta, meta)
-        meta = root.metaclassByName('NewMeta')
+        meta = rootContext.metaclassByName('NewMeta')
         self.assertTrue(meta.isNil())
 
 if __name__ == '__main__':

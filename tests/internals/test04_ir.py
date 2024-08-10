@@ -23,35 +23,104 @@ env['TESTALL'] = '1'
 from smallscript.SObject import *
 from smallscript.Closure import Script, Method
 from smallscript.Step import *
-from tests.TestBase import *
+from tests.TestBase import SmallScriptTest, TestSObj14
 
 class Test_IntermediateRep(SmallScriptTest):
+    @skipUnless('TESTALL' in env, "disabled")
+    def test100_method1(self):
+        m = Method()
+        ret = m()
+        self.assertEqual(nil, ret)
+
+    @skipUnless('TESTALL' in env, "disabled")
+    def test500_primitives(self):
+        #### Primitive: parser and run in interpreter.
+        ss = "123"
+        m = Method().interpret(ss)
+        ret = m()
+        self.assertEqual(123, ret)
+        ss = "'123'"
+        self.assertEqual('123', Method().interpret(ss)())
+        ss = "true"
+        self.assertEqual(true_, Method().interpret(ss)())
+        ss = "false"
+        self.assertEqual(false_, Method().interpret(ss)())
+        ss = "nil"
+        self.assertEqual(nil, Method().interpret(ss)())
+        ss = "context"
+        context = Method().interpret(ss)()
+        self.assertEqual(rootContext, context)
+        ss = "root"
+        rootScope = Method().interpret(ss)()
+        self.assertEqual(rootContext, rootScope['context'])
+
+    @skipUnless('TESTALL' in env, "disabled")
+    def test510_local_access(self):
+        pkg = rootContext.loadPackage('tests')
+        tobj = TestSObj14().attr11(123)
+        tobj.cattr12('cvalue12')
+
+        # local getOrSet
+        # param getOrSet
+        # assignment
+        # SObj attr: instance and class
+        # SObj super: instance and class
+        # simple instant method: interpreter vs compiled
+        # simple class method: interpreter vs compiled
+        # rootScope
+            # packages
+            # Python globals
+        # Create new class with new method in interpreter mode. (Execution)
+            # basically SObject mechanics is completed.
+
+
     def test600_method1(self):
         return
-        st = ':e :f | |a b| obj := 123'
-        m = Method().compile(st)
-        pkg = root.loadPackage('tests.internals')
-        pkg.importMethods()
-        tobj = TestSObj4()
-        tobj.metaclass().getHolder('method14').print()
+        pkg = rootContext.loadPackage('tests')
+        tobj = TestSObj14()
+        tobj.attr11(123)
+        ss = 'attr11'
+        scope = rootContext.createScope()
+        scope.objs().append(tobj)
+        m = Method().interpret(ss)
+        ret = m(scope)
+
+
+        # ss = ':e :f | |a b| obj := 123'
+        # ss = '[:e :f | |a b| obj := 123]'
+        ss = ':f | |a| obj := 123'
+        m = Method().interpret(ss)
+        scope = rootContext.createScope()
+        ret = m(scope, 'arg1')
+        ret = m('f')
+        return
+        pkg = rootContext.loadPackage('tests')
+        tobj = TestSObj14()
+        meta = tobj.metaclass()
+        meta._getHolder('method14').print()
         tobj.method14()
 
         return
 
     def test990_hack1(self):
-        # return
-        pkg = root.loadPackage('tests')
-        tobj = TestSObj14()
-        meta = tobj.metaclass()
+        return
+        ss = "[:e :f| | a b | obj := 123]"
+        script = Script().parse(ss)
 
+        return
 
     def test990_hack99(self):
         return
-        st = "obj := 123"
-        script = Script().compile(st)
+        ss = "obj := 123"
+        script = Script().parse(ss)
         ssStep = script.firstStep()
-        precompiled = ssStep.precompile()
-        # m = Method().compile(st)
+        # precompiler = ssStep.createPrecompiler()
+
+        precompiler = Precompiler()
+        ssStep.precompile(precompiler)
+
+
+
         return
 
 if __name__ == '__main__':

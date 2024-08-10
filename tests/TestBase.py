@@ -41,13 +41,13 @@ class TestSObj13(SObject):
 class TestSObj14(SObject):
     ss_metas = "TestSObj15"
     attr11 = Holder().name('attr11').type('String')
-    cattr12 = Holder().name('cattr12').type('String').classType()
+    cattr12 = Holder().name('cattr12').type('String').asClassType()
 
     @Holder()
     def method14(scope, arg1, arg2):
         return arg1 + arg2
 
-    @Holder().classType()
+    @Holder().asClassType()
     def cmethod15(scope, arg1, arg2):
         return arg1 * arg2
 
@@ -58,7 +58,7 @@ class TestSObj14(SObject):
         attr11 = self['attr11'].asNumber()
         return cattr12 + attr11 + arg1 + arg2
 
-    @Holder().classType()
+    @Holder().asClassType()
     def cmethod17(scope, arg1, arg2):
         self = scope['self']
         ret = self['cattr12'].asNumber()

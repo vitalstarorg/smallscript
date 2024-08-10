@@ -28,7 +28,7 @@ from tests.TestBase import *
 class Test_Method(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test500_method(self):
-        pkg = root.loadPackage('tests')
+        pkg = rootContext.loadPackage('tests')
         tobj = TestSObj14()
         meta = tobj.metaclass()
 

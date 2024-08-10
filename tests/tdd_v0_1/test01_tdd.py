@@ -22,21 +22,32 @@ env['TESTALL'] = '1'
 
 from smallscript.SObject import *
 
-class TDD_Method(SmallScriptTest):
+class TDD_SObject(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
-    def test500_method(self):
-        pkg = root.loadPackage('tests')
+    def test500_sobject(self):
+        pkg = rootContext.loadPackage('tests')
 
+        # Test SObject.copyFrom
+        tobj1 = TestSObj14()            # Python way to instantiate sobject.
+        tobj1.attr11('value11')
+        tobj2 = TestSObj14()
+        self.assertTrue(not tobj2.hasKey('attr11'))
+        tobj2.copyFrom(tobj1)
+        self.assertTrue(tobj2.hasKey('attr11'))
+        self.assertTrue('value11', tobj2.attr11())
+
+    @skipUnless('TESTALL' in env, "disabled")
+    def test600_method(self):
         ### Access instance and class attributes and methods
         tobj1 = TestSObj14()            # Python way to instantiate sobject.
         meta1 = tobj1.metaclass()       # Access the metaclass
-        self.assertTrue(meta1.holders().keys().includes([
-                'attr11',               # instance attribute
-                'cattr12',              # class attribute
-                'method14',             # instance method
-                'cmethod15',            # class method
-                'method16',             # instance method
-                'cmethod17']))          # class method
+
+        self.assertTrue(meta1._getHolder('attr11').isInstanceAttribute())
+        self.assertTrue(meta1._getHolder('cattr12').isClassAttribute())
+        self.assertTrue(meta1._getHolder('method14').isInstanceMethod())
+        self.assertTrue(meta1._getHolder('cmethod15').isClassMethod())
+        self.assertTrue(meta1._getHolder('method16').isInstanceMethod())
+        self.assertTrue(meta1._getHolder('cmethod17').isClassMethod())
 
         ret = tobj1.method14(2,3)       # accessing instance method method14().
         self.assertEqual(5, ret)
@@ -51,7 +62,7 @@ class TDD_Method(SmallScriptTest):
 
         ### Instantiate the same obj through name defined by ss_metas, instead of class name.
         # Same tests as above.
-        tobj2 = root.newInstance('TestSObj15')
+        tobj2 = rootContext.newInstance('TestSObj15')
         meta2 = tobj2.metaclass()
         ret = tobj2.method14(2, 3)
         self.assertEqual(5, ret)

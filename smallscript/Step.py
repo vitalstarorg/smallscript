@@ -85,6 +85,7 @@ class Step(SObject):
     ruleCxt = Holder().name('ruleCxt')
     ruleName = Holder().name('ruleName')
     parent = Holder().name('parent')
+    toKeep = Holder().name('toKeep').type('False_') # Precompiler hint to keep in instructions explicitly.
     children = Holder().name('children').type('Map')
     intermediate = Holder().name('intermediate')
     final = Holder().name('final')
@@ -95,75 +96,107 @@ class Step(SObject):
     def addStep(self, name, step): self.children()[name] = step; return self
     def getStep(self, name, default=nil): return self.children().getValue(name, default)
     def isFinal(self): return self.final().notNil()
+    def isEmpty(self): return true_ if self.children().isNil() else self.children().isEmpty()
 
     def retrieve(self, cxt):
         name = cxt.parser.ruleNames[cxt.getRuleIndex()]
         return self.ruleName(name).ruleCxt(cxt)
 
-    def precompile(self):
-        precompilation = PrecompilationStep()
+    def precompile(self, precompiler):
         cxt = self.ruleCxt()
-        precompilation._scanChildren(self, cxt)
-        return precompilation
+        for childcxt in cxt.getChildren():
+            # we want to keep SmallScript untouched without modifying accept(),
+            # so we set current step to precompiler.
+            precompiler.currentStep(self)
+            childStep = childcxt.accept(precompiler)
+            # if childStep.isNil() or self.toKeep(): continue
+            if childStep.isNil(): continue
+            if not childStep.toKeep() and childStep.children().len() == 1:
+                self.addStep(childStep.ruleName(), childStep.children().head())
+            else:
+                self.addStep(childStep.ruleName(), childStep)
+        return self
 
     def describe(self):
+        if self.hasKey('name'): return f"{self.name()}:{self.ruleName()}"
         if self.final().notNil(): return f"{self.final()}:{self.ruleName()}"
         if self.intermediate().notNil(): return f"{self.intermediate()}:{self.ruleName()}"
         return self.keyname()
 
-class AssignStep(Step):
-    def run(self):
-        refname = self.getStep('ref')
-        expr = self.getStep('expr')
-        final = expr.final()
-        self.final(final)
+class SequenceStep(Step):
+    method = Holder().name('method').type('Method')
+
+    def precompile(self, precompiler):
+        seqPrecompiler = Precompiler()
+        seqPrecompiler.currentStep(self)
+        super().precompile(seqPrecompiler)
+        seqPrecompiler.instructions().append(self)
+        method = self.method()
+        method.precompiler(seqPrecompiler)
+        bplStep = self.getStep('blkparamlst')
+        if bplStep.notNil() and bplStep.notEmpty():
+            method.params(bplStep.children().keys())
+        tsStep = self.getStep('temps')
+        if tsStep.notNil() and tsStep.notEmpty():
+            method.tempvars(tsStep.children().keys())
+        self.final(method)
+        precompiler.instructions().append(self)
         return self
+
+    def run(self, scope):
+        final = self.getStep('exprs').final()
+        return final
+
+class AssignStep(Step):
+    def run(self, scope):
+        ref = self.getStep('ref')
+        refObj = ref.final()
+        final = self.getStep('expr').final()
+        refObj.setValue(ref.name(), final)
+        self.final(final)
+        return final
+
+class VarStep(Step):
+    def run(self, scope):
+        ref = self.getStep('ref')
+        refObj = ref.final()
+        final = refObj.getValue(ref.name())
+        self.final(final)
+        return final
 
 class RefStep(Step):
-    def run(self):
+    def run(self, scope):
         varname = self.intermediate()
-        self.final(varname)
-        return self
+        self.name(varname)
+        obj = scope.lookup(varname)
+        self.final(obj)
+        return obj
 
-class PrecompilationStep(SObject, StepVisitor):
+class Precompiler(SObject, StepVisitor):
     currentStep = Holder().name('currentStep')
     instructions = Holder().name('instructions').type('List')
 
-    def visitWs(self, cxt): return
-    def visitTerminal(self, tnode): return self
-
-    def _scanChildren(self, step, cxt):
-        self.currentStep(step)
-        for child in cxt.getChildren():
-            child.accept(self)
-
-    def _getRuleName(self, cxt):
-        name = cxt.parser.ruleNames[cxt.getRuleIndex()]
-        return name
-
-    def _visitCommon(self, cxt, step):
-        currentStep = self.currentStep()
-        if not isinstance(cxt, RuleContext):
-            return self
-        step.retrieve(cxt)
-        self._scanChildren(step, cxt)
-        self.currentStep(currentStep)
-        if step.children().len() == 1:
-            currentStep.addStep(step.ruleName(), step.children().head())
-        else:
-            currentStep.addStep(step.ruleName(), step)
-        return step
+    def _visitCommon(self, cxt, childStep):
+        if not isinstance(cxt, RuleContext): return self
+        currentStep = self.currentStep()        # save the current step
+        childStep.retrieve(cxt)
+        childStep.precompile(self)
+        self.currentStep(currentStep)                  # restore the current step
+        return childStep
 
     def visitCommon(self, cxt): return self._visitCommon(cxt, Step())
+    def visitSequence(self, cxt): return self._visitCommon(cxt, SequenceStep().toKeep(true_))
 
+    def visitTemps(self, cxt): return self._visitCommon(cxt, Step().toKeep(true_))
     def visitTempvar(self, cxt):
         currentStep = self.currentStep()
         step = Step().retrieve(cxt)
         ret = self._retrieveTerminalText(cxt)
         step.name(ret).final(ret)
         currentStep.addStep(step.keyname(), step)
-        return self
+        return step
 
+    def visitBlkparamlst(self, cxt): return self._visitCommon(cxt, Step().toKeep(true_))
     def visitBlkparam(self, cxt):
         currentStep = self.currentStep()
         step = Step().retrieve(cxt)
@@ -171,23 +204,34 @@ class PrecompilationStep(SObject, StepVisitor):
         ret = text[1:]
         step.name(ret).final(ret)
         currentStep.addStep(step.keyname(), step)
-        return self
+        return step
 
     def visitAssign(self, cxt):
-        step = self._visitCommon(cxt, AssignStep())
+        step = self._visitCommon(cxt, AssignStep().toKeep(true_))
         self.instructions().append(step)
-        return self
+        return step
+
+    def visitVar(self, cxt):
+        step = self._visitCommon(cxt, VarStep().toKeep(true_))
+        self.instructions().append(step)
+        return step
 
     def visitRef(self, cxt):
-        step = self._addTextStep(cxt, RefStep(), false_);
+        step = self._addTextStep(cxt, RefStep().toKeep(true_), false_)
         self.instructions().append(step)
-        return self
+        return step
+
+    def visitString(self, cxt):
+        step =  self._addTextStep(cxt, Step(), false_)
+        ret = String(step.intermediate()[1:-1])     # "'abc'" -> "abc"
+        step.final(ret)
+        return step
 
     def visitNum(self, cxt):
         step = self._addTextStep(cxt, Step(), false_)
         ret = step.intermediate().asNumber()
         step.final(ret)
-        return self
+        return step
 
     def _addTextStep(self, cxt, step, final=true_):
         currentStep = self.currentStep()
@@ -206,7 +250,6 @@ class PrecompilationStep(SObject, StepVisitor):
         return text
 
     # def visitBlk(self, cxt):          # common
-    # def visitTempvar(self, cxt):      # common
     # def visitExpr(self, cxt):         # Collapsible
     # def visitAssign(self, cxt):       # Collapsible
     # def visitCascade(self, cxt):      # common
@@ -220,28 +263,15 @@ class PrecompilationStep(SObject, StepVisitor):
     # def visitPtkey(self, cxt):        # common
     # def visitUnaryhead(self, cxt):    # Collapsible
     # def visitUnaryop(self, cxt):      # common
-    # def visitVar(self, cxt):          # additional processing
     # def visitLitarr(self, cxt):       # Collapsible
-    def visitPtfin(self, cxt): self._addTextStep(cxt, Step()); return self
-    def visitString(self, cxt): self._addTextStep(cxt, Step()); return self
+    def visitPtfin(self, cxt): return self._addTextStep(cxt, Step())
     # def visitPrimitive(self, cxt):    # common
-    def visitPrimkey(self, cxt): self._addTextStep(cxt, Step()); return self
-    def visitPrimtxt(self, cxt): self._addTextStep(cxt, Step()); return self
-    # def visitParselit(self, cxt): self._addTextStep(cxt, Step()); return self
-    def visitSymbol(self, cxt): self._addTextStep(cxt, Step()); return self
-    def visitBaresym(self, cxt): self._addTextStep(cxt, Step()); return self
+    def visitPrimkey(self, cxt): return self._addTextStep(cxt, Step())
+    def visitPrimtxt(self, cxt): return self._addTextStep(cxt, Step())
+    # def visitParselit(self, cxt): self._addTextStep(cxt, Step())
+    def visitSymbol(self, cxt): return self._addTextStep(cxt, Step())
+    def visitBaresym(self, cxt): return self._addTextStep(cxt, Step())
+    def visitWs(self, cxt): return nil
+    def visitTerminal(self, tnode): return nil
 
-    # def visitSequence(self, cxt):
-    #     ruleName = self._getRuleName(cxt)
-    #     sequence = Step().name(ruleName)
-    #     currentStep = self.currentStep()
-    #     self.scanChildren(sequence, cxt)
-    #     exprs = sequence.getStep('exprs')
-    #     temps = sequence.getStep('temps')
-    #     if exprs.len() == 1:
-    #         currentStep.addStep('exprs', exprs.head())
-    #     else:
-    #         currentStep.addStep('exprs', exprs)
-    #     if temps.notNil():
-    #         currentStep.addStep('temps', temps)
-    #     return self
+

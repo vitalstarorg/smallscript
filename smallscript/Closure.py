@@ -27,7 +27,7 @@ from antlr4.tree.Trees import Trees
 from smallscript.antlr.SmallScriptLexer import SmallScriptLexer as Lexer
 from smallscript.antlr.SmallScriptParser import SmallScriptParser as Parser
 from smallscript.antlr.SmallScriptListener import SmallScriptListener as Listener
-from smallscript.Step import Step
+# from smallscript.Step import Step, Precompiler
 from smallscript.SObject import *
 
 class ScriptErrorListener(SObject, ErrorListener):
@@ -72,7 +72,7 @@ class Script(SObject):
     def __init__(self): self.reset()
     def reset(self): return self.errorHandler(ScriptErrorListener())
 
-    def compile(self, text=""):
+    def parse(self, text=""):
         if text == nil:
             text = self.text()
         else:
@@ -166,22 +166,65 @@ class Method(SObject):
     "Works as a function encapsulation. Its object context is provided during method invocation."
     smallscript = Holder().name('smallscript').type('String')
     script = Holder().name('script').type('Script')
-    precompiled = Holder().name('precompiled')
+    precompiler = Holder().name('precompiler').type('Precompiler')
     params = Holder().name('params').type('List')
+    tempvars = Holder().name('tempvars').type('List')
     pyfunc = Holder().name('pyfunc')
     pysource = Holder().name('pysource')
 
+    def __call__(self, *args, **kwargs):
+        arglst = List(args)
+        if arglst.isEmpty() or not isinstance(arglst.head(), Scope):
+            scope = self.getContext().createScope()
+        else:
+            scope = arglst.head()
+            arglst.pop(0)
+        scope['self'] = scope.objs().head()
+        return self.run(scope, *arglst)
+
+    def run(self, scope, *params):
+        if self.pyfunc() == nil:
+            return self._runSteps(scope, *params)
+        return self._runPy(scope, *params)
+
+    def _runPy(self, scope, *params):
+        "Using a compiled Python func to run this method."
+        func = self.pyfunc()
+        try:
+            ret = func(scope, *params)
+        except Exception as e:
+            logging.error("pyfunc() execution", exc_info=True)
+            ret = nil
+        return ret
+
+    def _runSteps(self, scope, *params):
+        "Using a precompiler instructions to run this method."
+        for param, arg in zip(self.params(), params):
+            scope[param] = arg
+        for tmp in self.tempvars():
+            scope[tmp] = nil
+        instructions = self.precompiler().instructions()
+        ret = nil
+        for instruction in instructions:
+            ret = instruction.run(scope)
+        return ret
+
     def visit(self, visitor): return visitor.visitMethod(self)
-    def compile(self, smallscript=""):
+
+    def interpret(self, smallscript=""):
         smallscript = self.asSObj(smallscript)
         if smallscript.isEmpty():
             smallscript = self.smallscript()
-        script = self.script().compile(smallscript)
+        script = self.script().parse(smallscript)
         # if script.hasError():
         #     return nil
         ssStep = script.firstStep()
-        precompiled = ssStep.precompile()
-        self.precompiled(precompiled)
+        initial = self.precompiler()
+        ssStep.precompile(initial)
+        sequence = ssStep.getStep('sequence')
+        if sequence.notNil():
+            method = sequence.method()
+            self.copyFrom(method)
         return self
 
     def takePyFunc(self, pyfunc):
@@ -219,15 +262,6 @@ class Method(SObject):
         #     self.compile()
         return self
 
-    def execute(self, scope, *args):
-        func = self.pyfunc()
-        try:
-            ret = func(scope, *args)
-        except Exception as e:
-            logging.error("pyfunc() execution", exc_info=True)
-            ret = nil
-        return ret
-
     def info(self):
         info = self.script().info()
         return info
@@ -242,11 +276,11 @@ class Execution(SObject):
         method = self.method()
         params = List([self.asSObj(arg) for arg in args])
         scope = self.prepareScope()
-        ret = method.execute(scope, *params)
+        ret = method._runPy(scope, *params)
         return ret
 
     def prepareScope(self):
-        scope = Scope().context(self.context())
+        scope = self.getContext().createScope().context(self.context())
         scope.setValue('self', self.this())
         return scope
 

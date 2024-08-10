@@ -28,7 +28,7 @@ class TDD(SmallScriptTest):
     def test100_antlr(self):
         #### Simple case
         st = "obj := 123"
-        script = Script().compile(st)
+        script = Script().parse(st)
         self.assertTrue(script.noError())
 
         #### AST graph in form of text
@@ -43,7 +43,7 @@ class TDD(SmallScriptTest):
 
         #### Error case
         st = "obj1 'abc'"
-        script.compile(st)
+        script.parse(st)
         self.assertTrue(script.hasError())
         errmsg = ("Syntax error at line 1:5: extraneous input ''abc'' expecting <EOF>\n"
                   "obj1 'abc'\n"

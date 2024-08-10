@@ -30,8 +30,8 @@ class Test_Parser(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test100_smoke(self):
         # Simple case
-        st = "obj := 123"
-        script = Script().compile(st)
+        ss = "obj := 123"
+        script = Script().parse(ss)
         self.assertTrue(script.noError())
 
         ret = script.toStringTree()
@@ -39,8 +39,8 @@ class Test_Parser(SmallScriptTest):
         self.assertTrue('123' in ret)
 
         # Error case
-        st = "obj1 'abc'"
-        script.compile(st)
+        ss = "obj1 'abc'"
+        script.parse(ss)
         self.assertTrue(script.hasError())
         errmsg = ("Syntax error at line 1:5: extraneous input ''abc'' expecting <EOF>\n"
                   "obj1 'abc'\n"
@@ -52,123 +52,123 @@ class Test_Parser(SmallScriptTest):
         script = Script()
 
         # assignment & ExpressionList
-        st = "var1 := 1"
-        self.assertTrue(script.compile(st).noError())
-        st = "var1 := root"
-        self.assertTrue(script.compile(st).noError())
-        st = "var1 := 'abc'"
-        self.assertTrue(script.compile(st).noError())
-        st = "var1 := root. var2 := var1"
-        self.assertTrue(script.compile(st).noError())
-        st = "a := b := 2"
-        self.assertTrue(script.compile(st).noError())
-        st = "var1 := root. var2 := _"
-        self.assertTrue(script.compile(st).noError())
+        ss = "var1 := 1"
+        self.assertTrue(script.parse(ss).noError())
+        ss = "var1 := root"
+        self.assertTrue(script.parse(ss).noError())
+        ss = "var1 := 'abc'"
+        self.assertTrue(script.parse(ss).noError())
+        ss = "var1 := root. var2 := var1"
+        self.assertTrue(script.parse(ss).noError())
+        ss = "a := b := 2"
+        self.assertTrue(script.parse(ss).noError())
+        ss = "var1 := root. var2 := _"
+        self.assertTrue(script.parse(ss).noError())
 
     @skipUnless('TESTALL' in env, "disabled")
     def test510_messages(self):
         script = Script()
 
         # unarySend & unaryTail
-        st = "obj1 attr3 name"
-        self.assertTrue(script.compile(st).noError())
+        ss = "obj1 attr3 name"
+        self.assertTrue(script.parse(ss).noError())
 
         # keywordSend
-        st = "obj1 name: 'abc'"
-        self.assertTrue(script.compile(st).noError())
-        st = "obj1 method1__firstname: 'John' lastname: 'Doe'"
-        self.assertTrue(script.compile(st).noError())
-        st = "obj1 attr1: 123. obj1 attr1"
-        self.assertTrue(script.compile(st).noError())
+        ss = "obj1 name: 'abc'"
+        self.assertTrue(script.parse(ss).noError())
+        ss = "obj1 method1__firstname: 'John' lastname: 'Doe'"
+        self.assertTrue(script.parse(ss).noError())
+        ss = "obj1 attr1: 123. obj1 attr1"
+        self.assertTrue(script.parse(ss).noError())
 
         # binarySend
-        st = "obj1 attr1: 1 + 2"
-        self.assertTrue(script.compile(st).noError())
-        st = "obj1 attr1: 1 + 2 + obj1 var1"
-        self.assertTrue(script.compile(st).noError())
-        st = "obj1 var1 + 1 + 2"
-        self.assertTrue(script.compile(st).noError())
-        st = "obj1 var1 + obj1 var2"
-        self.assertTrue(script.compile(st).noError())
-        st = "obj1 method3__var1: 3 + 4 var2: 2 + 3"
-        self.assertTrue(script.compile(st).noError())
+        ss = "obj1 attr1: 1 + 2"
+        self.assertTrue(script.parse(ss).noError())
+        ss = "obj1 attr1: 1 + 2 + obj1 var1"
+        self.assertTrue(script.parse(ss).noError())
+        ss = "obj1 var1 + 1 + 2"
+        self.assertTrue(script.parse(ss).noError())
+        ss = "obj1 var1 + obj1 var2"
+        self.assertTrue(script.parse(ss).noError())
+        ss = "obj1 method3__var1: 3 + 4 var2: 2 + 3"
+        self.assertTrue(script.parse(ss).noError())
 
     @skipUnless('TESTALL' in env, "disabled")
     def test520_cascade(self):
         script = Script()
 
         # cascade
-        st = "7; + 3"
-        self.assertTrue(script.compile(st).noError())
-        st = "2; + 1; + 5" # Antlr ok, Amber fail
-        self.assertTrue(script.compile(st).noError())
-        st = "obj1 var1; +3"
-        self.assertTrue(script.compile(st).noError())
-        st = "obj1; method4 attr7 + 3"                  # Amber fails as it is mixed unaryMsg and binMsg
-        self.assertTrue(script.compile(st).noError())
-        st = "obj1; var1 + obj1 method4 attr7"          # Amber fails as it is mixed unaryMsg and binMsg
-        self.assertTrue(script.compile(st).noError())
-        st = "obj1 var2: 7; var2; + 3" # ok
-        self.assertTrue(script.compile(st).noError())
-        st = "obj1; method4; method3__var1: 3 var2: 2; + obj1 var1; + 5" # ok
-        self.assertTrue(script.compile(st).noError())
+        ss = "7; + 3"
+        self.assertTrue(script.parse(ss).noError())
+        ss = "2; + 1; + 5" # Antlr ok, Amber fail
+        self.assertTrue(script.parse(ss).noError())
+        ss = "obj1 var1; +3"
+        self.assertTrue(script.parse(ss).noError())
+        ss = "obj1; method4 attr7 + 3"                  # Amber fails as it is mixed unaryMsg and binMsg
+        self.assertTrue(script.parse(ss).noError())
+        ss = "obj1; var1 + obj1 method4 attr7"          # Amber fails as it is mixed unaryMsg and binMsg
+        self.assertTrue(script.parse(ss).noError())
+        ss = "obj1 var2: 7; var2; + 3" # ok
+        self.assertTrue(script.parse(ss).noError())
+        ss = "obj1; method4; method3__var1: 3 var2: 2; + obj1 var1; + 5" # ok
+        self.assertTrue(script.parse(ss).noError())
 
     @skipUnless('TESTALL' in env, "disabled")
     def test530_subExpr(self):
         script = Script()
 
         # subexpression
-        st = "(obj1 method4 method3__var1: 3 var2: 2) + obj1 var1 + 5"
-        self.assertTrue(script.compile(st).noError())
-        st = "(obj := obj1) var1"
-        self.assertTrue(script.compile(st).noError())
-        st = """(obj1 m1: 1) + (obj2 m2 m3) + 2"""
-        self.assertTrue(script.compile(st).noError())
+        ss = "(obj1 method4 method3__var1: 3 var2: 2) + obj1 var1 + 5"
+        self.assertTrue(script.parse(ss).noError())
+        ss = "(obj := obj1) var1"
+        self.assertTrue(script.parse(ss).noError())
+        ss = """(obj1 m1: 1) + (obj2 m2 m3) + 2"""
+        self.assertTrue(script.parse(ss).noError())
 
     @skipUnless('TESTALL' in env, "disabled")
     def test540_block_closure(self):
         script = Script()
 
         # BlockClosure
-        st = "[ :e | | a | a:= e + 1]" # error, 'a:' parsed as a keyword.
-        self.assertTrue(not script.compile(st).noError())
-        st = "| tmp1 tmp2 | tmp1 := obj1 var1. tmp2 := tmp1 + 3. obj1 var2: tmp2 + 5. obj1 var2"
-        self.assertTrue(script.compile(st).noError())
-        st = "| tmp1 tmp2 | obj1 var1"
-        self.assertTrue(script.compile(st).noError())
-        st = "[2 + 3] value"
-        self.assertTrue(script.compile(st).noError())
-        st = "[ :e | 2 + e] value: 9"
-        self.assertTrue(script.compile(st).noError())
-        st = "b := [ :e | | a | a := e + 3]. b value: 9"
-        script.compile(st)
-        self.assertTrue(script.compile(st).noError())
-        st = 'b := [ :e | | a | a "comment" := [2 + 3] value + e]. b value: 9'
-        self.assertTrue(script.compile(st).noError())
-        st = "[[2 + 3] value + [3 - 2] value]"
-        self.assertTrue(script.compile(st).noError())
+        ss = "[ :e | | a | a:= e + 1]" # error, 'a:' parsed as a keyword.
+        self.assertTrue(not script.parse(ss).noError())
+        ss = "| tmp1 tmp2 | tmp1 := obj1 var1. tmp2 := tmp1 + 3. obj1 var2: tmp2 + 5. obj1 var2"
+        self.assertTrue(script.parse(ss).noError())
+        ss = "| tmp1 tmp2 | obj1 var1"
+        self.assertTrue(script.parse(ss).noError())
+        ss = "[2 + 3] value"
+        self.assertTrue(script.parse(ss).noError())
+        ss = "[ :e | 2 + e] value: 9"
+        self.assertTrue(script.parse(ss).noError())
+        ss = "b := [ :e | | a | a := e + 3]. b value: 9"
+        script.parse(ss)
+        self.assertTrue(script.parse(ss).noError())
+        ss = 'b := [ :e | | a | a "comment" := [2 + 3] value + e]. b value: 9'
+        self.assertTrue(script.parse(ss).noError())
+        ss = "[[2 + 3] value + [3 - 2] value]"
+        self.assertTrue(script.parse(ss).noError())
 
     @skipUnless('TESTALL' in env, "disabled")
     def test550_literal_array(self):
         script = Script()
 
         # literalArray
-        st = 'obj1 := $F'
-        self.assertTrue(script.compile(st).noError())
-        st = "#('a' 12 $F true #root #(1 2) + root value: )"
-        self.assertTrue(script.compile(st).noError())
+        ss = 'obj1 := $F'
+        self.assertTrue(script.parse(ss).noError())
+        ss = "#('a' 12 $F true #root #(1 2) + root value: )"
+        self.assertTrue(script.parse(ss).noError())
 
     @skipUnless('TESTALL' in env, "disabled")
     def test560_edge_case(self):
         script = Script()
 
         # Number format
-        st = "abc := -123 + 1.2 + 1.0e-1 + 16r123"
-        self.assertTrue(script.compile(st).noError())
+        ss = "abc := -123 + 1.2 + 1.0e-1 + 16r123"
+        self.assertTrue(script.parse(ss).noError())
 
         # primitive
-        st = f"<python: 'def hello:'>"
-        self.assertTrue(script.compile(st).noError())
+        ss = f"<python: 'def hello:'>"
+        self.assertTrue(script.parse(ss).noError())
 
 if __name__ == '__main__':
     unittest.main()
