@@ -23,29 +23,33 @@ env['TESTALL'] = '1'
 from smallscript.SObject import *
 from smallscript.Closure import Script, Method
 from smallscript.Step import *
-from tests.TestBase import *
+from tests.TestBase import SmallScriptTest, TestSObj14
 
-class Test_Method(SmallScriptTest):
+class Test_Interpreter2(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
-    def test500_method(self):
+    def test820_param_access(self):
         pkg = rootContext.loadPackage('tests')
-        tobj = TestSObj14()
-        meta = tobj.metaclass()
+        tobj = TestSObj14().attr11(123)
+        tobj.cattr12('cvalue12')
 
-        # Instance attribute behavior
-        self.assertTrue(not tobj.hasKey('attr11'))
-        self.assertEqual('', tobj.attr11())
-        self.assertTrue(tobj.hasKey('attr11'))
-        tobj.attr11('value11')
-        self.assertEqual('value11', tobj.attr11())
+        # SObj super: instance and class
+        # simple instant method: interpreter vs compiled
+        # simple class method: interpreter vs compiled
+        # rootScope
+            # packages
+            # Python globals
+        # Create new class with new method in interpreter mode. (Execution)
+            # basically SObject mechanics is completed.
 
-        # Class attribute behavior
-        self.assertTrue(not tobj.metaclass().attrs().hasKey('cattr12'))
-        self.assertEqual('', tobj.cattr12())
-        self.assertTrue(tobj.metaclass().attrs().hasKey('cattr12'))
-        ret = tobj.cattr12('value12')
-        self.assertEqual(meta.attrs(), ret)
-        self.assertEqual('value12', tobj.cattr12())
+
+    def test_hack(self):
+        return
+        scope = rootContext.createScope()
+        ss = ":param1 | param1"
+        ret = Method().interpret(ss)
+        ret = ret(scope, 'abc')
+        return
+
 
 if __name__ == '__main__':
     unittest.main()

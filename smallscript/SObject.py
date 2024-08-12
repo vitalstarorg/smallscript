@@ -260,14 +260,14 @@ class SObject:
 
     def info(self, offset=0):
         buffer = io.StringIO()
-        # padding = " " * offset
-        buffer.write(f"{self.toString()}\n")
+        padding = " " * offset
+        buffer.write(f"{padding}{self.toString()}\n")
         metaclasses = self.inheritedMetas().values()
         for metaclass in metaclasses:
             for holder in metaclass.holders().values():
                 name = holder.name()
                 if SObject.hasKey(self, name):
-                    buffer.write(f"  {metaclass.name()}.{name} = {SObject.getValue(self, name)}\n")
+                    buffer.write(f"{padding}  {metaclass.name()}.{name} = {SObject.getValue(self, name)}\n")
         output = buffer.getvalue()
         return String(output)
 
@@ -717,8 +717,6 @@ class Scope(SObject):
     """
     Scope object defines the variable lookup.
     """
-    parent = Holder().name('parent')
-
     #### Attributes that can't use Holder as Scope overridden major protocols.
     def vars(self, vars=''): return self._getOrSetDefault('vars', 'Map', vars)
     def scopes(self, scopes=''): return self._getOrSetDefault('scopes', 'List', scopes)
@@ -726,20 +724,18 @@ class Scope(SObject):
     def parent(self, parent=''):  return self._getOrSet('parent', parent, nil)
     def context(self, context=''): return self._getOrSet('context', context, nil)
 
-    #### Variable lookup chains
-    def lookup(self, key):
-        "Return a sobject contains the @key from self, scopes and parent scope. Return self if fails to find @key as we consider @key as an local variable. So it will never return nil."
-        if self.hasKey(key): return self
-        for scope in self.scopes():
-            if scope.hasKey(key): return scope
-        for obj in self.objs():
-            if obj.hasKey(key): return obj
-            classAttrs = obj.metaclass().attrs()
-            if classAttrs.hasKey(key): return classAttrs
-        obj = self.parent()
-        while obj.notNil():
-            if obj.hasKey(key): return obj
-            obj = obj.parent()
+    #### Add scopes, objs, and vars
+    def setSelf(self, obj): self.setValue('self', obj); return self
+    def addScope(self, scope): self.scopes().insert(0, scope); return self
+
+    def addVars(self, map):
+        varScope = Scope()
+        varScope.vars(map)
+        self.addScope(varScope)
+
+    def addObj(self, obj):
+        self.objs().insert(0, obj)
+        self.setSelf(obj)
         return self
 
     #### Override SObject get and set behavior
@@ -758,13 +754,55 @@ class Scope(SObject):
         return self
 
     def getValue(self, attname, default=nil):
-        if super().hasKey('masquerade'): return super().getValue(attname, default)
-        return self.vars().getValue(attname, default)
+        ref = self.lookup(attname)
+        if ref.isNil(): return default
+        return ref.getValue(attname)
+        # return self.vars().getValue(attname, default)
 
     def setValue(self, attname, value):
-        if super().hasKey('masquerade'): return super().setValue(attname, value)
-        sobj = self.asSObj(value)
-        return self.vars().setValue(attname, sobj)
+        ref = self.lookup(attname)
+        if ref.isNil():
+            self.vars().setValue(attname, self.asSObj(value))
+        else:
+            ref.setValue(attname, self.asSObj(value))
+        return self
+
+    #### Variable lookup chains
+    def lookup(self, key, default=nil):
+        "Return a sobject contains the @key from self, scopes and parent scope."
+        # if self.hasKey(key): return self
+        if self.vars().hasKey(key): return self.vars()
+        for scope in self.scopes():
+            if scope.hasKey(key): return scope
+        for obj in self.objs():
+            if obj.hasKey(key): return obj
+            classAttrs = obj.metaclass().attrs()
+            if classAttrs.hasKey(key): return classAttrs
+        obj = self.parent()
+        while obj.notNil():
+            # if obj.hasKey(key): return obj
+            if obj.vars().hasKey(key): return obj
+            obj = obj.parent()
+        return default
+
+    #### Helpers
+    def info(self, offset=0):
+        buffer = io.StringIO()
+        padding = " " * offset
+        buffer.write(f"{padding}{self.toString()}\n")
+        for key in self.keys():
+            buffer.write(f"{padding}  {key} = {self.getValue(key).toString()}\n")
+        for scope in self.scopes():
+            buffer.write(scope.info(2))
+        for obj in self.objs():
+            buffer.write(f"{padding}  obj:")
+            buffer.write(obj.info(2))
+            buffer.write(f"{padding}  obj.class:")
+            buffer.write(obj.metaclass().attrs().info(2))
+        if self.parent().notNil():
+            buffer.write(f"{padding}parent = {self.parent().toString()}\n")
+        output = buffer.getvalue()
+        return String(output)
 
 class Number(int, Primitive):
     def __new__(cls, number = 0): return super(Number, cls).__new__(cls, number)

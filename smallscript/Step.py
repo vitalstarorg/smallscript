@@ -85,7 +85,8 @@ class Step(SObject):
     ruleCxt = Holder().name('ruleCxt')
     ruleName = Holder().name('ruleName')
     parent = Holder().name('parent')
-    toKeep = Holder().name('toKeep').type('False_') # Precompiler hint to keep in instructions explicitly.
+    toKeep = Holder().name('toKeep').type('False_') # Interpreter hint to keep in instructions explicitly.
+    isElement = Holder().name('isElement').type('False_') # Is a list element
     children = Holder().name('children').type('Map')
     intermediate = Holder().name('intermediate')
     final = Holder().name('final')
@@ -102,15 +103,16 @@ class Step(SObject):
         name = cxt.parser.ruleNames[cxt.getRuleIndex()]
         return self.ruleName(name).ruleCxt(cxt)
 
-    def interpret(self, precompiler):
+    def interpret(self, interpreter):
         cxt = self.ruleCxt()
         for childcxt in cxt.getChildren():
             # we want to keep SmallScript untouched without modifying accept(),
-            # so we set current step to precompiler.
-            precompiler.currentStep(self)
-            childStep = childcxt.accept(precompiler)
+            # so we set currentStep to precompiler.
+            interpreter.currentStep(self)
+            childStep = childcxt.accept(interpreter)
             # if childStep.isNil() or self.toKeep(): continue
             if childStep.isNil(): continue
+            if childStep.isElement(): continue  # childStep handled addStep already
             if not childStep.toKeep() and childStep.children().len() == 1:
                 self.addStep(childStep.ruleName(), childStep.children().head())
             else:
@@ -126,13 +128,13 @@ class Step(SObject):
 class SequenceStep(Step):
     method = Holder().name('method').type('Method')
 
-    def interpret(self, precompiler):
-        seqPrecompiler = Interpreter()
-        seqPrecompiler.currentStep(self)
-        super().interpret(seqPrecompiler)
-        seqPrecompiler.instructions().append(self)
+    def interpret(self, interpreter):
+        seqInterpreter = Interpreter()
+        seqInterpreter.currentStep(self)
+        super().interpret(seqInterpreter)
+        seqInterpreter.instructions().append(self)
         method = self.method()
-        method.interpreter(seqPrecompiler)
+        method.interpreter(seqInterpreter)
         bplStep = self.getStep('blkparamlst')
         if bplStep.notNil() and bplStep.notEmpty():
             method.params(bplStep.children().keys())
@@ -140,11 +142,13 @@ class SequenceStep(Step):
         if tsStep.notNil() and tsStep.notEmpty():
             method.tempvars(tsStep.children().keys())
         self.final(method)
-        precompiler.instructions().append(self)
+        interpreter.instructions().append(self)
         return self
 
     def run(self, scope):
-        final = self.getStep('exprs').final()
+        exprs = self.getStep('exprs')
+        if exprs.isNil(): return nil
+        final = exprs.final()
         return final
 
 class AssignStep(Step):
@@ -169,6 +173,7 @@ class RefStep(Step):
         varname = self.intermediate()
         self.name(varname)
         obj = scope.lookup(varname)
+        if obj.isNil(): obj = scope
         self.final(obj)
         return obj
 
@@ -190,7 +195,7 @@ class Interpreter(SObject, StepVisitor):
     def visitTemps(self, cxt): return self._visitCommon(cxt, Step().toKeep(true_))
     def visitTempvar(self, cxt):
         currentStep = self.currentStep()
-        step = Step().retrieve(cxt)
+        step = Step().retrieve(cxt).isElement(true_)
         ret = self._retrieveTerminalText(cxt)
         step.name(ret).final(ret)
         currentStep.addStep(step.keyname(), step)
@@ -199,7 +204,7 @@ class Interpreter(SObject, StepVisitor):
     def visitBlkparamlst(self, cxt): return self._visitCommon(cxt, Step().toKeep(true_))
     def visitBlkparam(self, cxt):
         currentStep = self.currentStep()
-        step = Step().retrieve(cxt)
+        step = Step().retrieve(cxt).isElement(true_)
         text = self._retrieveTerminalText(cxt)
         ret = text[1:]
         step.name(ret).final(ret)

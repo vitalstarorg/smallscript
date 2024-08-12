@@ -148,14 +148,8 @@ class Script(SObject):
             text = f"smallscript: <no error>\n{self.text()}"
         return text
 
-        # 'smallscript': 'String',
-        # 'args': 'List',
-        # 'runnerList': 'List',
-        # 'scope': 'Scope',       # internal scope object from the last runner in runnerList.
-
         # 'context': 'Context',
         # 'smallscript': 'String',
-        # 'args': 'List',
         # 'closure': 'nil',
         # 'pythonscript': 'String',
         # 'pythonerror': 'String',
