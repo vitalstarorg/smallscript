@@ -80,7 +80,7 @@ CHAR
 
 rule names:
 smallscript
-sequence
+closure
 ws
 temps
 tempvar

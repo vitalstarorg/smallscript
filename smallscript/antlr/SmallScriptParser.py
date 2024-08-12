@@ -1,4 +1,4 @@
-# Generated from SmallScript.g4 by ANTLR 4.13.1
+# Generated from SmallScript.g4 by ANTLR 4.13.2
 # encoding: utf-8
 from antlr4 import *
 from io import StringIO
@@ -190,7 +190,7 @@ class SmallScriptParser ( Parser ):
                       "DIGIT", "HEXDIGIT", "KEYWORD", "BLK_PARAM", "CHAR" ]
 
     RULE_smallscript = 0
-    RULE_sequence = 1
+    RULE_closure = 1
     RULE_ws = 2
     RULE_temps = 3
     RULE_tempvar = 4
@@ -238,15 +238,15 @@ class SmallScriptParser ( Parser ):
     RULE_binmsg = 46
     RULE_binop = 47
 
-    ruleNames =  [ "smallscript", "sequence", "ws", "temps", "tempvar", 
-                   "blkparamlst", "blkparam", "expr", "exprs", "exprlst", 
-                   "cascade", "ptfin", "msg", "assign", "ref", "binhead", 
-                   "unaryhead", "kwhead", "kwmsg", "kwpair", "ptkey", "operand", 
-                   "subexpr", "literal", "rtlit", "blk", "dyndict", "dynarr", 
-                   "parselit", "num", "char", "string", "primitive", "primkey", 
-                   "primtxt", "baresym", "symbol", "litarr", "litarrcnt", 
-                   "barelitarr", "unarytail", "unarymsg", "unaryop", "keywords", 
-                   "var", "bintail", "binmsg", "binop" ]
+    ruleNames =  [ "smallscript", "closure", "ws", "temps", "tempvar", "blkparamlst", 
+                   "blkparam", "expr", "exprs", "exprlst", "cascade", "ptfin", 
+                   "msg", "assign", "ref", "binhead", "unaryhead", "kwhead", 
+                   "kwmsg", "kwpair", "ptkey", "operand", "subexpr", "literal", 
+                   "rtlit", "blk", "dyndict", "dynarr", "parselit", "num", 
+                   "char", "string", "primitive", "primkey", "primtxt", 
+                   "baresym", "symbol", "litarr", "litarrcnt", "barelitarr", 
+                   "unarytail", "unarymsg", "unaryop", "keywords", "var", 
+                   "bintail", "binmsg", "binop" ]
 
     EOF = Token.EOF
     NUMEXP=1
@@ -289,7 +289,7 @@ class SmallScriptParser ( Parser ):
 
     def __init__(self, input:TokenStream, output:TextIO = sys.stdout):
         super().__init__(input, output)
-        self.checkVersion("4.13.1")
+        self.checkVersion("4.13.2")
         self._interp = ParserATNSimulator(self, self.atn, self.decisionsToDFA, self.sharedContextCache)
         self._predicates = None
 
@@ -303,8 +303,8 @@ class SmallScriptParser ( Parser ):
             super().__init__(parent, invokingState)
             self.parser = parser
 
-        def sequence(self):
-            return self.getTypedRuleContext(SmallScriptParser.SequenceContext,0)
+        def closure(self):
+            return self.getTypedRuleContext(SmallScriptParser.ClosureContext,0)
 
 
         def EOF(self):
@@ -337,7 +337,7 @@ class SmallScriptParser ( Parser ):
         try:
             self.enterOuterAlt(localctx, 1)
             self.state = 96
-            self.sequence()
+            self.closure()
             self.state = 97
             self.match(SmallScriptParser.EOF)
         except RecognitionException as re:
@@ -349,7 +349,7 @@ class SmallScriptParser ( Parser ):
         return localctx
 
 
-    class SequenceContext(ParserRuleContext):
+    class ClosureContext(ParserRuleContext):
         __slots__ = 'parser'
 
         def __init__(self, parser, parent:ParserRuleContext=None, invokingState:int=-1):
@@ -376,29 +376,29 @@ class SmallScriptParser ( Parser ):
 
 
         def getRuleIndex(self):
-            return SmallScriptParser.RULE_sequence
+            return SmallScriptParser.RULE_closure
 
         def enterRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "enterSequence" ):
-                listener.enterSequence(self)
+            if hasattr( listener, "enterClosure" ):
+                listener.enterClosure(self)
 
         def exitRule(self, listener:ParseTreeListener):
-            if hasattr( listener, "exitSequence" ):
-                listener.exitSequence(self)
+            if hasattr( listener, "exitClosure" ):
+                listener.exitClosure(self)
 
         def accept(self, visitor:ParseTreeVisitor):
-            if hasattr( visitor, "visitSequence" ):
-                return visitor.visitSequence(self)
+            if hasattr( visitor, "visitClosure" ):
+                return visitor.visitClosure(self)
             else:
                 return visitor.visitChildren(self)
 
 
 
 
-    def sequence(self):
+    def closure(self):
 
-        localctx = SmallScriptParser.SequenceContext(self, self._ctx, self.state)
-        self.enterRule(localctx, 2, self.RULE_sequence)
+        localctx = SmallScriptParser.ClosureContext(self, self._ctx, self.state)
+        self.enterRule(localctx, 2, self.RULE_closure)
         self._la = 0 # Token type
         try:
             self.state = 119
@@ -2156,8 +2156,8 @@ class SmallScriptParser ( Parser ):
             return self.getTypedRuleContext(SmallScriptParser.WsContext,0)
 
 
-        def sequence(self):
-            return self.getTypedRuleContext(SmallScriptParser.SequenceContext,0)
+        def closure(self):
+            return self.getTypedRuleContext(SmallScriptParser.ClosureContext,0)
 
 
         def getRuleIndex(self):
@@ -2202,7 +2202,7 @@ class SmallScriptParser ( Parser ):
             _la = self._input.LA(1)
             if (((_la) & ~0x3f) == 0 and ((1 << _la) & 212099688382) != 0):
                 self.state = 283
-                self.sequence()
+                self.closure()
 
 
             self.state = 286

@@ -31,7 +31,7 @@ from antlr4 import RuleContext
 class StepVisitor(SmallScriptVisitor):
     def visitCommon(self, cxt): return cxt.getText()
     def visitSmallscript(self, cxt): return self.visitCommon(cxt)
-    def visitSequence(self, cxt): return self.visitCommon(cxt)
+    def visitClosure(self, cxt): return self.visitCommon(cxt)
     def visitWs(self, cxt): return self.visitCommon(cxt)
     def visitTemps(self, cxt): return self.visitCommon(cxt)
     def visitTempvar(self, cxt): return self.visitCommon(cxt)
@@ -125,16 +125,16 @@ class Step(SObject):
         if self.intermediate().notNil(): return f"{self.intermediate()}:{self.ruleName()}"
         return self.keyname()
 
-class SequenceStep(Step):
+class ClosureStep(Step):
     method = Holder().name('method').type('Method')
 
     def interpret(self, interpreter):
-        seqInterpreter = Interpreter()
-        seqInterpreter.currentStep(self)
-        super().interpret(seqInterpreter)
-        seqInterpreter.instructions().append(self)
+        closureInterpreter = Interpreter()
+        closureInterpreter.currentStep(self)
+        super().interpret(closureInterpreter)
+        closureInterpreter.instructions().append(self)
         method = self.method()
-        method.interpreter(seqInterpreter)
+        method.interpreter(closureInterpreter)
         bplStep = self.getStep('blkparamlst')
         if bplStep.notNil() and bplStep.notEmpty():
             method.params(bplStep.children().keys())
@@ -190,7 +190,7 @@ class Interpreter(SObject, StepVisitor):
         return childStep
 
     def visitCommon(self, cxt): return self._visitCommon(cxt, Step())
-    def visitSequence(self, cxt): return self._visitCommon(cxt, SequenceStep().toKeep(true_))
+    def visitClosure(self, cxt): return self._visitCommon(cxt, ClosureStep().toKeep(true_))
 
     def visitTemps(self, cxt): return self._visitCommon(cxt, Step().toKeep(true_))
     def visitTempvar(self, cxt):

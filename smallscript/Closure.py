@@ -215,9 +215,9 @@ class Method(SObject):
         initialStep = script.initialStep()
         interpreter = self.interpreter()
         initialStep.interpret(interpreter)
-        sequence = initialStep.getStep('sequence')
-        if sequence.notNil():
-            method = sequence.method()
+        closure = initialStep.getStep('closure')
+        if closure.notNil():
+            method = closure.method()
             self.copyFrom(method)
         return self
 

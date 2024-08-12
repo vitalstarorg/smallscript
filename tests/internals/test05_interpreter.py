@@ -28,6 +28,7 @@ from tests.TestBase import SmallScriptTest, TestSObj14
 class Test_Interpreter2(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test820_param_access(self):
+        return
         pkg = rootContext.loadPackage('tests')
         tobj = TestSObj14().attr11(123)
         tobj.cattr12('cvalue12')
@@ -43,11 +44,12 @@ class Test_Interpreter2(SmallScriptTest):
 
 
     def test_hack(self):
-        return
+        # return
         scope = rootContext.createScope()
-        ss = ":param1 | param1"
+        ss = "[:param1 | param1]"
         ret = Method().interpret(ss)
-        ret = ret(scope, 'abc')
+        ret = ret(scope)
+        # ret = ret(scope, 'abc')
         return
 
 

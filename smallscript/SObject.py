@@ -466,7 +466,7 @@ class Map(dict, Primitive):
     def notEmpty(self): return not self.isEmpty()
     def keys(self): return List(super().keys())
     def hasKey(self, name): found = name in self; return found
-    def setValue(self, name, value): self[name] = value; return self
+    def setValue(self, name, value): self[name] = self.asSObj(value); return self
     def getValue(self, name, default=nil): ret = self.get(name, default); return ret
     def values(self): return List(super().values())
     def head(self): return nil if self.isEmpty() else self.values().head()
@@ -702,7 +702,7 @@ class Context(SObject):
 
     def createScope(self):
         rootScope = self.rootScope()
-        if rootScope.vars().isEmpty():
+        if not rootScope.vars().hasKey('root'):
             rootScope.name('rootScope')
             rootScope['true'] = true_
             rootScope['false'] = false_

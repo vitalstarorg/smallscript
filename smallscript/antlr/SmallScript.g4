@@ -9,8 +9,8 @@ History
 
 grammar SmallScript;
 
-smallscript: sequence EOF;
-sequence: blkparamlst? ws? temps? ws? exprs | blkparamlst? ws? exprs;
+smallscript: closure EOF;
+closure: blkparamlst? ws? temps? ws? exprs | blkparamlst? ws? exprs;
 ws: (SEP | COMMENT)+;
 temps: PIPE (ws? tempvar)+ ws? PIPE;
 tempvar: IDENT;
@@ -34,7 +34,7 @@ operand: literal | var | subexpr;
 subexpr: OPEN_PAREN ws? expr ws? CLOSE_PAREN;
 literal: rtlit | parselit;
 rtlit: dyndict | dynarr | blk;
-blk: BLK_START ws? sequence? BLK_END;
+blk: BLK_START ws? closure? BLK_END;
 dyndict: DYNDICT_START ws? exprs? ws? DYNARR_END;
 dynarr: DYNARR_START ws? exprs? ws? DYNARR_END;
 parselit: baresym | num | char | litarr | string ;

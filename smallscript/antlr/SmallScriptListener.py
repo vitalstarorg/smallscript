@@ -1,4 +1,4 @@
-# Generated from SmallScript.g4 by ANTLR 4.13.1
+# Generated from SmallScript.g4 by ANTLR 4.13.2
 from antlr4 import *
 if "." in __name__:
     from .SmallScriptParser import SmallScriptParser
@@ -17,12 +17,12 @@ class SmallScriptListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by SmallScriptParser#sequence.
-    def enterSequence(self, ctx:SmallScriptParser.SequenceContext):
+    # Enter a parse tree produced by SmallScriptParser#closure.
+    def enterClosure(self, ctx:SmallScriptParser.ClosureContext):
         pass
 
-    # Exit a parse tree produced by SmallScriptParser#sequence.
-    def exitSequence(self, ctx:SmallScriptParser.SequenceContext):
+    # Exit a parse tree produced by SmallScriptParser#closure.
+    def exitClosure(self, ctx:SmallScriptParser.ClosureContext):
         pass
 
 

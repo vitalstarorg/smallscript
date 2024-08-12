@@ -1,4 +1,4 @@
-# Generated from SmallScript.g4 by ANTLR 4.13.1
+# Generated from SmallScript.g4 by ANTLR 4.13.2
 from antlr4 import *
 if "." in __name__:
     from .SmallScriptParser import SmallScriptParser
@@ -14,8 +14,8 @@ class SmallScriptVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SmallScriptParser#sequence.
-    def visitSequence(self, ctx:SmallScriptParser.SequenceContext):
+    # Visit a parse tree produced by SmallScriptParser#closure.
+    def visitClosure(self, ctx:SmallScriptParser.ClosureContext):
         return self.visitChildren(ctx)
 
 
