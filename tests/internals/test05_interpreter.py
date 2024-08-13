@@ -27,7 +27,18 @@ from tests.TestBase import SmallScriptTest, TestSObj14
 
 class Test_Interpreter2(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
-    def test820_param_access(self):
+    def test500_exprs(self):
+        scope = rootContext.createScope()
+        ss = "obj2 := 222. obj1 := 111. obj3 := 333"
+        method = Method().interpret(ss)
+        ret = method(scope)
+        self.assertEqual(333, ret)
+        self.assertEqual(111, scope.getValue('obj1'))
+        self.assertEqual(222, scope.getValue('obj2'))
+        self.assertEqual(333, scope.getValue('obj3'))
+
+    @skipUnless('TESTALL' in env, "disabled")
+    def test900_(self):
         return
         pkg = rootContext.loadPackage('tests')
         tobj = TestSObj14().attr11(123)
@@ -44,12 +55,20 @@ class Test_Interpreter2(SmallScriptTest):
 
 
     def test_hack(self):
-        # return
+        return
+        pkg = rootContext.loadPackage('tests')
+        tobj = TestSObj14().attr11(123)
+        tobj.cattr12('cvalue12')
+
         scope = rootContext.createScope()
-        ss = "[:param1 | param1]"
-        ret = Method().interpret(ss)
-        ret = ret(scope)
-        # ret = ret(scope, 'abc')
+        scope['tobj'] = tobj
+        # ss = "tobj sobj11 name"
+        ss = "tobj sobj11"
+        method = Method().interpret(ss)
+        ret = method(scope)
+        self.assertEqual(333, ret)
+
+
         return
 
 

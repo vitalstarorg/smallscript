@@ -41,6 +41,7 @@ class TestSObj13(SObject):
 class TestSObj14(SObject):
     ss_metas = "TestSObj15"
     attr11 = Holder().name('attr11').type('String')
+    sobj11 = Holder().name('sobj11').type('TestSObj11')
     cattr12 = Holder().name('cattr12').type('String').asClassType()
 
     @Holder()

@@ -25,6 +25,7 @@ from smallscript.Closure import Script, Method
 from smallscript.Step import *
 from tests.TestBase import SmallScriptTest, TestSObj14
 
+# These are the basic tests with minimal language implementation.
 class Test_Interpreter1(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test100_method1(self):
@@ -126,13 +127,21 @@ class Test_Interpreter1(SmallScriptTest):
     def test530_assignment(self):
         scope = rootContext.createScope()
         ss = "obj1 := 123"
-        ret = Method().interpret(ss)()
+        ret = Method().interpret(ss)(scope)
         self.assertEqual(123, ret)
-        self.assertTrue(123, scope.getValue('obj1'))
+        self.assertTrue(scope.hasKey('obj1'))
+        self.assertEqual(123, scope.getValue('obj1'))
 
         ss = "obj1 := 'str1'"
-        ret = Method().interpret(ss)()
+        ret = Method().interpret(ss)(scope)
         self.assertEqual('str1', ret)
+
+        scope = rootContext.createScope()
+        ss = "_ := obj1 := 123"
+        ret = Method().interpret(ss)(scope)
+        self.assertEqual(123, ret)
+        self.assertEqual(123, scope.getValue('obj1'))
+        self.assertEqual(123, scope.getValue('_'))
 
         scope = rootContext.createScope()
         ss = ":param1 :param2| |tmp1| tmp1 := param2"
@@ -206,6 +215,15 @@ class Test_Interpreter1(SmallScriptTest):
         ss = "global1 := 'global value'"
         ret = Method().interpret(ss)(scope)
         self.assertEqual('global value', scope['global1'])
+
+    @skipUnless('TESTALL' in env, "disabled")
+    def test800_block(self):
+        scope = rootContext.createScope()
+        ss = "[:param1 | param1]"
+        block = Method().interpret(ss)
+        closure = block(scope)
+        ret = closure(scope, 'aString')
+        self.assertEqual('aString', ret)
 
 if __name__ == '__main__':
     unittest.main()
