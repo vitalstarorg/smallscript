@@ -33,10 +33,10 @@ class TDD(SmallScriptTest):
         sobj = SObject()
         self.assertEqual('a SObject', sobj.name())  # default name
         self.assertTrue(not sobj.hasKey('name'))    # @name not yet exists
-        ret = sobj.name('sobj')                     # setter always returns obj
+        res = sobj.name('sobj')                     # setter always returns obj
         self.assertTrue(sobj.hasKey('name'))        # @name exists
         self.assertEqual('sobj', sobj.name())       # its value is 'sobj'
-        self.assertEqual(sobj, ret)                 # return sobj as to follow the builder pattern
+        self.assertEqual(sobj, res)                 # return sobj as to follow the builder pattern
         self.assertEqual('sobj', sobj.getValue('name'))  # alternative way to access attribute
         sobj.delValue('name')                       # remove @name
         self.assertTrue(not sobj.hasKey('name'))    # @name removed
@@ -51,8 +51,8 @@ class TDD(SmallScriptTest):
         # Besides holder defined the attributes, SObject will still try to access other value inside sobject.
         self.assertTrue(not sobj.hasKey('newAttr'))     # newAttr not there
         sobj.setValue('newAttr', 'newValue')            # set some value
-        ret = sobj.newAttr()                            # newAttr works like a getter method.
-        self.assertEqual('newValue', ret)               # retrieves the same value
+        res = sobj.newAttr()                            # newAttr works like a getter method.
+        self.assertEqual('newValue', res)               # retrieves the same value
         sobj.delValue('newAttr')                        # remove @newAttr from sobj
         self.assertTrue(not sobj.hasKey('newAttr'))     # @newAttr removed
 
@@ -60,8 +60,8 @@ class TDD(SmallScriptTest):
         self.assertTrue(not sobj.hasKey('package'))     # sobj doesn't have @package attribute
         sobj.metaname('Metaclass')                      # change its @metaname to Metaclass
         self.assertTrue(not sobj.hasKey('package'))     # @package not exist yet
-        ret = sobj.package()                            # but @package available from Metaclass metaclass
-        self.assertEqual('Package', ret.metaname())     # empty object is returned by default
+        res = sobj.package()                            # but @package available from Metaclass metaclass
+        self.assertEqual('Package', res.metaname())     # empty object is returned by default
         self.assertTrue(sobj.hasKey('package'))         # default value is saved
 
     @skipUnless('TESTALL' in env, "disabled")
@@ -126,9 +126,9 @@ class TDD(SmallScriptTest):
         # tobj2 works the same as tobj1
         self.assertEqual(nil, tobj2.attr12())
         self.assertTrue(not tobj2.hasKey('attr12'))
-        ret = tobj2.attr12('value2')
+        res = tobj2.attr12('value2')
         self.assertEqual('value2', tobj2.attr12())
-        self.assertEqual(ret, tobj2)
+        self.assertEqual(res, tobj2)
 
         ### true_, false_, nil and root are singletons that shared with all contexts.
         aNil = Nil()
@@ -145,8 +145,8 @@ class TDD(SmallScriptTest):
         sobj2 = TestSObj12().name('tobj2')
         self.assertEqual('TestSObj12', sobj2.metaname())
         self.assertEqual('TestSObj12', sobj2.metaclass().name())
-        ret = sobj2.attr21()
-        self.assertEqual(0, ret)
+        res = sobj2.attr21()
+        self.assertEqual(0, res)
         sobj2.attr11('value11').attr21(21)
         self.assertEqual('value11', sobj2.attr11())
         self.assertEqual(21, sobj2.attr21())
@@ -185,8 +185,8 @@ class TDD(SmallScriptTest):
         self.assertEqual('TestSObj13', sobj3.metaname())
         self.assertEqual('TestSObj13', sobj3.metaclass().name())
 
-        ret = sobj3.attr31()
-        self.assertEqual([], ret)
+        res = sobj3.attr31()
+        self.assertEqual([], res)
         sobj3.attr11('value11').attr31(['hello', 'world'])
         self.assertEqual('value11', sobj3.attr11())
         self.assertEqual(['hello', 'world'], sobj3.attr31())

@@ -30,16 +30,16 @@ class Test_Interpreter1(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test100_method1(self):
         m = Method()
-        ret = m()
-        self.assertEqual(nil, ret)
+        res = m()
+        self.assertEqual(nil, res)
 
     @skipUnless('TESTALL' in env, "disabled")
     def test500_primitives(self):
         #### Primitive: parser and run in interpreter.
         ss = "123"
         m = Method().interpret(ss)
-        ret = m()
-        self.assertEqual(123, ret)
+        res = m()
+        self.assertEqual(123, res)
         ss = "'123'"
         self.assertEqual('123', Method().interpret(ss)())
         ss = "true"
@@ -62,29 +62,29 @@ class Test_Interpreter1(SmallScriptTest):
         # However, such update might be defined else where, so it is better to be predefined.
         scope = rootContext.createScope()
         ss = "obj := 'aString'"
-        ret = Method().interpret(ss)(scope)
-        self.assertEqual('aString', ret)
+        res = Method().interpret(ss)(scope)
+        self.assertEqual('aString', res)
         self.assertEqual('aString', scope.getValue('obj'))
 
         # Local variable can be predefined.
         scope = rootContext.createScope()
         ss = "|obj|"
-        ret = Method().interpret(ss)(scope)
-        self.assertEqual(nil, ret)
+        res = Method().interpret(ss)(scope)
+        self.assertEqual(nil, res)
         self.assertTrue(scope.hasKey('obj'))
         self.assertEqual(nil, scope.getValue('obj'))
 
         scope = rootContext.createScope()
         ss = "|obj1 obj2|"
-        ret = Method().interpret(ss)(scope)
+        res = Method().interpret(ss)(scope)
         self.assertTrue(scope.hasKey('obj1'))
         self.assertTrue(scope.hasKey('obj2'))
 
         # Predefined local variable will
         scope = rootContext.createScope()
         ss = "|obj| obj := 'aString'"
-        ret = Method().interpret(ss)(scope)
-        self.assertEqual('aString', ret)
+        res = Method().interpret(ss)(scope)
+        self.assertEqual('aString', res)
         self.assertEqual('aString', scope.getValue('obj'))
 
     @skipUnless('TESTALL' in env, "disabled")
@@ -92,34 +92,34 @@ class Test_Interpreter1(SmallScriptTest):
         scope = rootContext.createScope()
         ss = ":param1 | param1"
         method = Method().interpret(ss)
-        ret = method(scope)
-        self.assertEqual(nil, ret)
+        res = method(scope)
+        self.assertEqual(nil, res)
         self.assertTrue(not scope.hasKey('param1'))
 
-        ret = method(scope, 'aString')
-        self.assertEqual('aString', ret)
+        res = method(scope, 'aString')
+        self.assertEqual('aString', res)
         self.assertTrue(scope.hasKey('param1'))
 
-        ret = method(scope, 123)
-        self.assertEqual(123, ret)
-        ret = Method().interpret(ss)(scope)
-        self.assertEqual(123, ret)  # ret is not nil as scope already have param1 assigned
+        res = method(scope, 123)
+        self.assertEqual(123, res)
+        res = Method().interpret(ss)(scope)
+        self.assertEqual(123, res)  # res is not nil as scope already have param1 assigned
 
         scope = rootContext.createScope()
         ss = ":param1 :param2| param2"
         method = Method().interpret(ss)
-        ret = method(scope)
-        self.assertEqual(nil, ret)
+        res = method(scope)
+        self.assertEqual(nil, res)
         self.assertTrue(not scope.hasKey('param1'))
         self.assertTrue(not scope.hasKey('param2'))
 
-        ret = method(scope, 'str1')
-        self.assertEqual(nil, ret)
+        res = method(scope, 'str1')
+        self.assertEqual(nil, res)
         self.assertTrue(scope.hasKey('param1'))
         self.assertTrue(not scope.hasKey('param2'))
 
-        ret = method(scope, 'str1', 'str2')
-        self.assertEqual('str2', ret)
+        res = method(scope, 'str1', 'str2')
+        self.assertEqual('str2', res)
         self.assertTrue('str1', scope.getValue('param1'))
         self.assertTrue('str2', scope.getValue('param2'))
 
@@ -127,33 +127,33 @@ class Test_Interpreter1(SmallScriptTest):
     def test530_assignment(self):
         scope = rootContext.createScope()
         ss = "obj1 := 123"
-        ret = Method().interpret(ss)(scope)
-        self.assertEqual(123, ret)
+        res = Method().interpret(ss)(scope)
+        self.assertEqual(123, res)
         self.assertTrue(scope.hasKey('obj1'))
         self.assertEqual(123, scope.getValue('obj1'))
 
         ss = "obj1 := 'str1'"
-        ret = Method().interpret(ss)(scope)
-        self.assertEqual('str1', ret)
+        res = Method().interpret(ss)(scope)
+        self.assertEqual('str1', res)
 
         scope = rootContext.createScope()
         ss = "_ := obj1 := 123"
-        ret = Method().interpret(ss)(scope)
-        self.assertEqual(123, ret)
+        res = Method().interpret(ss)(scope)
+        self.assertEqual(123, res)
         self.assertEqual(123, scope.getValue('obj1'))
         self.assertEqual(123, scope.getValue('_'))
 
         scope = rootContext.createScope()
         ss = ":param1 :param2| |tmp1| tmp1 := param2"
         method = Method().interpret(ss)
-        ret = method(scope, 'str1', 'str2')
-        self.assertEqual('str2', ret)
+        res = method(scope, 'str1', 'str2')
+        self.assertEqual('str2', res)
         self.assertTrue('str1', scope.getValue('param1'))
         self.assertTrue('str2', scope.getValue('param2'))
         self.assertTrue('str2', scope.getValue('tmp1'))
 
-        ret = method(scope, 'str1', 123)
-        self.assertEqual(123, ret)
+        res = method(scope, 'str1', 123)
+        self.assertEqual(123, res)
         self.assertTrue(123, scope.getValue('param2'))
         self.assertTrue(123, scope.getValue('tmp1'))
 
@@ -166,17 +166,17 @@ class Test_Interpreter1(SmallScriptTest):
         scope = rootContext.createScope()
         scope.addObj(tobj)
         ss = "attr11"
-        ret = Method().interpret(ss)(scope)
-        self.assertEqual(123, ret)
+        res = Method().interpret(ss)(scope)
+        self.assertEqual(123, res)
         ss = "cattr12"
-        ret = Method().interpret(ss)(scope)
-        self.assertEqual('cvalue12', ret)
+        res = Method().interpret(ss)(scope)
+        self.assertEqual('cvalue12', res)
 
         ss = "attr11 := 321"
-        ret = Method().interpret(ss)(scope)
+        res = Method().interpret(ss)(scope)
         self.assertEqual(321, tobj.attr11())
         ss = "cattr12 := 'anotherValue'"
-        ret = Method().interpret(ss)(scope)
+        res = Method().interpret(ss)(scope)
         self.assertEqual('anotherValue', tobj.cattr12())
 
     @skipUnless('TESTALL' in env, "disabled")
@@ -184,9 +184,9 @@ class Test_Interpreter1(SmallScriptTest):
         # SObject protocol of Scope
         scope = Scope()
         self.assertEqual('a Scope', scope.name())
-        ret = scope.name('scope')
+        res = scope.name('scope')
         self.assertEqual('scope', scope.name())
-        self.assertEqual(scope, ret)
+        self.assertEqual(scope, res)
 
         # Get & set to scope will not affect SObject states e.g. name, metaname, etc.
         self.assertTrue(not scope.hasKey('name'))
@@ -206,14 +206,14 @@ class Test_Interpreter1(SmallScriptTest):
         tobj = TestSObj14()
         tobj.attr11('tobj12')
         scope.addObj(tobj)
-        ret = scope.info()  # smoke test, ignore output
-        # ret.print()
+        res = scope.info()  # smoke test, ignore output
+        # res.print()
 
         scope = rootContext.createScope()
         root = scope['root']
         root['global1'] = nil
         ss = "global1 := 'global value'"
-        ret = Method().interpret(ss)(scope)
+        res = Method().interpret(ss)(scope)
         self.assertEqual('global value', scope['global1'])
 
     @skipUnless('TESTALL' in env, "disabled")
@@ -222,8 +222,8 @@ class Test_Interpreter1(SmallScriptTest):
         ss = "[:param1 | param1]"
         block = Method().interpret(ss)
         closure = block(scope)
-        ret = closure(scope, 'aString')
-        self.assertEqual('aString', ret)
+        res = closure(scope, 'aString')
+        self.assertEqual('aString', res)
 
 if __name__ == '__main__':
     unittest.main()

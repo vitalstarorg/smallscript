@@ -66,7 +66,7 @@ class Script(SObject):
     text = Holder().name('text').type('String')
     parser = Holder().name('parser')
     errorHandler = Holder().name('errorHandler')
-    initialStep = Holder().name('initialStep').type('Step')
+    smallscriptStep = Holder().name('smallscriptStep').type('SmallScriptStep')
     # smallscriptCxt = Holder().name('smallscriptCxt')
 
     def __init__(self): self.reset()
@@ -89,14 +89,14 @@ class Script(SObject):
         parser.addErrorListener(errorHandler)
         ast = parser.smallscript()
         self.parser(parser)
-        self.initialStep().retrieve(ast)
+        self.smallscriptStep().retrieve(ast)
         # self.smallscriptCxt(ast)
         return self
 
     def dotGraph(self):
         listener = DOTGrapher()
         walker = ParseTreeWalker()
-        walker.walk(listener, self.initialStep().ruleCxt())
+        walker.walk(listener, self.smallscriptStep().ruleCxt())
         return listener.graph
 
     def run(self):
@@ -122,9 +122,9 @@ class Script(SObject):
 
     def toStringTree(self):
         parser = self.parser()
-        ast = self.initialStep().ruleCxt()
-        ret = ast.toStringTree(recog=parser)
-        return String(ret)
+        ast = self.smallscriptStep().ruleCxt()
+        res = ast.toStringTree(recog=parser)
+        return String(res)
 
     def prettyErrorMsg(self):
         errmsg = self.errormsg()
@@ -185,11 +185,11 @@ class Method(SObject):
         "Using a compiled Python func to run this method."
         func = self.pyfunc()
         try:
-            ret = func(scope, *params)
+            res = func(scope, *params)
         except Exception as e:
             logging.error("pyfunc() execution", exc_info=True)
-            ret = nil
-        return ret
+            res = nil
+        return res
 
     def _runSteps(self, scope, *params):
         "Using a precompiler instructions to run this method."
@@ -198,10 +198,11 @@ class Method(SObject):
         for tmp in self.tempvars():
             scope[tmp] = nil
         instructions = self.interpreter().instructions()
-        ret = nil
+        res = nil
         for instruction in instructions:
-            ret = instruction.run(scope)
-        return ret
+            # print(instruction)
+            res = instruction.run(scope)
+        return res
 
     def visit(self, visitor): return visitor.visitMethod(self)
 
@@ -212,10 +213,10 @@ class Method(SObject):
         script = self.script().parse(smallscript)
         # if script.hasError():
         #     return nil
-        initialStep = script.initialStep()
+        smallscriptStep = script.smallscriptStep()
         interpreter = self.interpreter()
-        initialStep.interpret(interpreter)
-        closure = initialStep.getStep('closure')
+        closure = smallscriptStep.getClosure(interpreter)
+        # closure = smallscriptStep.getStep('closure')
         if closure.notNil():
             method = closure.method()
             self.copyFrom(method)
@@ -270,8 +271,8 @@ class Execution(SObject):
         method = self.method()
         params = List([self.asSObj(arg) for arg in args])
         scope = self.prepareScope()
-        ret = method._runPy(scope, *params)
-        return ret
+        res = method._runPy(scope, *params)
+        return res
 
     def prepareScope(self):
         scope = self.getContext().createScope().context(self.context())

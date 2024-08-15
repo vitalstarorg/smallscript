@@ -61,8 +61,8 @@ class SObject:
         _attrname = self._keyName('metaname')
         if self._has(_attrname):
             return self._get(_attrname, nil)
-        ret = self._metaname(type(self))
-        return ret
+        res = self._metaname(type(self))
+        return res
 
     def _metaname(self, sClass):
         return self._ss_metas(sClass).head()
@@ -107,8 +107,8 @@ class SObject:
         # execution.localGlobals()
         execution.this(self)
         # self.visit(execution)
-        ret = obj.visit(execution)
-        return ret
+        res = obj.visit(execution)
+        return res
 
     def visit(self, visitor): return visitor.visitSObj(self)
     def getContext(self): return self.metaclass().context()
@@ -304,7 +304,7 @@ class Holder(SObject):
         """Implement the descriptor protocol."""
         def getOrSetSObj(sobj, value=None):
             attname = self.name()
-            ret = sobj
+            res = sobj
             if value is None:
                 if sobj.hasKey(attname):
                     return sobj.getValue(attname)
@@ -312,44 +312,50 @@ class Holder(SObject):
                     metaclass = sobj.metaclass()
                     if metaclass.notNil():
                         type = self.type()
-                        ret = metaclass.context().metaclassByName(type).createEmpty()
-                        if ret == nil or type == 'True_' or type == 'False_':  # don't need to save these default values.
-                            return ret
-                        value = ret
+                        res = metaclass.context().metaclassByName(type).createEmpty()
+                        if res == nil or type == 'True_' or type == 'False_':  # don't need to save these default values.
+                            return res
+                        value = res
                     else:
                         logging.warning(f"Found no metaclass for type '{type}' defined by {sobj.metaname()}.{self.name()}")
                         return nil
             if sobj.mutable():
                 sobj.setValue(attname, value)
-            return ret
+            return res
 
         def getOrSet(value=None): return getOrSetSObj(obj, value)
 
-        ret = nil
+        res = nil
         method = self.method()
         if method.isNil():
             if self.instanceType():
+                # Instance attribute access
                 if obj is None:
                     return nil
                 return getOrSet
             if obj is None:
+                # Class attribute access from Python class
                 obj = self.getContext().metaclassByName(self._metaname(owner)).attrs()
             else:
+                # Class attribute access from sobject
                 obj = obj.metaclass().attrs()
             return getOrSet
         else:
             if obj is not None:
                 if self.instanceType():
-                    ret = obj.runThis(method)
+                    # Instance method
+                    res = obj.runThis(method)
                 else:
-                    ret = obj.metaclass().attrs().runThis(method)
-                return ret
+                    # Class method invoked from sobject
+                    res = obj.metaclass().attrs().runThis(method)
+                return res
             if owner is not None:
                 if not self.instanceType():
+                    # Class method invoked from Python class
                     metaclass = self.getContext().metaclassByName(self._metaname(owner))
-                    obj = metaclass.attrs()
-                    ret = obj.runThis(method)
-        return ret
+                    attrs = metaclass.attrs()
+                    res = attrs.runThis(method)
+        return res
 
     #### Private helper methods
     def _defineHolders(self, holders):
@@ -366,7 +372,6 @@ class Primitive(SObject):
     def metaclass(self, metaclass = ''):
         # Don't allow setting metaclass for primitive
         if metaclass != '': return self
-        # return metaclass(metaclass)
         return super().metaclass()
 
     def visit(self, visitor): return visitor.visitPrimitive(self)
@@ -467,7 +472,7 @@ class Map(dict, Primitive):
     def keys(self): return List(super().keys())
     def hasKey(self, name): found = name in self; return found
     def setValue(self, name, value): self[name] = self.asSObj(value); return self
-    def getValue(self, name, default=nil): ret = self.get(name, default); return ret
+    def getValue(self, name, default=nil): res = self.get(name, default); return res
     def values(self): return List(super().values())
     def head(self): return nil if self.isEmpty() else self.values().head()
 
@@ -478,7 +483,15 @@ class Metaclass(SObject):
     factory = Holder().name('factory').type('Nil')
     holders = Holder().name('holders').type('Map')
     parentNames = Holder().name('parentNames').type('List')
-    attrs = Holder().name('attrs').type('SObject')
+
+    def attrs(self):
+        keyname = self._keyName('attrs')
+        if not self._has(keyname):
+            classAttrs = SObject().metaclass(self)
+            self._set(keyname, classAttrs)
+        else:
+            classAttrs = self._get(keyname, nil)
+        return classAttrs
 
     def createEmpty(self):
         """create an empty obj for this metaclass, including Metaclass."""
@@ -611,6 +624,16 @@ class Package(SObject):
                     method.takePyFunc(pyfunc)
         return self
 
+    def initClasses(self):
+        "Invoke all ss_metaInit() if defined."
+        for metaclass in self.metaclasses().values():
+            holder = metaclass.holderByName('metaInit')
+            if holder.isNil(): continue
+            method = holder.method()
+            exeContext = metaclass.attrs().runThis(method)
+            res = exeContext()
+        return self
+
     def createMetaclass(self, metaname):
         context = self.getValue('context')
         if not self.hasKey('metaclasses'):  # init metaclasses
@@ -636,8 +659,8 @@ class Package(SObject):
 
     def metaclassByName(self, metaname):
         classes = self.getValue('metaclasses', Map())
-        ret = classes.get(metaname, nil)
-        return ret
+        res = classes.get(metaname, nil)
+        return res
 
     def isEmpty(self):
         if not self.hasKey('metaclasses'): return true_
@@ -666,6 +689,7 @@ class Context(SObject):
         if pkg.isEmpty():
             pkg.importSObjects()
             pkg.importMethods()
+            pkg.initClasses()
         return pkg
 
     def newPackage(self, pkgname):
@@ -682,13 +706,13 @@ class Context(SObject):
     def metaclassByName(self, metaname):
         "Find metaclass in last-in-first-out by name. Later package can override earlier package to allow deferred implementation."
         pkgs = self.getValue('packages', Map())
-        ret = nil
+        res = nil
         for pkg in pkgs.values()[::-1]:
             metaclass = pkg.metaclassByName(metaname)
             if metaclass.notNil():
-                ret = metaclass
+                res = metaclass
                 break
-        return ret
+        return res
 
     def newInstance(self, metaname):
         "Create an sobject."
@@ -772,6 +796,8 @@ class Scope(SObject):
         "Return a sobject contains the @key from self, scopes and parent scope."
         # if self.hasKey(key): return self
         if self.vars().hasKey(key): return self.vars()
+        classAttrs = self.metaclass().attrs()
+        if classAttrs.hasKey(key): return classAttrs
         for scope in self.scopes():
             if scope.hasKey(key): return scope
         for obj in self.objs():
@@ -818,6 +844,7 @@ class Number(int, Primitive):
     def __sub__(self, val): res = super().__sub__(val);  return Number(res)
     def __hash__(self): return super().__hash__()
     def asObj(self, pyobj): return Number(pyobj)
+    def asNumber(self): return self
     def toString(self): return String(self)
 
 class Float(float, Primitive):
@@ -834,6 +861,7 @@ class Float(float, Primitive):
     def __sub__(self, val): res = super().__sub__(val); return Float(res)
     def __hash__(self): return super().__hash__()
     def asObj(self, pyobj): return Float(pyobj)
+    def asNumber(self): return self
     def toString(self): return String(self)
 
 pytypes = Map(str = String, int = Number, float = Float, dict = Map, list = List)

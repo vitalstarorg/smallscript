@@ -47,5 +47,15 @@ class Test_Method(SmallScriptTest):
         self.assertEqual(meta.attrs(), ret)
         self.assertEqual('value12', tobj.cattr12())
 
+    @skipUnless('TESTALL' in env, "disabled")
+    def test600_metaInit(self):
+        pkg = rootContext.loadPackage('tests')
+        tobj = TestSObj14()
+        meta = tobj.metaclass()
+
+        self.assertTrue(tobj.metaclass().attrs().hasKey('cattr13'))
+        self.assertEqual('value from metaInit', tobj.cattr13())
+        self.assertEqual('value from metaInit', tobj.metaclass().attrs()['cattr14'])
+
 if __name__ == '__main__':
     unittest.main()

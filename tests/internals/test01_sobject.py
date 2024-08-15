@@ -44,8 +44,8 @@ class Test_SObject(SmallScriptTest):
     def test110_errorReturn(self):
         sobj = SObject()
         sobj.undefined('Error!!!')
-        ret = sobj.nothing()
-        self.assertEqual('Error!!!', ret)
+        res = sobj.nothing()
+        self.assertEqual('Error!!!', res)
 
     @skipUnless('TESTALL' in env, "disabled")
     def test120_primitive(self):
@@ -103,12 +103,12 @@ class Test_SObject(SmallScriptTest):
         ### Loading all SObject from tests
         pkg1 = rootContext.loadPackage('tests')
         testobj1 = rootContext.metaclassByName('TestSObj1').createEmpty()
-        ret = testobj1.var1()
+        res = testobj1.var1()
         self.assertEqual('', testobj1.var1())
-        ret = testobj1.var1('value1')
-        self.assertEqual(ret, testobj1)
-        ret = testobj1.var1()
-        self.assertEqual('value1', ret)
+        res = testobj1.var1('value1')
+        self.assertEqual(res, testobj1)
+        res = testobj1.var1()
+        self.assertEqual('value1', res)
         meta1 = rootContext.metaclassByName('TestSObj11')
         self.assertEqual(pkg1, meta1.package())
 

@@ -32,9 +32,9 @@ class TDD(SmallScriptTest):
         self.assertTrue(script.noError())
 
         #### AST graph in form of text
-        ret = script.toStringTree()
-        self.assertTrue('obj' in ret)
-        self.assertTrue('123' in ret)
+        res = script.toStringTree()
+        self.assertTrue('obj' in res)
+        self.assertTrue('123' in res)
 
         #### AST graph of the syntax can be shown on nbs/antlr.ipynb
         dot = script.dotGraph()

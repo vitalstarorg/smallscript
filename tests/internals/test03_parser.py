@@ -69,11 +69,11 @@ class Test_Parser(SmallScriptTest):
     def test510_messages(self):
         script = Script()
 
-        # unarySend & unaryTail
+        # UnaryHead & UnaryTail
         ss = "obj1 attr3 name"
         self.assertTrue(script.parse(ss).noError())
 
-        # keywordSend
+        # KeywordHead
         ss = "obj1 name: 'abc'"
         self.assertTrue(script.parse(ss).noError())
         ss = "obj1 method1__firstname: 'John' lastname: 'Doe'"
@@ -81,7 +81,7 @@ class Test_Parser(SmallScriptTest):
         ss = "obj1 attr1: 123. obj1 attr1"
         self.assertTrue(script.parse(ss).noError())
 
-        # binarySend
+        # BinaryHead
         ss = "obj1 attr1: 1 + 2"
         self.assertTrue(script.parse(ss).noError())
         ss = "obj1 attr1: 1 + 2 + obj1 var1"
@@ -97,7 +97,7 @@ class Test_Parser(SmallScriptTest):
     def test520_cascade(self):
         script = Script()
 
-        # cascade
+        # Cascade
         ss = "7; + 3"
         self.assertTrue(script.parse(ss).noError())
         ss = "2; + 1; + 5" # Antlr ok, Amber fail
@@ -117,7 +117,7 @@ class Test_Parser(SmallScriptTest):
     def test530_subExpr(self):
         script = Script()
 
-        # subexpression
+        # Subexpression
         ss = "(obj1 method4 method3__var1: 3 var2: 2) + obj1 var1 + 5"
         self.assertTrue(script.parse(ss).noError())
         ss = "(obj := obj1) var1"
@@ -152,7 +152,7 @@ class Test_Parser(SmallScriptTest):
     def test550_literal_array(self):
         script = Script()
 
-        # literalArray
+        # LiteralArray
         ss = 'obj1 := $F'
         self.assertTrue(script.parse(ss).noError())
         ss = "#('a' 12 $F true #root #(1 2) + root value: )"
@@ -166,7 +166,7 @@ class Test_Parser(SmallScriptTest):
         ss = "abc := -123 + 1.2 + 1.0e-1 + 16r123"
         self.assertTrue(script.parse(ss).noError())
 
-        # primitive
+        # Primitive
         ss = f"<python: 'def hello:'>"
         self.assertTrue(script.parse(ss).noError())
 
