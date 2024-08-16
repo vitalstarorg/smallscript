@@ -52,6 +52,7 @@ class StepVisitor(SmallScriptVisitor):
     def visitBinop(self, cxt): return self.visitCommon(cxt)
     def visitCascade(self, cxt): return self.visitCommon(cxt)
     def visitPtfin(self, cxt): return self.visitCommon(cxt)
+    def visitMsg(self, cxt): return self.visitCommon(cxt)
 
     def visitAssign(self, cxt): return self.visitCommon(cxt)
     def visitVar(self, cxt): return self.visitCommon(cxt)
@@ -121,6 +122,7 @@ class Step(SObject):
     def retrieve(self, cxt):
         name = self._ruleName(cxt)
         self.ruleName(name).ruleCxt(cxt)
+        if cxt.children is None: return self
         if not isinstance(cxt.children[0], RuleContext):
             terminal = cxt.children[0]
             text = terminal.symbol.text
@@ -200,10 +202,6 @@ class ClosureStep(RuntimeStep):
         return self
 
     def run(self, scope):
-        # exprs = self.getStep('exprs')
-        # if exprs.isNil(): return nil
-        # res = exprs.runtimeRes()
-        # return res
         exprs = self.getStep('exprs')
         if exprs.isNil(): return nil
         if exprs.ruleName() == 'exprs':
@@ -227,37 +225,30 @@ class UnaryHeadStep(RuntimeStep):
             interpreter.instructions().append(self)
         return self
 
-    def _unaryops(self, tail, oplist):
-        if tail.children().isEmpty():
-            oplist.append(tail.compileRes())    # this tail is unaryops
-            return
-        unarymsg = tail.getStep('unarymsg')
-        oplist.append(unarymsg.compileRes())
-        unarytail = tail.getStep('unarytail')
-        self._unaryops(unarytail, oplist)
-        return self
-
-    def invoke(self, scope, obj, oplist):   # obj can be Python obj
+    def invoke(self, scope, obj, unarytail):   # obj can be Python obj
         res = obj
-        for op in oplist:
-            method = getattr(res, op, nil)  # Holder.valueFunc
-            if method == nil and isinstance(res, SObject):
-                holder = res.metaclass().holderByName(op)
-                # if holder.notNil() and holder.method().notNil():
-                if holder.notNil():
-                    method = holder.__get__(obj)
-            # if method == nil: method = getattr(res, op, nil)  # Holder.valueFunc
-            if method == nil: return nil
-            res = method()
+        while unarytail.notNil():
+            if unarytail.ruleName() == "unarytail":
+                unarymsg = unarytail.getStep('unarymsg')
+            else:
+                unarymsg = unarytail
+            op = unarymsg.compileRes()
+            if op.notNil():             # op.isNil() for case like "7;"
+                method = getattr(res, op, nil)  # Holder.valueFunc
+                if method == nil and isinstance(res, SObject):
+                    holder = res.metaclass().holderByName(op)
+                    if holder.notNil():
+                        method = holder.__get__(res)
+                if method == nil: return nil
+                res = method()
+            unarytail = unarytail.getStep('unarytail')
         return res
 
     def run(self, scope):
         operand = self.getStep('operand')
         obj = operand.runtimeRes()
         unarytail = self.getStep('unarytail')
-        unaryopList = List()
-        self._unaryops(unarytail, unaryopList)
-        res = self.invoke(scope, obj, unaryopList)
+        res = self.invoke(scope, obj, unarytail)
         self.runtimeRes(res)
         return res
 
@@ -284,23 +275,29 @@ class BinHeadStep(RuntimeStep):
             interpreter.instructions().append(self)
         return self
 
-    def _binaryops(self, tail, binopList):
-        if tail.ruleName() == 'binmsg':
-            binmsg = tail
-        else:
-            binmsg = tail.getStep('binmsg')
+    def invoke1(self, scope, obj, binmsg):   # obj can be Python obj
+        operators = self.operators()
         binop = binmsg.getStep('binop').compileRes()
         unaryhead = binmsg.getStep('unaryhead').runtimeRes()
-        binopList.append((binop, unaryhead))
-        bintail = tail.getStep('bintail')
-        if bintail.notNil():
-            self._binaryops(bintail, binopList)
-        return self
+        method = getattr(obj, binop, nil)
+        if method == nil:
+            if binop in operators:
+                binop = operators[binop]
+            method = getattr(obj, binop, nil)
+            if method == nil: return nil
+        res = method(unaryhead)
+        return res
 
-    def invoke(self, scope, obj, binopList):   # obj can be Python obj
+    def invoke(self, scope, obj, bintail):   # obj can be Python obj
         operators = self.operators()
         res = obj
-        for binop, unaryhead in binopList:
+        while bintail.notNil():
+            if bintail.ruleName() == 'bintail':
+                binmsg = bintail.getStep('binmsg')
+            else:
+                binmsg = bintail
+            binop = binmsg.getStep('binop').compileRes()
+            unaryhead = binmsg.getStep('unaryhead').runtimeRes()
             method = getattr(res, binop, nil)
             if method == nil:
                 if binop in operators:
@@ -308,15 +305,14 @@ class BinHeadStep(RuntimeStep):
                 method = getattr(res, binop, nil)
                 if method == nil: return nil
             res = method(unaryhead)
+            bintail = bintail.getStep('bintail')
         return res
 
     def run(self, scope):
         unaryhead = self.getStep('unaryhead')
         obj = unaryhead.runtimeRes()
         bintail = self.getStep('bintail')
-        binopList = List()
-        self._binaryops(bintail, binopList)
-        res = self.invoke(scope, obj, binopList)
+        res = self.invoke(scope, obj, bintail)
         self.runtimeRes(res)
         return res
 
@@ -330,10 +326,11 @@ class KwHeadStep(RuntimeStep):
         return self
 
     def _kwmsg(self, kwmsg):
-        if not isinstance(kwmsg, List):
-            kwmsg = List().append(kwmsg)
+        kwpairs = kwmsg.children().head()
+        if not isinstance(kwpairs, List):
+            kwpairs = List().append(kwpairs)
         kwMap = Map()
-        for kwpair in kwmsg:
+        for kwpair in kwpairs:
             ptkey = kwpair.children()['ptkey'].compileRes()[:-1]
             binhead = kwpair.children()['binhead'].runtimeRes()
             kwMap[ptkey] = binhead
@@ -362,7 +359,8 @@ class KwHeadStep(RuntimeStep):
         if prefix in methods: return methods[prefix][2]
         return nil
 
-    def invoke(self, scope, obj, kwMap):   # obj can be Python obj
+    def invoke(self, scope, obj, kwmsg):   # obj can be Python obj
+        kwMap = self._kwmsg(kwmsg)
         prefix = kwMap.keys().head()
         fullname = prefix
         if kwMap.len() > 1:
@@ -382,7 +380,7 @@ class KwHeadStep(RuntimeStep):
                 holder = obj.metaclass().holderByName(prefix)
                 # if holder.notNil() and holder.method().notNil():
                 if holder.notNil():
-                        method = holder.__get__(obj)
+                    method = holder.__get__(obj)
 
         if method != nil:
             res = method(*kwMap.values())
@@ -392,21 +390,37 @@ class KwHeadStep(RuntimeStep):
         unaryhead = self.getStep('unaryhead')
         obj = unaryhead.runtimeRes()
         kwmsg = self.getStep('kwmsg')
-        kwMap = self._kwmsg(kwmsg)
-        res = self.invoke(scope, obj, kwMap)
+        res = self.invoke(scope, obj, kwmsg)
         self.runtimeRes(res)
         return res
 
 class CascadeStep(RuntimeStep):
+    def invoke(self, scope, obj, msg):
+        res = obj
+        tails = msg.children().values()
+        for tail in tails:
+            ruleName = tail.ruleName()
+            if ruleName == 'kwmsg':
+                res = KwHeadStep().invoke(scope, res, tail)
+            elif ruleName == 'bintail':
+                res = BinHeadStep().invoke(scope, res, tail)
+            elif ruleName == 'unarytail':
+                res = UnaryHeadStep().invoke(scope, res, tail)
+        return res
+
     def run(self, scope):
         head = self.getStep('kwhead')
         if head.isNil():
            head = self.getStep('binhead')
         obj = head.runtimeRes()
+        res = obj
         msgs = self.getStep('msg')
         if not isinstance(msgs, List):
             msgs = List().append(msgs)
-        return nil
+        for msg in msgs:
+            res = self.invoke(scope, res, msg)
+        self.runtimeRes(res)
+        return res
 
 class AssignStep(RuntimeStep):
     def run(self, scope):
@@ -480,10 +494,13 @@ class Interpreter(SObject, StepVisitor):
         return exprsStep
 
     def visitUnaryhead(self, cxt): return UnaryHeadStep().retrieve(cxt).interpret(self)
+    def visitUnarytail(self, cxt): return Step().retrieve(cxt).toKeep(true_).interpret(self)
     def visitKwhead(self, cxt): return KwHeadStep().retrieve(cxt).interpret(self)
-    # def visitKwmsg(self, cxt): return Step().retrieve(cxt).toKeep(true_).interpret(self)
+    def visitKwmsg(self, cxt): return Step().retrieve(cxt).toKeep(true_).interpret(self)
     def visitBinhead(self, cxt): return BinHeadStep().retrieve(cxt).interpret(self)
-    def visitCascade(self, cxt): return Step().retrieve(cxt).toKeep(true_).interpret(self)
+    def visitBintail(self, cxt): return Step().retrieve(cxt).toKeep(true_).interpret(self)
+    def visitCascade(self, cxt): return CascadeStep().retrieve(cxt).toKeep(true_).interpret(self)
+    def visitMsg(self, cxt): return Step().retrieve(cxt).toKeep(true_).interpret(self)
 
     def visitAssign(self, cxt): return AssignStep().retrieve(cxt).interpret(self)
     def visitVar(self, cxt): return VarStep().retrieve(cxt).interpret(self)

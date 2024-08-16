@@ -135,14 +135,13 @@ class Test_Interpreter2(SmallScriptTest):
 
     @skipUnless('TESTALL' in env, "disabled")
     def test530_binhead(self):
-        # return
+        # Binary Head Test
         pkg = rootContext.loadPackage('tests')
         tobj = TestSObj14()
         tobj.attr11(100)
         tobj.cattr12('200')
         metaclass = tobj.metaclass()
 
-        # Simple python method invocation setting name
         scope = rootContext.createScope()
         scope['tobj'] = tobj
 
@@ -177,6 +176,61 @@ class Test_Interpreter2(SmallScriptTest):
         self.assertEqual("aaAA, bbBB", res)
 
     @skipUnless('TESTALL' in env, "disabled")
+    def test540_cascade(self):
+        # Cascade test
+        pkg = rootContext.loadPackage('tests')
+        tobj = TestSObj14()
+        tobj.attr11(100)
+        tobj.cattr12('200')
+        metaclass = tobj.metaclass()
+
+        scope = rootContext.createScope()
+        scope['tobj'] = tobj
+
+        ss = "7;"
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual(7, res)
+
+        ss = "7; + 3; + 2"
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual(12, res)
+
+        ss = "2; + 1; + 5"          # Antlr ok, Amber fails
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual(8, res)
+
+        ss = "tobj; attr11: 7; attr11; + 2"
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual(9, res)
+
+        ss = "tobj attr11; + 2"
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual(9, res)
+
+        tobj.sobj11().attr11(13)
+        ss = "tobj; sobj11 attr11"
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual(13, res)
+
+        ss = "tobj; sobj11 attr11 + 2"              # Amber fails as it is mixed unaryMsg and binMsg
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual(15, res)
+
+        ss = "tobj; attr11 + tobj sobj11 attr11"    # Amber fails as it is mixed unaryMsg and binMsg
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual(20, res)
+
+        ss = "tobj attr11: 7; attr11; + 2"          # ok
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual(9, res)
+
+        ss = "tobj; method14: 7 add: 3; + tobj attr11; + tobj sobj11 attr11 + 2 + 4"
+        # ss = "7; + tobj sobj11 attr11"
+        method = Method().interpret(ss);
+        res = method(scope)
+        self.assertEqual(36, res)
+
+    @skipUnless('TESTALL' in env, "disabled")
     def test900_(self):
         return
         pkg = rootContext.loadPackage('tests')
@@ -193,22 +247,6 @@ class Test_Interpreter2(SmallScriptTest):
             # basically SObject mechanics is completed.
 
     def test_hack(self):
-        # return
-        # Simple parsing test
-        scope = rootContext.createScope()
-        ss = "123"
-        # ss = "true"
-        method = Method().interpret(ss)
-        res = method()
-        self.assertEqual(123, res)
-
-        ss = "true"
-        method = Method().interpret(ss)
-        res = method()
-        self.assertEqual(true_, res)
-
-
-    def test_hack1(self):
         return
         pkg = rootContext.loadPackage('tests')
         tobj = TestSObj14()
@@ -219,21 +257,16 @@ class Test_Interpreter2(SmallScriptTest):
         scope = rootContext.createScope()
         scope['tobj'] = tobj
 
-        ss = "tobj method16: 2 arg: 3"
-        method = Method().interpret(ss)
-        res = method(scope)
-        self.assertEqual(251, res)
-
-        # ss = "7; + 3; + 2"
-        ss = "tobj; attr11: 7; attr11; + 2"
-        ss = "tobj; method16: 2 arg: 3; name: 'aa'; + 2"
-
+        ss = "7; + 3; + 2"
+        # ss = "tobj; attr11: 7; attr11; + 2"
+        # ss = "tobj; method16: 2 arg: 3; name: 'aa'; + 2"
 
         method = Method().interpret(ss)
         res = method(scope)
-        self.assertEqual(8, res)
+        self.assertEqual(9, res)
 
         # Cascade
+        # ss "7;"
         # ss = "7; + 3"
         # self.assertTrue(script.parse(ss).noError())
         # ss = "2; + 1; + 5" # Antlr ok, Amber fail
