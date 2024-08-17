@@ -15,6 +15,7 @@
 
 import unittest
 from smallscript.SObject import *
+from smallscript.Closure import Method
 
 # WARNING: these test classes shouldn't be defined and loaded from the same test case Python file as the class definition would be load twice, causing inconsistency between the holder in the class definition and metaclass.
 class TestSObj1(SObject):
@@ -36,6 +37,36 @@ class TestSObj12(TestSObj11):
 class TestSObj13(SObject):
     ss_metas = "TestSObj13, TestSObj11, Metaclass"
     attr31 = Holder().name('attr31').type('List')
+
+loglevel = 4
+class DebugMethod(Method):
+    def __init__(self): self.loglevel(loglevel)
+
+    def _getInterpreter(self):
+        interpreter = self.interpreter()
+        if self.toDebug():
+            interpreter.toDebug(true_)
+        return interpreter
+
+    def _runSteps(self, scope, *params):
+        instructions = self.interpreter().instructions()
+        res = nil
+        for instruction in instructions:
+            if self.toDebug():
+                stepName = instruction.toString()
+                print(stepName)
+                msgheads = {'unaryhead', 'binhead', 'kwhead', 'cascadehead'}
+                if instruction.ruleName() in msgheads:
+                    dummy = 1                           # specific steps bpt
+                res = instruction.run(scope)            # all steps bpt
+                print(f"res = [{res}]")
+                dummy = 1                               # all steps bpt
+            else:
+                res = instruction.run(scope)
+        if self.toDebug():
+            dummy = 1                                   # stepping ended
+        return res
+
 
 
 class TestSObj14(SObject):

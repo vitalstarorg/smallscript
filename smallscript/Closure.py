@@ -166,6 +166,20 @@ class Method(SObject):
     pyfunc = Holder().name('pyfunc')
     pysource = Holder().name('pysource')
 
+    def value(self, *args, **kwargs):
+        arglst = List(args)
+        if arglst.isEmpty() or not isinstance(arglst.head(), Scope):
+            local = self.getContext().createScope()
+        else:
+            # Not yet tested
+            scope = arglst.head()
+            local = scope.createScope()
+            this = scope.objs().head()
+            local['self'] = this
+            local.objs().append(this)
+            arglst.pop(0)
+        return self.__call__(local, *arglst, **kwargs)
+
     def __call__(self, *args, **kwargs):
         arglst = List(args)
         if arglst.isEmpty() or not isinstance(arglst.head(), Scope):
@@ -177,6 +191,10 @@ class Method(SObject):
         return self.run(scope, *arglst)
 
     def run(self, scope, *params):
+        for param, arg in zip(self.params(), params):
+            scope[param] = arg
+        for tmp in self.tempvars():
+            scope[tmp] = nil
         if self.pyfunc() == nil:
             return self._runSteps(scope, *params)
         return self._runPy(scope, *params)
@@ -192,18 +210,14 @@ class Method(SObject):
         return res
 
     def _runSteps(self, scope, *params):
-        "Using a precompiler instructions to run this method."
-        for param, arg in zip(self.params(), params):
-            scope[param] = arg
-        for tmp in self.tempvars():
-            scope[tmp] = nil
+        "Use a precompiler instructions to run this method."
         instructions = self.interpreter().instructions()
         res = nil
         for instruction in instructions:
-            # print(instruction)
             res = instruction.run(scope)
         return res
 
+    def _getInterpreter(self): return self.interpreter()    # to be overridden
     def visit(self, visitor): return visitor.visitMethod(self)
 
     def interpret(self, smallscript=""):
@@ -211,12 +225,13 @@ class Method(SObject):
         if smallscript.isEmpty():
             smallscript = self.smallscript()
         script = self.script().parse(smallscript)
-        # if script.hasError():
-        #     return nil
+        if script.hasError():
+            self.log(script.prettyErrorMsg(), 3)
+            return nil
         smallscriptStep = script.smallscriptStep()
-        interpreter = self.interpreter()
+        interpreter = self._getInterpreter()
+        interpreter.method(self)        # interpreter reference this method e.g. toDebug
         closure = smallscriptStep.getClosure(interpreter)
-        # closure = smallscriptStep.getStep('closure')
         if closure.notNil():
             method = closure.method()
             self.copyFrom(method)

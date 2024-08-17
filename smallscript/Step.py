@@ -90,7 +90,6 @@ class Step(SObject):
     parent = Holder().name('parent')
     toKeep = Holder().name('toKeep').type('False_') # Interpreter hint to keep in instructions explicitly.
     isElement = Holder().name('isElement').type('False_') # Is an element of a list
-    # isList = Holder().name('isList').type('False_')       # Is a list
     children = Holder().name('children').type('Map')
     compileRes = Holder().name('compileRes')
     runtimeRes = Holder().name('runtimeRes')
@@ -101,6 +100,7 @@ class Step(SObject):
     def getStep(self, name, default=nil): return self.children().getValue(name, default)
     def isFinal(self): return self.runtimeRes().notNil()
     def isEmpty(self): return true_ if self.children().isNil() else self.children().isEmpty()
+    def isRuntime(self): return false_
 
     def addStep(self, name, step):
         children = self.children()
@@ -122,6 +122,7 @@ class Step(SObject):
     def retrieve(self, cxt):
         name = self._ruleName(cxt)
         self.ruleName(name).ruleCxt(cxt)
+        # if not hasattr(cxt, "children"): return self
         if cxt.children is None: return self
         if not isinstance(cxt.children[0], RuleContext):
             terminal = cxt.children[0]
@@ -132,25 +133,28 @@ class Step(SObject):
     def _addToParent(self, interpreter, parentStep, toKeep):
         if toKeep:
             parentStep.addStep(self.ruleName(), self)
-            interpreter.instructions().append(self)
         else:
             if self.children().len() == 1:
                 parentStep.addStep(self.ruleName(), self.children().head())
             else:
                 parentStep.addStep(self.ruleName(), self)
+        if self.isRuntime():
+            if interpreter.toDebug(): print(f"  {self.ruleName()} add to instructions")
+            interpreter.instructions().append(self)
         return self
 
     def interpret(self, interpreter):
-        rulename = self.ruleName()      # debugging purpose
-        if rulename == 'unarytail':
-            x = 1
+        if interpreter.toDebug():
+            rulename = self.ruleName(); print(f"parent: {rulename}")
         currentStep = interpreter.currentStep()
         interpreter.currentStep(self)
         cxt = self.ruleCxt()
         for childcxt in cxt.getChildren():
-            chdRulename = self._ruleName(childcxt)  # debugging purpose
+            if interpreter.toDebug():
+                chdRulename = self._ruleName(childcxt); print(f"  children: {chdRulename}")
             childStep = childcxt.accept(interpreter)
             if childStep.isNil() or childStep.isElement(): continue  # e.g. blkparam, tempvar
+            if interpreter.toDebug(): print(f"    {chdRulename}._addToParent({rulename})")
             childStep._addToParent(interpreter, self, childStep.toKeep())
         interpreter.currentStep(currentStep)
         return self
@@ -165,16 +169,7 @@ class Step(SObject):
         if self.compileRes().notNil(): return f"{self.compileRes()}:{self.ruleName()}"
         return self.keyname()
 
-class RuntimeStep(Step):
-    "Helper class for all steps that have runtime implications."
-    def __init__(self): self.toKeep(true_)
-
-    def interpret(self, interpreter):
-        super().interpret(interpreter)
-        # interpreter.instructions().append(self)
-        return self
-
-class SmallScriptStep(RuntimeStep):
+class SmallScriptStep(Step):
     def getClosure(self, interpreter):
         interpreter.currentStep(self)
         ssCxt = self.ruleCxt()
@@ -182,14 +177,20 @@ class SmallScriptStep(RuntimeStep):
         closureStep = closureCxt.accept(interpreter)
         return closureStep
 
-class ClosureStep(RuntimeStep):
-    method = Holder().name('method').type('Method')
+class ClosureStep(Step):
+    method = Holder().name('method')
 
     def interpret(self, interpreter):
-        closureInterpreter = Interpreter().currentStep(self)
+        # Interpret the rest with a new interpreter.
+        closureInterpreter = Interpreter().currentStep(self).method(interpreter.method())
+        if interpreter.toDebug(): closureInterpreter.toDebug(true_)
         super().interpret(closureInterpreter)
-        closureInterpreter.instructions().append(self)
-        method = self.method()
+
+        # Create method object for this closure.
+        method = interpreter.method().createEmpty()
+            # new method obj from initiating method e.g. DebugMethod.
+        method.toDebug(interpreter.method().toDebug())
+        self.method(method)
         method.interpreter(closureInterpreter)
         bplStep = self.getStep('blkparamlst')
         if bplStep.notNil() and bplStep.notEmpty():
@@ -198,33 +199,19 @@ class ClosureStep(RuntimeStep):
         if tsStep.notNil() and tsStep.notEmpty():
             method.tempvars(tsStep.children().keys())
         self.runtimeRes(method)
-        interpreter.instructions().append(self)
+
+        if interpreter.toDebug():
+            print("Instruction List:")
+            for instruction in method.interpreter().instructions():
+                print(f"  {instruction}")
         return self
 
-    def run(self, scope):
-        exprs = self.getStep('exprs')
-        if exprs.isNil(): return nil
-        if exprs.ruleName() == 'exprs':
-            if exprs.isNil(): return nil
-            exprlst = exprs.getStep('exprlst')
-            if exprlst.notNil():
-                res = exprlst.runtimeRes()
-            else:
-                expr = self.getStep('expr')
-                res = expr.runtimeRes()
-        else:
-            res = exprs.runtimeRes()
-        return res
+class RuntimeStep(Step):
+    "Helper class for all steps that have runtime implications."
+    def __init__(self): self.toKeep(true_)
+    def isRuntime(self): return true_
 
 class UnaryHeadStep(RuntimeStep):
-    def _addToParent(self, interpreter, parentStep, toKeep):
-        if self.children().len() == 1:
-            parentStep.addStep(self.ruleName(), self.children().head())
-        else:
-            parentStep.addStep(self.ruleName(), self)
-            interpreter.instructions().append(self)
-        return self
-
     def invoke(self, scope, obj, unarytail):   # obj can be Python obj
         res = obj
         while unarytail.notNil():
@@ -248,7 +235,9 @@ class UnaryHeadStep(RuntimeStep):
         operand = self.getStep('operand')
         obj = operand.runtimeRes()
         unarytail = self.getStep('unarytail')
-        res = self.invoke(scope, obj, unarytail)
+        res = obj
+        if unarytail.notNil():
+            res = self.invoke(scope, obj, unarytail)
         self.runtimeRes(res)
         return res
 
@@ -266,27 +255,6 @@ class BinHeadStep(RuntimeStep):
             setValue('%', '__mod__').setValue('~', '__invert__').setValue('|', '__or__'). \
             setValue('&', '__and__').setValue('-', '__sub__').setValue('?', '__question__'). \
             setValue('>=', '__ge__').setValue('<=', '__le__').setValue('^', '__xor__')
-
-    def _addToParent(self, interpreter, parentStep, toKeep):
-        if self.children().len() == 1:
-            parentStep.addStep(self.ruleName(), self.children().head())
-        else:
-            parentStep.addStep(self.ruleName(), self)
-            interpreter.instructions().append(self)
-        return self
-
-    def invoke1(self, scope, obj, binmsg):   # obj can be Python obj
-        operators = self.operators()
-        binop = binmsg.getStep('binop').compileRes()
-        unaryhead = binmsg.getStep('unaryhead').runtimeRes()
-        method = getattr(obj, binop, nil)
-        if method == nil:
-            if binop in operators:
-                binop = operators[binop]
-            method = getattr(obj, binop, nil)
-            if method == nil: return nil
-        res = method(unaryhead)
-        return res
 
     def invoke(self, scope, obj, bintail):   # obj can be Python obj
         operators = self.operators()
@@ -312,19 +280,13 @@ class BinHeadStep(RuntimeStep):
         unaryhead = self.getStep('unaryhead')
         obj = unaryhead.runtimeRes()
         bintail = self.getStep('bintail')
-        res = self.invoke(scope, obj, bintail)
+        res = obj
+        if bintail.notNil():
+            res = self.invoke(scope, obj, bintail)
         self.runtimeRes(res)
         return res
 
 class KwHeadStep(RuntimeStep):
-    def _addToParent(self, interpreter, parentStep, toKeep):
-        if self.children().len() == 1:
-            parentStep.addStep(self.ruleName(), self.children().head())
-        else:
-            parentStep.addStep(self.ruleName(), self)
-            interpreter.instructions().append(self)
-        return self
-
     def _kwmsg(self, kwmsg):
         kwpairs = kwmsg.children().head()
         if not isinstance(kwpairs, List):
@@ -350,7 +312,9 @@ class KwHeadStep(RuntimeStep):
                 nParam = nDefault = 0
                 for argname, param in signature.parameters.items():
                     nParam += 1
-                    if param.default is not inspect.Parameter.empty:
+                    if param.kind == inspect.Parameter.VAR_POSITIONAL or \
+                       param.kind == inspect.Parameter.VAR_KEYWORD or \
+                       param.default is not inspect.Parameter.empty :
                         nDefault += 1
                 if nArgs > nParam or nArgs < nParam - nDefault: continue
                 params = List(signature.parameters.values())
@@ -390,7 +354,9 @@ class KwHeadStep(RuntimeStep):
         unaryhead = self.getStep('unaryhead')
         obj = unaryhead.runtimeRes()
         kwmsg = self.getStep('kwmsg')
-        res = self.invoke(scope, obj, kwmsg)
+        res = obj
+        if kwmsg.notNil():
+            res = self.invoke(scope, obj, kwmsg)
         self.runtimeRes(res)
         return res
 
@@ -444,19 +410,20 @@ class RefStep(RuntimeStep):
         varname = self.compileRes()
         self.name(varname)
         obj = scope.lookup(varname)
-        if obj.isNil(): obj = scope
+        if obj.isNil(): obj = scope     # if @varname was not defined, consider it in local scope.
         self.runtimeRes(obj)
         return obj
 
 class Interpreter(SObject, StepVisitor):
     currentStep = Holder().name('currentStep')
     instructions = Holder().name('instructions').type('List')
+    method = Holder().name('method')
 
     def visitWs(self, cxt): return nil
     def visitTerminal(self, tnode): return nil
     def visitPtfin(self, cxt): return nil
     def visitCommon(self, cxt): return Step().retrieve(cxt).interpret(self)
-    def visitClosure(self, cxt): return ClosureStep().retrieve(cxt).interpret(self)
+    def visitClosure(self, cxt): return ClosureStep().toKeep(true_).retrieve(cxt).interpret(self)
 
     def visitTemps(self, cxt): return Step().retrieve(cxt).toKeep(true_).interpret(self)
     def visitTempvar(self, cxt):
@@ -499,7 +466,7 @@ class Interpreter(SObject, StepVisitor):
     def visitKwmsg(self, cxt): return Step().retrieve(cxt).toKeep(true_).interpret(self)
     def visitBinhead(self, cxt): return BinHeadStep().retrieve(cxt).interpret(self)
     def visitBintail(self, cxt): return Step().retrieve(cxt).toKeep(true_).interpret(self)
-    def visitCascade(self, cxt): return CascadeStep().retrieve(cxt).toKeep(true_).interpret(self)
+    def visitCascade(self, cxt): return CascadeStep().retrieve(cxt).interpret(self)
     def visitMsg(self, cxt): return Step().retrieve(cxt).toKeep(true_).interpret(self)
 
     def visitAssign(self, cxt): return AssignStep().retrieve(cxt).interpret(self)

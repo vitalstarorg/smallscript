@@ -144,7 +144,19 @@ class SObject:
 
     def masquerade(self, sobj=''): return self._getOrSet('masquerade', sobj, nil) # used for @super
     def mutable(self, mutable=''): return self._getOrSet('mutable', mutable, true_) # set mutuable or immatable
-    def undefined(self, undefined=''): return self._getOrSet('undefined', undefined, nil) #
+    def undefined(self, undefined=''): return self._getOrSet('undefined', undefined, nil)
+    def toDebug(self, toDebug=''): return self._getOrSet('toDebug', toDebug, false_)
+    def loglevel(self, loglevel=''): return self._getOrSet('loglevel', loglevel, 0)
+        # DEBUG: 0, INFO: 1, WARNING: 2, ERROR: 3, CRITICAL: 4
+
+    def log(self, msg, level=0):
+        if level >= self.loglevel():
+            if level == 0: logging.debug(msg); return self
+            if level == 1: logging.info(msg); return self
+            if level == 2: logging.warning(msg); return self
+            if level == 3: logging.error(msg); return self
+            if level == 4: logging.critical(msg); return self
+        return self
 
     #### Attributes accesses: these are Scope key-value access behavior.
     def __getitem__(self, attname): return self.getValue(attname, nil)
@@ -310,8 +322,8 @@ class Holder(SObject):
                     return sobj.getValue(attname)
                 else:   # find default value
                     metaclass = sobj.metaclass()
+                    type = self.type()
                     if metaclass.notNil():
-                        type = self.type()
                         res = metaclass.context().metaclassByName(type).createEmpty()
                         if res == nil or type == 'True_' or type == 'False_':  # don't need to save these default values.
                             return res
@@ -588,6 +600,28 @@ class Package(SObject):
     path = Holder().name('path').type('Nil')
 
     #### Metaclass definition import: limited SObject features before initialization.
+    def importSingleSObject(self, sClass):
+        # from importSObjects()
+        metaname = self._metaname(sClass)
+        metaclass = self.createMetaclass(metaname)
+        metaclass.importFrom(sClass)
+
+        # from importMethods()
+        for holder in metaclass.holders().values():
+            if holder.type() == 'Method' and holder.pyfunc() != nil:
+                method = self.context().newInstance('Method')
+                holder.method(method)
+                pyfunc = holder.pyfunc()
+                method.takePyFunc(pyfunc)
+
+        # from initClasses()
+        holder = metaclass.holderByName('metaInit')
+        if holder.isNil(): return self
+        method = holder.method()
+        exeContext = metaclass.attrs().runThis(method)
+        res = exeContext()
+        return self
+
     def listSObjects(self):
         "List SObjects from named Python package."
         package_name = self.name()
@@ -791,7 +825,11 @@ class Scope(SObject):
             ref.setValue(attname, self.asSObj(value))
         return self
 
-    #### Variable lookup chains
+    #### Scope behavior
+    def createScope(self):
+        scope = Scope().parent(self)
+        return scope
+
     def lookup(self, key, default=nil):
         "Return a sobject contains the @key from self, scopes and parent scope."
         # if self.hasKey(key): return self

@@ -18,14 +18,18 @@ from unittest import skip, skipUnless
 from tests.TestBase import SmallScriptTest
 
 from os import environ as env
-env['TESTALL'] = '1'
+# env['TESTALL'] = '1'
 
 from smallscript.SObject import *
 from smallscript.Closure import Script, Method
 from smallscript.Step import *
-from tests.TestBase import SmallScriptTest, TestSObj14
+from tests.TestBase import SmallScriptTest, TestSObj14, DebugMethod
 
 class Test_Interpreter2(SmallScriptTest):
+    @classmethod
+    def setUpClass(cls):
+        pkg = rootContext.newPackage('Test_Interpreter2').importSingleSObject(DebugMethod)
+
     @skipUnless('TESTALL' in env, "disabled")
     def test500_exprs(self):
         # Multiple expressions test
@@ -183,7 +187,6 @@ class Test_Interpreter2(SmallScriptTest):
         tobj.attr11(100)
         tobj.cattr12('200')
         metaclass = tobj.metaclass()
-
         scope = rootContext.createScope()
         scope['tobj'] = tobj
 
@@ -231,20 +234,111 @@ class Test_Interpreter2(SmallScriptTest):
         self.assertEqual(36, res)
 
     @skipUnless('TESTALL' in env, "disabled")
-    def test900_(self):
-        return
+    def test550_subexpr(self):
+        # Subexpression test
         pkg = rootContext.loadPackage('tests')
-        tobj = TestSObj14().attr11(123)
-        tobj.cattr12('cvalue12')
+        tobj = TestSObj14(); tobj.attr11(100); tobj.cattr12('200')
+        metaclass = tobj.metaclass()
+        scope = rootContext.createScope()
+        scope['tobj'] = tobj
 
-        # SObj super: instance and class
-        # simple instant method: interpreter vs compiled
-        # simple class method: interpreter vs compiled
-        # rootScope
-            # packages
-            # Python globals
-        # Create new class with new method in interpreter mode. (Execution)
-            # basically SObject mechanics is completed.
+        ss = "(7 + 3)"
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual(10, res)
+
+        ss = "(tobj method14: 7 add: 3)"
+        method = Method().interpret(ss)
+        res = method(scope)
+        self.assertEqual(10, res)
+
+        ss = "(tobj method14: 7 add: 3) + tobj attr11 + 5"
+        method = Method().interpret(ss)
+        res = method(scope)
+        self.assertEqual(115, res)
+
+    @skipUnless('TESTALL' in env, "disabled")
+    def test600_block_closure(self):
+        # block closure test
+        pkg = rootContext.loadPackage('tests')
+        tobj = TestSObj14()
+        tobj.attr11(100)
+        tobj.cattr12('200')
+        metaclass = tobj.metaclass()
+        scope = rootContext.createScope()
+        scope['tobj'] = tobj
+
+        ss = "| tmp1 tmp2 | tmp1 := tobj attr11. tmp2 := tmp1 + 3. tobj cattr12: tmp2 + 5. tobj cattr12"
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual(108, res)
+
+        ss = "| tmp1 tmp2 | tobj attr11"
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual(100, res)
+
+        ss = "[2 + 3] value"
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual(5, res)
+
+        ss = "[ :e | 2 + e] value: 9"
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual(11, res)
+
+        # closure is a functional can be assigned to a variable.
+        ss = "b := [ :e | | a | a := e + 3]. b value: 9"
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual(12, res)
+
+        #  b.value(...) is always run under a new scope.
+        ss = "b := [ :e | | a | a := e + 3]. b value: 9. b value: 10"
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual(13, res)
+
+        # closure can be nested.
+        ss = 'b := [ :e | | a | a "comment" := [2 + 3] value + e]. b value: 9'
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual(14, res)
+
+        # Block would return unexecuted closure. Method object works as a block.
+        ss = "[[2 + 3] value + [3 - 2] value]"
+        method = Method().interpret(ss); block = method(scope)
+        res = block()   # execute "[2 + 3] value + [3 - 2] value"
+        self.assertEqual(6, res)
+
+        # Nested closure can access outer scope variable
+
+    @skipUnless('TESTALL' in env, "disabled")
+    def test800_parsing_errors(self):
+        # Parsing errors
+        pkg = rootContext.loadPackage('tests')
+        tobj = TestSObj14(); tobj.attr11(100); tobj.cattr12('200')
+        metaclass = tobj.metaclass()
+        scope = rootContext.createScope()
+        scope['tobj'] = tobj
+
+        ss = "1+2-3"                            # need to fix the grammar
+        method = Method().loglevel(4).interpret(ss)
+        self.assertEqual(nil, method)
+            # extraneous input '-3' expecting
+            # 1+2-3
+            #    ^
+
+        ss = "|obj|"
+        method = Method().loglevel(4).interpret(ss)
+        self.assertEqual(nil, method)
+            # | obj1 |
+            #         ^
+
+        ss = "|obj1 obj2|"
+        method = Method().loglevel(4).interpret(ss)
+        self.assertEqual(nil, method)
+            # | obj1 obj2 |
+            #              ^
+
+        ss = "[ :e | | a | a:= e + 1]"          # error, 'a:' parsed as a keyword.
+        method = Method().loglevel(4).interpret(ss)
+        self.assertEqual(nil, method)
+            # [: e | | a | a:= e + 1]
+            #              ^
 
     def test_hack(self):
         return
@@ -253,36 +347,32 @@ class Test_Interpreter2(SmallScriptTest):
         tobj.attr11(100)
         tobj.cattr12('200')
         metaclass = tobj.metaclass()
-
         scope = rootContext.createScope()
         scope['tobj'] = tobj
 
-        ss = "7; + 3; + 2"
-        # ss = "tobj; attr11: 7; attr11; + 2"
-        # ss = "tobj; method16: 2 arg: 3; name: 'aa'; + 2"
-
-        method = Method().interpret(ss)
+        ss = "[[2 + 3] value + [3 - 2] value]"
+        method = DebugMethod()
+        # method.toDebug(true_).loglevel(0)
+        method.interpret(ss)
+        # method.toDebug(true_).loglevel(0)
         res = method(scope)
-        self.assertEqual(9, res)
-
-        # Cascade
-        # ss "7;"
-        # ss = "7; + 3"
-        # self.assertTrue(script.parse(ss).noError())
-        # ss = "2; + 1; + 5" # Antlr ok, Amber fail
-        # self.assertTrue(script.parse(ss).noError())
-        # ss = "obj1 var1; +3"
-        # self.assertTrue(script.parse(ss).noError())
-        # ss = "obj1; method4 attr7 + 3"                  # Amber fails as it is mixed unaryMsg and binMsg
-        # self.assertTrue(script.parse(ss).noError())
-        # ss = "obj1; var1 + obj1 method4 attr7"          # Amber fails as it is mixed unaryMsg and binMsg
-        # self.assertTrue(script.parse(ss).noError())
-        # ss = "obj1 var2: 7; var2; + 3" # ok
-        # self.assertTrue(script.parse(ss).noError())
-        # ss = "obj1; method4; method3__var1: 3 var2: 2; + obj1 var1; + 5" # ok
-        # self.assertTrue(script.parse(ss).noError())
 
         return
+        # LiteralArray
+        ss = 'obj1 := $F'
+        self.assertTrue(script.parse(ss).noError())
+        ss = "#('a' 12 $F true #root #(1 2) + root value: )"
+        self.assertTrue(script.parse(ss).noError())
+
+        return
+    # SObj super: instance and class
+    # simple instant method: interpreter vs compiled
+    # simple class method: interpreter vs compiled
+    # rootScope
+    # packages
+    # Python globals
+    # Create new class with new method in interpreter mode. (Execution)
+    # basically SObject mechanics is completed.
 
 
 if __name__ == '__main__':

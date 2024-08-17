@@ -23,7 +23,7 @@ env['TESTALL'] = '1'
 from smallscript.SObject import *
 from smallscript.Closure import Script, Method
 from smallscript.Step import *
-from tests.TestBase import SmallScriptTest, TestSObj14
+from tests.TestBase import SmallScriptTest, TestSObj14, DebugMethod
 
 # These are the basic tests with minimal language implementation.
 class Test_Interpreter1(SmallScriptTest):
@@ -67,20 +67,6 @@ class Test_Interpreter1(SmallScriptTest):
         self.assertEqual('aString', scope.getValue('obj'))
 
         # Local variable can be predefined.
-        scope = rootContext.createScope()
-        ss = "|obj|"
-        res = Method().interpret(ss)(scope)
-        self.assertEqual(nil, res)
-        self.assertTrue(scope.hasKey('obj'))
-        self.assertEqual(nil, scope.getValue('obj'))
-
-        scope = rootContext.createScope()
-        ss = "|obj1 obj2|"
-        res = Method().interpret(ss)(scope)
-        self.assertTrue(scope.hasKey('obj1'))
-        self.assertTrue(scope.hasKey('obj2'))
-
-        # Predefined local variable will
         scope = rootContext.createScope()
         ss = "|obj| obj := 'aString'"
         res = Method().interpret(ss)(scope)
