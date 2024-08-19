@@ -164,6 +164,7 @@ holders['method16'] = Holder().name('method16').type('Method').method(method16)
 cmethod17 = Method().interpret(":arg1 :arg2 | arg1 * arg2 + self cattr12 asNumber")
 holders['cmethod17'] = Holder().name('cmethod17').type('Method').method(cmethod17)
 
+tobj = rootContext.newInstance('NewMeta').name('tobj')
 tobj.metaclass().name()         # 'NewMeta'
 tobj.cattr12('200')             # assign cattr12 class attribute
 tobj.cmethod17(2,3)             # 206
