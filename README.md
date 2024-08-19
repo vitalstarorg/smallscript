@@ -159,6 +159,7 @@ holders['attr11'] = Holder().name('attr11').type('String')
 holders['cattr12'] = Holder().name('cattr12').type('String').asClassType()
 
 # Define instance and class method using SmallScript
+method16 = Method().interpret(":arg1 :arg2 | self cattr12 asNumber + self attr11 asNumber + arg1 + arg2")
 holders['method16'] = Holder().name('method16').type('Method').method(method16)
 cmethod17 = Method().interpret(":arg1 :arg2 | arg1 * arg2 + self cattr12 asNumber")
 holders['cmethod17'] = Holder().name('cmethod17').type('Method').method(cmethod17)
