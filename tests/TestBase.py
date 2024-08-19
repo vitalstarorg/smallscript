@@ -32,42 +32,11 @@ class TestSObj11(SObject):
     attr14 = Holder().name('attr14').type('False_')
 
 class TestSObj12(TestSObj11):
-    attr21 = Holder().name('attr21').type('Number')
+    attr21 = Holder().name('attr21').type('Integer')
 
 class TestSObj13(SObject):
     ss_metas = "TestSObj13, TestSObj11, Metaclass"
     attr31 = Holder().name('attr31').type('List')
-
-loglevel = 4
-class DebugMethod(Method):
-    def __init__(self): self.loglevel(loglevel)
-
-    def _getInterpreter(self):
-        interpreter = self.interpreter()
-        if self.toDebug():
-            interpreter.toDebug(true_)
-        return interpreter
-
-    def _runSteps(self, scope, *params):
-        instructions = self.interpreter().instructions()
-        res = nil
-        for instruction in instructions:
-            if self.toDebug():
-                stepName = instruction.toString()
-                print(stepName)
-                msgheads = {'unaryhead', 'binhead', 'kwhead', 'cascadehead'}
-                if instruction.ruleName() in msgheads:
-                    dummy = 1                           # specific steps bpt
-                res = instruction.run(scope)            # all steps bpt
-                print(f"res = [{res}]")
-                dummy = 1                               # all steps bpt
-            else:
-                res = instruction.run(scope)
-        if self.toDebug():
-            dummy = 1                                   # stepping ended
-        return res
-
-
 
 class TestSObj14(SObject):
     ss_metas = "TestSObj15"
@@ -121,6 +90,35 @@ class TestSObj14(SObject):
 
     def firstname(self, first, last):
         return f"{first}, {last} ({self.attr11()})"
+
+loglevel = 4
+class DebugMethod(Method):
+    def __init__(self): self.loglevel(loglevel)
+
+    def _getInterpreter(self):
+        interpreter = self.interpreter()
+        if self.toDebug():
+            interpreter.toDebug(true_)
+        return interpreter
+
+    def _runSteps(self, scope, *params):
+        instructions = self.interpreter().instructions()
+        res = nil
+        for instruction in instructions:
+            if self.toDebug():
+                stepName = instruction.toString()
+                print(stepName)
+                msgheads = {'unaryhead', 'binhead', 'kwhead', 'cascadehead'}
+                if instruction.ruleName() in msgheads:
+                    dummy = 1                           # specific steps bpt
+                res = instruction.run(scope)            # all steps bpt
+                print(f"res = [{res}]")
+                dummy = 1
+            else:
+                res = instruction.run(scope)
+        if self.toDebug():
+            dummy = 1                                   # stepping ended
+        return res
 
 setUpClassDone = false_
 class SmallScriptTest(unittest.TestCase):

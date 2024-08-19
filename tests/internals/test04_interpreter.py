@@ -37,8 +37,8 @@ class Test_Interpreter1(SmallScriptTest):
     def test500_primitives(self):
         #### Primitive: parser and run in interpreter.
         ss = "123"
-        m = Method().interpret(ss)
-        res = m()
+        method = Method().interpret(ss)
+        res = method()
         self.assertEqual(123, res)
         ss = "'123'"
         self.assertEqual('123', Method().interpret(ss)())

@@ -224,7 +224,8 @@ class Test_Interpreter2(SmallScriptTest):
         self.assertEqual(20, res)
 
         ss = "tobj attr11: 7; attr11; + 2"          # ok
-        method = Method().interpret(ss); res = method(scope)
+        method = Method().interpret(ss);
+        res = method(scope)
         self.assertEqual(9, res)
 
         ss = "tobj; method14: 7 add: 3; + tobj attr11; + tobj sobj11 attr11 + 2 + 4"
@@ -305,6 +306,66 @@ class Test_Interpreter2(SmallScriptTest):
         self.assertEqual(6, res)
 
         # Nested closure can access outer scope variable
+        ss = "| outer| outer := 13. [7 + outer] value"
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual(20, res)
+
+    @skipUnless('TESTALL' in env, "disabled")
+    def test700_literal_array(self):
+        pkg = rootContext.loadPackage('tests')
+        tobj = TestSObj14()
+        tobj.attr11(100)
+        tobj.cattr12('200')
+        metaclass = tobj.metaclass()
+        scope = rootContext.createScope()
+        scope['tobj'] = tobj
+
+        ss = 'obj1 := $F'
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual('$F', scope['obj1'])
+
+        ss = 'obj1 := #F'
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual('#F', scope['obj1'])
+
+        ss = "#( #root #(1 2))"
+        method = Method().interpret(ss); res = method(scope)
+        self.assertListEqual(['#root', [1,2]], res)
+
+        ss = "#( 'a' 12 $F #root #(1 2) #(1 #root) )"
+        method = Method().interpret(ss); res = method(scope)
+        expect = List().append('a').append(12).append('$F').append('#root')\
+                .append([1,2]).append([1, '#root'])
+        self.assertListEqual(expect, res)
+
+        ss = "#{ 'a' 12 $F true #root #(1 2) #{1 root} root }"
+        method = Method().interpret(ss); res = method(scope)
+        expect = List().append('a').append(12).append('$F').append(true_).append('#root')\
+                .append([1,2]).append([1,rootContext.rootScope()]).append(rootContext.rootScope())
+        self.assertEqual(expect, res)
+
+        ss = "#(-123 1.2 1.0e-1 0x123)"
+        expect = [-123, 1.2, 0.1, 291]
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual(expect, res)
+
+        ss = "#(-123 1.2 1.0e-1 0x123)"
+        expect = [-123, 1.23, 0.1, 291]
+        method = Method().interpret(ss); res = method(scope)
+        self.assertNotEqual(expect, res)
+
+        ss = "123 + 1.2"; expect = 124.2
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual(expect, res)
+
+        ss = "-123 + 1.2 + 1.0e-1 + 0x123"
+        expect = 169.3
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual(expect, res)
+
+        ss = f"<python: 'def hello:'>"
+        method = Method().interpret(ss); res = method(scope)
+        self.assertEqual({'python:': "'def hello:'"}, res)
 
     @skipUnless('TESTALL' in env, "disabled")
     def test800_parsing_errors(self):
@@ -339,41 +400,6 @@ class Test_Interpreter2(SmallScriptTest):
         self.assertEqual(nil, method)
             # [: e | | a | a:= e + 1]
             #              ^
-
-    def test_hack(self):
-        return
-        pkg = rootContext.loadPackage('tests')
-        tobj = TestSObj14()
-        tobj.attr11(100)
-        tobj.cattr12('200')
-        metaclass = tobj.metaclass()
-        scope = rootContext.createScope()
-        scope['tobj'] = tobj
-
-        ss = "[[2 + 3] value + [3 - 2] value]"
-        method = DebugMethod()
-        # method.toDebug(true_).loglevel(0)
-        method.interpret(ss)
-        # method.toDebug(true_).loglevel(0)
-        res = method(scope)
-
-        return
-        # LiteralArray
-        ss = 'obj1 := $F'
-        self.assertTrue(script.parse(ss).noError())
-        ss = "#('a' 12 $F true #root #(1 2) + root value: )"
-        self.assertTrue(script.parse(ss).noError())
-
-        return
-    # SObj super: instance and class
-    # simple instant method: interpreter vs compiled
-    # simple class method: interpreter vs compiled
-    # rootScope
-    # packages
-    # Python globals
-    # Create new class with new method in interpreter mode. (Execution)
-    # basically SObject mechanics is completed.
-
 
 if __name__ == '__main__':
     unittest.main()

@@ -19,11 +19,6 @@ class SmallScriptVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SmallScriptParser#ws.
-    def visitWs(self, ctx:SmallScriptParser.WsContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by SmallScriptParser#temps.
     def visitTemps(self, ctx:SmallScriptParser.TempsContext):
         return self.visitChildren(ctx)
@@ -59,38 +54,28 @@ class SmallScriptVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SmallScriptParser#cascade.
-    def visitCascade(self, ctx:SmallScriptParser.CascadeContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by SmallScriptParser#ptfin.
-    def visitPtfin(self, ctx:SmallScriptParser.PtfinContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by SmallScriptParser#msg.
-    def visitMsg(self, ctx:SmallScriptParser.MsgContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by SmallScriptParser#assign.
-    def visitAssign(self, ctx:SmallScriptParser.AssignContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by SmallScriptParser#ref.
-    def visitRef(self, ctx:SmallScriptParser.RefContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by SmallScriptParser#binhead.
-    def visitBinhead(self, ctx:SmallScriptParser.BinheadContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by SmallScriptParser#unaryhead.
     def visitUnaryhead(self, ctx:SmallScriptParser.UnaryheadContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SmallScriptParser#unarytail.
+    def visitUnarytail(self, ctx:SmallScriptParser.UnarytailContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SmallScriptParser#unarymsg.
+    def visitUnarymsg(self, ctx:SmallScriptParser.UnarymsgContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SmallScriptParser#unaryop.
+    def visitUnaryop(self, ctx:SmallScriptParser.UnaryopContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SmallScriptParser#operand.
+    def visitOperand(self, ctx:SmallScriptParser.OperandContext):
         return self.visitChildren(ctx)
 
 
@@ -114,13 +99,53 @@ class SmallScriptVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SmallScriptParser#operand.
-    def visitOperand(self, ctx:SmallScriptParser.OperandContext):
+    # Visit a parse tree produced by SmallScriptParser#binhead.
+    def visitBinhead(self, ctx:SmallScriptParser.BinheadContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SmallScriptParser#bintail.
+    def visitBintail(self, ctx:SmallScriptParser.BintailContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SmallScriptParser#binmsg.
+    def visitBinmsg(self, ctx:SmallScriptParser.BinmsgContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SmallScriptParser#binop.
+    def visitBinop(self, ctx:SmallScriptParser.BinopContext):
         return self.visitChildren(ctx)
 
 
     # Visit a parse tree produced by SmallScriptParser#subexpr.
     def visitSubexpr(self, ctx:SmallScriptParser.SubexprContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SmallScriptParser#cascade.
+    def visitCascade(self, ctx:SmallScriptParser.CascadeContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SmallScriptParser#ptfin.
+    def visitPtfin(self, ctx:SmallScriptParser.PtfinContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SmallScriptParser#msg.
+    def visitMsg(self, ctx:SmallScriptParser.MsgContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SmallScriptParser#assign.
+    def visitAssign(self, ctx:SmallScriptParser.AssignContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SmallScriptParser#blk.
+    def visitBlk(self, ctx:SmallScriptParser.BlkContext):
         return self.visitChildren(ctx)
 
 
@@ -134,16 +159,6 @@ class SmallScriptVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SmallScriptParser#blk.
-    def visitBlk(self, ctx:SmallScriptParser.BlkContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by SmallScriptParser#dyndict.
-    def visitDyndict(self, ctx:SmallScriptParser.DyndictContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by SmallScriptParser#dynarr.
     def visitDynarr(self, ctx:SmallScriptParser.DynarrContext):
         return self.visitChildren(ctx)
@@ -154,8 +169,28 @@ class SmallScriptVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SmallScriptParser#num.
-    def visitNum(self, ctx:SmallScriptParser.NumContext):
+    # Visit a parse tree produced by SmallScriptParser#litarr.
+    def visitLitarr(self, ctx:SmallScriptParser.LitarrContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SmallScriptParser#litarrcnt.
+    def visitLitarrcnt(self, ctx:SmallScriptParser.LitarrcntContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SmallScriptParser#keywords.
+    def visitKeywords(self, ctx:SmallScriptParser.KeywordsContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SmallScriptParser#symbol.
+    def visitSymbol(self, ctx:SmallScriptParser.SymbolContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SmallScriptParser#baresym.
+    def visitBaresym(self, ctx:SmallScriptParser.BaresymContext):
         return self.visitChildren(ctx)
 
 
@@ -184,68 +219,38 @@ class SmallScriptVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SmallScriptParser#baresym.
-    def visitBaresym(self, ctx:SmallScriptParser.BaresymContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by SmallScriptParser#symbol.
-    def visitSymbol(self, ctx:SmallScriptParser.SymbolContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by SmallScriptParser#litarr.
-    def visitLitarr(self, ctx:SmallScriptParser.LitarrContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by SmallScriptParser#litarrcnt.
-    def visitLitarrcnt(self, ctx:SmallScriptParser.LitarrcntContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by SmallScriptParser#barelitarr.
-    def visitBarelitarr(self, ctx:SmallScriptParser.BarelitarrContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by SmallScriptParser#unarytail.
-    def visitUnarytail(self, ctx:SmallScriptParser.UnarytailContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by SmallScriptParser#unarymsg.
-    def visitUnarymsg(self, ctx:SmallScriptParser.UnarymsgContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by SmallScriptParser#unaryop.
-    def visitUnaryop(self, ctx:SmallScriptParser.UnaryopContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by SmallScriptParser#keywords.
-    def visitKeywords(self, ctx:SmallScriptParser.KeywordsContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by SmallScriptParser#var.
     def visitVar(self, ctx:SmallScriptParser.VarContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SmallScriptParser#bintail.
-    def visitBintail(self, ctx:SmallScriptParser.BintailContext):
+    # Visit a parse tree produced by SmallScriptParser#ref.
+    def visitRef(self, ctx:SmallScriptParser.RefContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SmallScriptParser#binmsg.
-    def visitBinmsg(self, ctx:SmallScriptParser.BinmsgContext):
+    # Visit a parse tree produced by SmallScriptParser#ws.
+    def visitWs(self, ctx:SmallScriptParser.WsContext):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SmallScriptParser#binop.
-    def visitBinop(self, ctx:SmallScriptParser.BinopContext):
+    # Visit a parse tree produced by SmallScriptParser#num.
+    def visitNum(self, ctx:SmallScriptParser.NumContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SmallScriptParser#ssFloat.
+    def visitSsFloat(self, ctx:SmallScriptParser.SsFloatContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SmallScriptParser#ssHex.
+    def visitSsHex(self, ctx:SmallScriptParser.SsHexContext):
+        return self.visitChildren(ctx)
+
+
+    # Visit a parse tree produced by SmallScriptParser#ssInt.
+    def visitSsInt(self, ctx:SmallScriptParser.SsIntContext):
         return self.visitChildren(ctx)
 
 

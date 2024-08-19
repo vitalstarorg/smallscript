@@ -167,11 +167,11 @@ class Method(SObject):
     pysource = Holder().name('pysource')
 
     def value(self, *args, **kwargs):
+        # @self @scope args...
         arglst = List(args)
         if arglst.isEmpty() or not isinstance(arglst.head(), Scope):
             local = self.getContext().createScope()
         else:
-            # Not yet tested
             scope = arglst.head()
             local = scope.createScope()
             this = scope.objs().head()
@@ -286,7 +286,7 @@ class Execution(SObject):
         method = self.method()
         params = List([self.asSObj(arg) for arg in args])
         scope = self.prepareScope()
-        res = method._runPy(scope, *params)
+        res = method.run(scope, *params)
         return res
 
     def prepareScope(self):

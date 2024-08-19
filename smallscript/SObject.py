@@ -399,7 +399,7 @@ class String(str, Primitive):
     def __eq__(self, val): return super().__eq__(val)
     def __hash__(self): return super().__hash__()
     def visit(self, visitor): return visitor.visitString(self)
-    def asNumber(self): return Number(int(self))
+    def asNumber(self): return Number().fromString(self)
     def len(self): return len(self)
     def isEmpty(self): return self.len() == 0
     def visit(self, visitor): return visitor.visitString(self)
@@ -868,41 +868,222 @@ class Scope(SObject):
         output = buffer.getvalue()
         return String(output)
 
-class Number(int, Primitive):
-    def __new__(cls, number = 0): return super(Number, cls).__new__(cls, number)
-    def __init__(self, value = 0): SObject.__init__(self)
-    def __floordiv__(self, val): res = super().__floordiv__(val); return res
-    def __add__(self, val): res = super().__add__(val); return Number(res)
-    def __mul__(self, val): res = super().__mul__(val); return Number(res)
-    def __truediv__(self, val): res = super().__truediv__(val); return Number(res)
-    def __eq__(self, val): res = super().__eq__(val); return res
-    def __gt__(self, val): res = super().__gt__(val); return res
-    def __lt__(self, val): res = super().__lt__(val); return res
-    def __mod__(self, val): res = super().__mod__(val); return Number(res)
-    def __sub__(self, val): res = super().__sub__(val);  return Number(res)
-    def __hash__(self): return super().__hash__()
-    def asObj(self, pyobj): return Number(pyobj)
+class Number(Primitive):
+    def number(self, number=''):
+        if number != '' and not isinstance(number, SObject):
+            if isinstance(number, int):
+                number = Integer(number)
+            elif isinstance(number, float):
+                number = Float(number)
+            else:
+                number = Number().fromString(String(number))
+        return self._getOrSet('number', number, 'Integer')
+
+    def __init__(self, number=0):
+        if not isinstance(number, SObject):
+            if isinstance(number, int):
+                number = Integer(number)
+            elif isinstance(number, float):
+                number = Float(number)
+            else:
+                self.fromString(String(number))
+                return
+        self.number(number)
+
+    def __floordiv__(self, val):
+        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Float):
+            res = val // self.number()
+        else:
+            res = self.number() // val
+        return res
+
+    def __add__(self, val):
+        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Float):
+            res = val + self.number()
+        else:
+            res = self.number() + val
+        return res
+
+    def __mul__(self, val):
+        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Float):
+            res = val * self.number()
+        else:
+            res = self.number() * val
+        return res
+
+    def __truediv__(self, val):
+        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Float):
+            res = val / self.number()
+        else:
+            res = self.number() / val
+        return res
+
+    def __eq__(self, val):
+        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Float):
+            res = val == self.number()
+        else:
+            res = self.number() == val
+        return res
+
+    def __gt__(self, val):
+        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Float):
+            res = val <= self.number()
+        else:
+            res = self.number() > val
+        return res
+
+    def __lt__(self, val):
+        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Float):
+            res = val >= self.number()
+        else:
+            res = self.number() < val
+        return res
+
+    def __mod__(self, val):
+        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Float):
+            res = val % self.number()
+        else:
+            res = self.number() % val
+        return res
+
+    def __sub__(self, val):
+        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Float):
+            res = val - self.number()
+        else:
+            res = self.number() - val
+        return res
+
+    def fromString(self, string):
+        number = Number()
+        if '.' in string:
+            number.number(Float(string))
+        else:
+            number.number(Integer(string))
+        return number
+
+    def __hash__(self): return self.number().__hash__()
+    def __str__(self): return self.toString()
+    def asSObj(self, pyobj): return Number(pyobj)
     def asNumber(self): return self
-    def toString(self): return String(self)
+    def toString(self): return String(self.number())
+
+class Integer(int, Primitive):
+    def __new__(cls, number = 0): return super(Integer, cls).__new__(cls, number)
+    def __init__(self, value = 0): SObject.__init__(self)
+
+    def __floordiv__(self, val):
+        if isinstance(val, Number): val = val.number()
+        res = super().__floordiv__(val)
+        return Number().number(res)
+
+    def __add__(self, val):
+        if isinstance(val, Number): val = val.number()
+        res = super().__add__(val)
+        return Number().number(res)
+
+    def __mul__(self, val):
+        if isinstance(val, Number): val = val.number()
+        res = super().__mul__(val)
+        return Number().number(res)
+
+    def __truediv__(self, val):
+        if isinstance(val, Number): val = val.number()
+        res = super().__truediv__(val)
+        return Number().number(res)
+
+    def __eq__(self, val):
+        if isinstance(val, Number): val = val.number()
+        res = super().__eq__(val)
+        return res
+
+    def __gt__(self, val):
+        if isinstance(val, Number): val = val.number()
+        res = super().__gt__(val)
+        return res
+
+    def __lt__(self, val):
+        if isinstance(val, Number): val = val.number()
+        res = super().__lt__(val)
+        return res
+
+    def __mod__(self, val):
+        if isinstance(val, Number): val = val.number()
+        res = super().__mod__(val)
+        return Number().number(res)
+
+    def __sub__(self, val):
+        if isinstance(val, Number): val = val.number()
+        res = super().__sub__(val)
+        return Number().number(res)
+
+    def __hash__(self): return super().__hash__()
+    def asSObj(self, pyobj): return Integer(pyobj)
+    def describe(self): return f"{self} {hex(self)}"
 
 class Float(float, Primitive):
     def __new__(cls, number = 0): return super(Float, cls).__new__(cls, number)
     def __init__(self, value = 0): SObject.__init__(self)
-    def __floordiv__(self, val): res = super().__floordiv__(val); return res
-    def __add__(self, val): res = super().__add__(val); return Float(res)
-    def __mul__(self, val): res = super().__mul__(val); return Float(res)
-    def __truediv__(self, val): res = super().__truediv__(val); return Float(res)
-    def __eq__(self, val): res = super().__eq__(val); return res
-    def __gt__(self, val): res = super().__gt__(val); return res
-    def __lt__(self, val): res = super().__lt__(val); return res
-    def __mod__(self, val): res = super().__mod__(val); return Float(res)
-    def __sub__(self, val): res = super().__sub__(val); return Float(res)
-    def __hash__(self): return super().__hash__()
-    def asObj(self, pyobj): return Float(pyobj)
-    def asNumber(self): return self
-    def toString(self): return String(self)
 
-pytypes = Map(str = String, int = Number, float = Float, dict = Map, list = List)
+    def __floordiv__(self, val):
+        if isinstance(val, Number): val = val.number()
+        res = super().__floordiv__(val)
+        return Number().number(res)
+
+    def __add__(self, val):
+        if isinstance(val, Number): val = val.number()
+        res = super().__add__(val)
+        return Number().number(res)
+
+    def __mul__(self, val):
+        if isinstance(val, Number): val = val.number()
+        res = super().__mul__(val)
+        return Number().number(res)
+
+    def __truediv__(self, val):
+        if isinstance(val, Number): val = val.number()
+        res = super().__truediv__(val)
+        return Number().number(res)
+
+    def __eq__(self, val):
+        if isinstance(val, Number): val = val.number()
+        res = super().__eq__(val)
+        return res
+
+    def __gt__(self, val):
+        if isinstance(val, Number): val = val.number()
+        res = super().__gt__(val)
+        return res
+
+    def __lt__(self, val):
+        if isinstance(val, Number): val = val.number()
+        res = super().__lt__(val)
+        return res
+
+    def __mod__(self, val):
+        if isinstance(val, Number): val = val.number()
+        res = super().__mod__(val)
+        return Number().number(res)
+
+    def __sub__(self, val):
+        if isinstance(val, Number): val = val.number()
+        res = super().__sub__(val)
+        return Number().number(res)
+
+    def __hash__(self): return super().__hash__()
+
+    def asSObj(self, pyobj): return Float(pyobj)
+    def describe(self): return f"{self}f"
+
+pytypes = Map(str = String, int = Number, float = Number, dict = Map, list = List)
 
 rootContext = Context().name('root').reset()
 rootContext.loadPackage('smallscript') # This global root context is the first Context object got created.

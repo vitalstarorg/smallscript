@@ -53,35 +53,37 @@ class StepVisitor(SmallScriptVisitor):
     def visitCascade(self, cxt): return self.visitCommon(cxt)
     def visitPtfin(self, cxt): return self.visitCommon(cxt)
     def visitMsg(self, cxt): return self.visitCommon(cxt)
+    def visitSubexpr(self, cxt): return self.visitCommon(cxt)
+    def visitChar(self, cxt): return self.visitCommon(cxt)
+    def visitBaresym(self, cxt): return self.visitCommon(cxt)
+    def visitPrimitive(self, cxt): return self.visitCommon(cxt)
 
     def visitAssign(self, cxt): return self.visitCommon(cxt)
     def visitVar(self, cxt): return self.visitCommon(cxt)
     def visitRef(self, cxt): return self.visitCommon(cxt)
-    def visitNum(self, cxt): return self.visitCommon(cxt)
     def visitString(self, cxt): return self.visitCommon(cxt)
     def visitWs(self, cxt): return self.visitCommon(cxt)
-    def visitExprlst(self, cxt): return self.visitCommon(cxt)
+    def visitTerminal(self, tnode): return self.visitCommon(tnode)
+    def visitNum(self, cxt): return self.visitCommon(cxt)
+    def visitSsFloat(self, cxt): return self.visitCommon(cxt)
+    def visitSsHex(self, cxt): return self.visitCommon(cxt)
+    def visitSsInt(self, cxt):return self.visitCommon(cxt)
 
-    def visitMsg(self, cxt): return self.visitCommon(cxt)
+    def visitExprlst(self, cxt): return self.visitCommon(cxt)
+    def visitBlk(self, cxt): return self.visitCommon(cxt)
     def visitPtkey(self, cxt): return self.visitCommon(cxt)
-    def visitSubexpr(self, cxt): return self.visitCommon(cxt)
     def visitLiteral(self, cxt): return self.visitCommon(cxt)
     def visitRtlit(self, cxt): return self.visitCommon(cxt)
-    def visitBlk(self, cxt): return self.visitCommon(cxt)
     def visitDyndict(self, cxt): return self.visitCommon(cxt)
     def visitDynarr(self, cxt): return self.visitCommon(cxt)
     def visitParselit(self, cxt): return self.visitCommon(cxt)
-    def visitChar(self, cxt): return self.visitCommon(cxt)
-    def visitPrimitive(self, cxt): return self.visitCommon(cxt)
     def visitPrimkey(self, cxt): return self.visitCommon(cxt)
     def visitPrimtxt(self, cxt): return self.visitCommon(cxt)
-    def visitBaresym(self, cxt): return self.visitCommon(cxt)
     def visitSymbol(self, cxt): return self.visitCommon(cxt)
     def visitLitarr(self, cxt): return self.visitCommon(cxt)
     def visitLitarrcnt(self, cxt): return self.visitCommon(cxt)
     def visitBarelitarr(self, cxt): return self.visitCommon(cxt)
     def visitKeywords(self, cxt): return self.visitCommon(cxt)
-    def visitTerminal(self, tnode): return self.visitCommon(tnode)
     def visitErrorNode(self, errnode): return self.visitCommon(errnode)
 
 class Step(SObject):
@@ -122,12 +124,14 @@ class Step(SObject):
     def retrieve(self, cxt):
         name = self._ruleName(cxt)
         self.ruleName(name).ruleCxt(cxt)
-        # if not hasattr(cxt, "children"): return self
         if cxt.children is None: return self
         if not isinstance(cxt.children[0], RuleContext):
-            terminal = cxt.children[0]
-            text = terminal.symbol.text
+            # first terminal children to determine the whole context is not reliable e.g. baresym & litarry. cxt.getText() would slow down 2.5%. Can regain the perf by reimplement these rule contexts.
+            # terminal = cxt.children[0]
+            # text = terminal.symbol.text
+            text = cxt.getText()
             self.compileRes(text)
+            self.runtimeRes(text)
         return self
 
     def _addToParent(self, interpreter, parentStep, toKeep):
@@ -190,6 +194,7 @@ class ClosureStep(Step):
         method = interpreter.method().createEmpty()
             # new method obj from initiating method e.g. DebugMethod.
         method.toDebug(interpreter.method().toDebug())
+        method.loglevel(interpreter.method().loglevel())
         self.method(method)
         method.interpreter(closureInterpreter)
         bplStep = self.getStep('blkparamlst')
@@ -211,6 +216,11 @@ class RuntimeStep(Step):
     def __init__(self): self.toKeep(true_)
     def isRuntime(self): return true_
 
+    def run(self, scope):
+        res = self.compileRes()
+        self.runtimeRes(res)
+        return res
+
 class UnaryHeadStep(RuntimeStep):
     def invoke(self, scope, obj, unarytail):   # obj can be Python obj
         res = obj
@@ -227,7 +237,10 @@ class UnaryHeadStep(RuntimeStep):
                     if holder.notNil():
                         method = holder.__get__(res)
                 if method == nil: return nil
-                res = method()
+                if op == "value":           # value() should only be called from within ss.
+                    res = method(scope)
+                else:
+                    res = method()
             unarytail = unarytail.getStep('unarytail')
         return res
 
@@ -330,11 +343,7 @@ class KwHeadStep(RuntimeStep):
         if kwMap.len() > 1:
             fullname = "".join([f"{key}__" for key in kwMap.keys()])
 
-        # Invoke method through Python protocol
-        res = nil
-        nArgs = kwMap.len()
-        method = self._methodLookup(obj, prefix, fullname, nArgs)
-
+        method = nil
         # Invoke method through SObject protocol
         if method == nil and isinstance(obj, SObject):
             holder = obj.metaclass().holderByName(fullname)
@@ -346,8 +355,17 @@ class KwHeadStep(RuntimeStep):
                 if holder.notNil():
                     method = holder.__get__(obj)
 
+        # Invoke method through Python protocol
+        if method == nil:
+            res = nil
+            nArgs = kwMap.len()
+            method = self._methodLookup(obj, prefix, fullname, nArgs)
+
         if method != nil:
-            res = method(*kwMap.values())
+            if prefix == 'value':
+                res = method(scope, *kwMap.values())
+            else:
+                res = method(*kwMap.values())
         return res
 
     def run(self, scope):
@@ -388,6 +406,48 @@ class CascadeStep(RuntimeStep):
         self.runtimeRes(res)
         return res
 
+class ArrayStep(RuntimeStep):  # Serving both dynarr & litarr
+    def _toList(self, steps):
+        list = List()
+        for step in steps:
+            if isinstance(step, Step):
+                list.append(step.runtimeRes())
+            else:
+                subList = self._toList(step)
+                list.append(subList)
+        return list
+
+    def interpret(self, interpreter):   # for litarr
+        super().interpret(interpreter)
+        litarrcnt = self.getStep('litarrcnt') # self should be litarr
+        if litarrcnt.isNil(): return self   # self should be dynarr
+        list = self._toList(litarrcnt)
+        self.compileRes(list)
+        self.runtimeRes(list)
+        return self
+
+    def run(self, scope):
+        def toList(steps):
+            list = List()
+            for step in steps:
+                if isinstance(step, Step):
+                    list.append(step.runtimeRes())
+                else:
+                    subList = toList(step)
+                    list.append(subList)
+            return list
+
+        steps = self.getStep('litarrcnt') # litarr
+        if steps.notNil():
+            res = self.compileRes()
+            self.runtimeRes(res)
+            return res
+        steps = self.getStep('operand') # dynarr
+        if steps.notNil():
+            res = toList(steps)
+            self.runtimeRes(res)
+            return res
+
 class AssignStep(RuntimeStep):
     def run(self, scope):
         ref = self.getStep('ref')
@@ -405,6 +465,8 @@ class VarStep(RuntimeStep):
         self.runtimeRes(res)
         return res
 
+    def describe(self): return f"{self.getStep('ref').compileRes()}:{self.ruleName()}"
+
 class RefStep(RuntimeStep):
     def run(self, scope):
         varname = self.compileRes()
@@ -413,6 +475,15 @@ class RefStep(RuntimeStep):
         if obj.isNil(): obj = scope     # if @varname was not defined, consider it in local scope.
         self.runtimeRes(obj)
         return obj
+
+class PrimitiveStep(RuntimeStep):
+    def interpret(self, interpreter):
+        super().interpret(interpreter)
+        primkey = self.getStep('primkey').compileRes()
+        primtxt = self.getStep('primtxt').compileRes()
+        map = Map().setValue(primkey, primtxt)
+        self.compileRes(map)
+        return self
 
 class Interpreter(SObject, StepVisitor):
     currentStep = Holder().name('currentStep')
@@ -468,10 +539,15 @@ class Interpreter(SObject, StepVisitor):
     def visitBintail(self, cxt): return Step().retrieve(cxt).toKeep(true_).interpret(self)
     def visitCascade(self, cxt): return CascadeStep().retrieve(cxt).interpret(self)
     def visitMsg(self, cxt): return Step().retrieve(cxt).toKeep(true_).interpret(self)
-
+    def visitDynarr(self, cxt): return ArrayStep().retrieve(cxt).interpret(self)
+    def visitLitarr(self, cxt): return ArrayStep().retrieve(cxt).interpret(self)
     def visitAssign(self, cxt): return AssignStep().retrieve(cxt).interpret(self)
     def visitVar(self, cxt): return VarStep().retrieve(cxt).interpret(self)
     def visitRef(self, cxt): return RefStep().retrieve(cxt).interpret(self)
+    def visitChar(self, cxt): return Step().retrieve(cxt).interpret(self)
+    def visitSymbol(self, cxt): return Step().retrieve(cxt).interpret(self)
+    def visitBaresym(self, cxt): return Step().retrieve(cxt).interpret(self)
+    def visitPrimitive(self, cxt): return PrimitiveStep().retrieve(cxt).interpret(self)
 
     def visitString(self, cxt):
         step = Step().retrieve(cxt)
@@ -479,8 +555,25 @@ class Interpreter(SObject, StepVisitor):
         step.runtimeRes(res)
         return step
 
-    def visitNum(self, cxt):
-        step = Step().retrieve(cxt)
-        res = step.compileRes().asNumber()
-        step.runtimeRes(res)
+    def visitSsFloat(self, cxt):
+        step = Step().retrieve(cxt).interpret(self)
+        f = Float(step.compileRes())
+        number = Number().number(f)
+        step.runtimeRes(number)
         return step
+
+    def visitSsHex(self, cxt):
+        step = Step().retrieve(cxt).interpret(self)
+        n = Integer(int(step.compileRes(), 16))
+        number = Number().number(n)
+        step.runtimeRes(number)
+        return step
+
+    def visitSsInt(self, cxt):
+        step = Step().retrieve(cxt).interpret(self)
+        n = Integer(step.compileRes())
+        number = Number().number(n)
+        step.runtimeRes(number)
+        return step
+
+    def visitNum(self, cxt): return Step().retrieve(cxt).interpret(self)

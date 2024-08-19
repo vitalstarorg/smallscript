@@ -155,15 +155,16 @@ class Test_Parser(SmallScriptTest):
         # LiteralArray
         ss = 'obj1 := $F'
         self.assertTrue(script.parse(ss).noError())
-        ss = "#('a' 12 $F true #root #(1 2) + root value: )"
+        ss = "#('a' 12 $F #root #(1 2) )"
         self.assertTrue(script.parse(ss).noError())
 
     @skipUnless('TESTALL' in env, "disabled")
     def test560_edge_case(self):
         script = Script()
 
-        # Number format
-        ss = "abc := -123 + 1.2 + 1.0e-1 + 16r123"
+        # Integer format
+        ss = "abc := -123 + 1.2 + 1.0e-1 + 0x123"
+        # ss = "abc := -123 + 1.2 + 1.0e-1"
         self.assertTrue(script.parse(ss).noError())
 
         # Primitive
