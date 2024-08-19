@@ -468,6 +468,7 @@ class List(list, Primitive):
     def head(self): return nil if self.isEmpty() else self[0]
     def append(self, obj): super().append(obj); return self
     def add(self, alist): self.extend(alist); return self
+    def at(self, index): return self[int(index)]
     def includes(self, aList):
         return all(item in self for item in aList)
 
@@ -889,6 +890,9 @@ class Number(Primitive):
                 self.fromString(String(number))
                 return
         self.number(number)
+
+    def __int__(self): return int(self.number())
+    def __float__(self): return float(self.number())
 
     def __floordiv__(self, val):
         if isinstance(val, Number): val = val.number()

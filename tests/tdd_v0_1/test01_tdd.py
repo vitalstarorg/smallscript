@@ -21,23 +21,11 @@ from os import environ as env
 env['TESTALL'] = '1'
 
 from smallscript.SObject import *
+from smallscript.Closure import Method
 
-class TDD_SObject(SmallScriptTest):
+class TDD_Method(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
-    def test500_sobject(self):
-        pkg = rootContext.loadPackage('tests')
-
-        # Test SObject.copyFrom
-        tobj1 = TestSObj14()            # Python way to instantiate sobject.
-        tobj1.attr11('value11')
-        tobj2 = TestSObj14()
-        self.assertTrue(not tobj2.hasKey('attr11'))
-        tobj2.copyFrom(tobj1)
-        self.assertTrue(tobj2.hasKey('attr11'))
-        self.assertTrue('value11', tobj2.attr11())
-
-    @skipUnless('TESTALL' in env, "disabled")
-    def test600_method(self):
+    def test500_Instance_Class(self):
         ### Access instance and class attributes and methods
         tobj1 = TestSObj14()            # Python way to instantiate sobject.
         meta1 = tobj1.metaclass()       # Access the metaclass
@@ -48,6 +36,8 @@ class TDD_SObject(SmallScriptTest):
         self.assertTrue(meta1._getHolder('cmethod15').isClassMethod())
         self.assertTrue(meta1._getHolder('method16').isInstanceMethod())
         self.assertTrue(meta1._getHolder('cmethod17').isClassMethod())
+
+        self.assertEqual('TestSObj15', meta1.name())
 
         res = tobj1.method14(2,3)       # accessing instance method method14().
         self.assertEqual(5, res)
@@ -89,3 +79,85 @@ class TDD_SObject(SmallScriptTest):
         self.assertEqual(meta1.attrs(), res)    # Class attribute map is returned for set operation
         res = TestSObj14.cattr12()              # Access class attribute cattr12
         self.assertEqual('value12_', res)
+
+    @skipUnless('TESTALL' not in env, "disabled")
+    def test600_Dynamic_Invocation(self):
+        #### SObject attributes protocol, not through Python
+        # Same as Test_Method.test500_method(), but totally SObject protocol.
+        pkg = rootContext.loadPackage('tests')
+        meta = rootContext.metaclassByName('TestSObj15')
+        tobj = SObject().metaclass(meta)
+
+        # Instance attribute behavior
+        self.assertTrue(not tobj.hasKey('attr11'))
+        self.assertEqual('', tobj.attr11())
+        self.assertTrue(tobj.hasKey('attr11'))
+        tobj.attr11('value11')
+        self.assertEqual('value11', tobj.attr11())
+
+        # Class attribute behavior
+        self.assertTrue(not tobj.metaclass().attrs().hasKey('cattr12'))
+        self.assertEqual('', tobj.cattr12())
+        self.assertTrue(tobj.metaclass().attrs().hasKey('cattr12'))
+        ret = tobj.cattr12('value12')
+        self.assertEqual(meta.attrs(), ret)
+        self.assertEqual('value12', tobj.cattr12())
+
+        #### SObject methods protocol, not through Python
+        res = tobj.method14(2,3)       # accessing instance method method14().
+        self.assertEqual(5, res)
+        res = tobj.cmethod15(2,3)      # accessing class method cmethod15().
+        self.assertEqual(6, res)
+        tobj.cattr12('200')            # accessing class attribute catt12.
+        res = tobj.cmethod17(2,3)      # accessing class method that accesses cattr12
+        self.assertEqual(206, res)
+        tobj.attr11('100')             # set an instance attribute attr11.
+        res = tobj.method16(2,3)       # accessing instance method that accesses attr11.
+        self.assertEqual(305, res)
+
+    @skipUnless('TESTALL' in env, "disabled")
+    def test700_Dynamic_Creation(self):
+        ### Create a new package and metaclass like TestSObj15 dynamically without using Python class.
+        # Basically doing the test600_Dynamic_Invocation() above with dynamically created class
+        # with attributes and methods.
+        # Based on TDD_SObject.test690_context_package()
+
+        # Create a new context, separated from root. So this separated context would work independently in the same runtime.
+        # Create a new test context and package
+        cxt = Context().name('v0_1_test01_tdd')
+        cxt.loadPackage('smallscript')      # need to load this first.
+        pkg = cxt.newPackage('tmppkg')      # create a temporary package
+
+        # Create new metaclass with two attributes.
+        newMeta = pkg.createMetaclass('NewMeta')
+        newMeta.parentNames(['Metaclass'])
+        newMeta.factory(SObject())
+        holders = newMeta.holders()
+        holders['attr11'] = Holder().name('attr11').type('String')
+        holders['attr12'] = Holder().name('attr12').type('List')
+        holders['cattr12'] = Holder().name('cattr12').type('String').asClassType()
+
+        # Define instance and class method using SmallScript
+        method14 = Method().interpret(":arg1 :arg2 | arg1 + arg2")
+        holders['method14'] = Holder().name('method14').type('Method').method(method14)
+        cmethod15 = Method().interpret(":arg1 :arg2 | arg1 * arg2")
+        holders['cmethod15'] = Holder().name('cmethod15').type('Method').method(cmethod15).asClassType()
+        method16 = Method().interpret(":arg1 :arg2 | self cattr12 asNumber + self attr11 asNumber + arg1 + arg2")
+        holders['method16'] = Holder().name('method16').type('Method').method(method16)
+        cmethod17 = Method().interpret(":arg1 :arg2 | arg1 * arg2 + self cattr12 asNumber")
+        holders['cmethod17'] = Holder().name('cmethod17').type('Method').method(cmethod17)
+
+        tobj = cxt.newInstance('NewMeta').name('tobj')
+        self.assertEqual(SObject, type(tobj))
+        self.assertEqual('NewMeta', tobj.metaname())
+
+        res = tobj.method14(2,3)            # accessing instance method method14().
+        self.assertEqual(5, res)
+        res = tobj.cmethod15(2,3)      # accessing class method cmethod15().
+        self.assertEqual(6, res)
+        tobj.cattr12('200')            # accessing class attribute catt12.
+        res = tobj.cmethod17(2,3)      # accessing class method that accesses cattr12
+        self.assertEqual(206, res)
+        tobj.attr11('100')             # set an instance attribute attr11.
+        res = tobj.method16(2,3)       # accessing instance method that accesses attr11.
+        self.assertEqual(305, res)

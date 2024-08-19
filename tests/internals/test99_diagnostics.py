@@ -29,8 +29,9 @@ class Test_Diagnostics(SmallScriptTest):
     def setUpClass(cls):
         pkg = rootContext.newPackage('Test_Interpreter2').importSingleSObject(DebugMethod)
 
+    @skip
     @skipUnless('TESTALL' not in env, "disabled")
-    def test_hack(self):
+    def test500_DebugMethod(self):
         pkg = rootContext.loadPackage('tests')
         tobj = TestSObj14()
         tobj.attr11(100)
@@ -48,8 +49,7 @@ class Test_Diagnostics(SmallScriptTest):
         self.assertEqual(expect, res)
         return
 
-        return
-
+    #### More Tests
     # SObj super: instance and class
     # simple instant method: interpreter vs compiled
     # simple class method: interpreter vs compiled

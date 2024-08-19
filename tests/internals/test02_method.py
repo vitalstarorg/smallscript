@@ -70,6 +70,9 @@ class Test_Method(SmallScriptTest):
         tobj = TestSObj14()
         meta = tobj.metaclass()
 
+        metaName = meta.name()
+        self.assertEqual('TestSObj15', metaName)
+
         # Instance attribute behavior
         self.assertTrue(not tobj.hasKey('attr11'))
         self.assertEqual('', tobj.attr11())
@@ -99,7 +102,7 @@ class Test_Method(SmallScriptTest):
     # Testing local import class
     #
 
-    # Originate from this test02_method.py.
+    # Originate from Test_Method.test500_method() test02_method.py.
     @skipUnless('TESTALL' in env, "disabled")
     def test700_localSObj(self):
         pkg = rootContext.newPackage('test02_method').importSingleSObject(LocalSObj14)

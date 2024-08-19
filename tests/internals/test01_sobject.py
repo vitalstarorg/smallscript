@@ -101,7 +101,7 @@ class Test_SObject(SmallScriptTest):
         self.assertTrue(obj, self)
 
     @skipUnless('TESTALL' in env, "disabled")
-    def test510_package(self):
+    def test210_package(self):
         ### Loading all SObject from tests
         pkg1 = rootContext.loadPackage('tests')
         testobj1 = rootContext.metaclassByName('TestSObj1').createEmpty()
@@ -118,7 +118,7 @@ class Test_SObject(SmallScriptTest):
         testobj1.print(false_)
 
     @skipUnless('TESTALL' in env, "disabled")
-    def test520_packages(self):
+    def test220_packages(self):
         # Reset the context will wipe out all packages and metaclasses and return nil.
         rootContext.reset().loadPackage('smallscript')
         tobj1 = TestSObj1()
@@ -138,6 +138,17 @@ class Test_SObject(SmallScriptTest):
         sobj1 = context.newInstance('SObject')
         self.assertTrue(sobj1.hasKey('metaclass'))
 
+    @skipUnless('TESTALL' in env, "disabled")
+    def test230_sobject(self):
+        # Test SObject.copyFrom
+        pkg = rootContext.loadPackage('tests')
+        tobj1 = TestSObj14()            # Python way to instantiate sobject.
+        tobj1.attr11('value11')
+        tobj2 = TestSObj14()
+        self.assertTrue(not tobj2.hasKey('attr11'))
+        tobj2.copyFrom(tobj1)
+        self.assertTrue(tobj2.hasKey('attr11'))
+        self.assertTrue('value11', tobj2.attr11())
 
 if __name__ == '__main__':
     unittest.main()

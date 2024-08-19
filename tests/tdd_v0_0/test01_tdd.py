@@ -22,7 +22,7 @@ env['TESTALL'] = '1'
 from smallscript.SObject import *
 from tests.TestBase import *
 
-class TDD(SmallScriptTest):
+class TDD_SObject(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test500_getter_setter(self):
         ### SObject uses builder pattern for its attributes.
@@ -235,6 +235,7 @@ class TDD(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test690_context_package(self):
         ### Create a new package and metaclass dynamically without existing Python class.
+
         # Create a new context, separated from root. So this separated context would work independently in the same runtime.
         # Create a new test context and package
         cxt = Context().name('test01_tdd')

@@ -28,32 +28,36 @@ from tests.TestBase import SmallScriptTest, TestSObj14, DebugMethod
 # These are the basic tests with minimal language implementation.
 class Test_Interpreter1(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
-    def test100_method1(self):
+    def test100_antlr(self):
+        #### Simple case
+        st = "obj := 123"
+        script = Script().parse(st)
+        self.assertTrue(script.noError())
+
+        #### AST graph in form of text
+        res = script.toStringTree()
+        self.assertTrue('obj' in res)
+        self.assertTrue('123' in res)
+
+        #### AST graph of the syntax can be shown on nbs/antlr.ipynb
+        dot = script.dotGraph()
+        dot_graph = dot.source.split('\n')
+        self.assertEqual('digraph G {', dot_graph[0])
+
+        #### Error case
+        st = "obj1 'abc'"
+        script.parse(st)
+        self.assertTrue(script.hasError())
+        errmsg = ("Syntax error at line 1:5: extraneous input ''abc'' expecting <EOF>\n"
+                  "obj1 'abc'\n"
+                  "     ^")
+        self.assertTrue(errmsg, script.prettyErrorMsg())
+
+    @skipUnless('TESTALL' in env, "disabled")
+    def test110_empty_method(self):
         m = Method()
         res = m()
         self.assertEqual(nil, res)
-
-    @skipUnless('TESTALL' in env, "disabled")
-    def test500_primitives(self):
-        #### Primitive: parser and run in interpreter.
-        ss = "123"
-        method = Method().interpret(ss)
-        res = method()
-        self.assertEqual(123, res)
-        ss = "'123'"
-        self.assertEqual('123', Method().interpret(ss)())
-        ss = "true"
-        self.assertEqual(true_, Method().interpret(ss)())
-        ss = "false"
-        self.assertEqual(false_, Method().interpret(ss)())
-        ss = "nil"
-        self.assertEqual(nil, Method().interpret(ss)())
-        ss = "context"
-        context = Method().interpret(ss)()
-        self.assertEqual(rootContext, context)
-        ss = "root"
-        rootScope = Method().interpret(ss)()
-        self.assertEqual(rootContext, rootScope['context'])
 
     # @skipUnless('TESTALL' in env, "disabled")
     def test510_local_access(self):

@@ -92,16 +92,97 @@ holders['attr12'] = Holder().name('attr12').type('List')
 obj4 = cxt.newInstance('NewMeta').name('obj4')
 ```
 
+## Basic Closure use cases
+### Instance and Class methods  
+```python
+class TestSObj14(SObject):
+    ss_metas = "TestSObj15"
+        # ss_metas defines the Metaclass name; otherwise, class name would be used.
+    attr11 = Holder().name('attr11').type('String')
+        # Instance attribute
+    cattr12 = Holder().name('cattr12').type('String').asClassType()
+        # Class attribute
+
+    # Make this method using SObject protocol. The first argument is @scope, not @self.
+    @Holder()
+    def method16(scope, arg1, arg2):
+        self = scope['self']
+        cattr12 = self.cattr12().asNumber()
+        attr11 = self['attr11'].asNumber()
+        return cattr12 + attr11 + arg1 + arg2
+
+    # Make this a class method using SObject protocol.
+    @Holder().asClassType()
+    def cmethod17(scope, arg1, arg2):
+        self = scope['self']
+        ret = self['cattr12'].asNumber()
+        return ret + arg1 * arg2
+
+    # @self can be retrieved from @scope. @scope is the window to both local and global variables.
+    @Holder()
+    def first__last__(scope, first, last):
+        self = scope['self']
+        self['first'] = first
+        self['last'] = last
+        return f"{first}, {last}"
+
+pkg = rootContext.loadPackage('tests')
+tobj = TestSObj14()
+
+tobj.metaclass().name()         # 'TestSObj15'
+tobj.cattr12('200')             # assign cattr12 class attribute
+tobj.cmethod17(2,3)             # 206
+tobj.attr11('100')              # assign attr11 instance attribute
+tobj.method16(2, 3)             # 305
+```
+### Dynamic Invocation through SObject system
+```python
+meta = rootContext.metaclassByName('TestSObj15')
+tobj = SObject().metaclass(meta)        # tobj behaves like TestSObj15 through generic SObject.
+
+tobj.metaclass().name()         # 'TestSObj15'
+tobj.cattr12('200')             # assign cattr12 class attribute
+tobj.cmethod17(2,3)             # 206
+tobj.attr11('100')              # assign attr11 instance attribute
+tobj.method16(2, 3)             # 305
+```
+### Fully Dynamic Creation using SObject & SmallScript
+```python
+
+# Create new metaclass with two attributes.
+pkg = rootContext.newPackage('tmppkg')      # create a temporary package
+newMeta = pkg.createMetaclass('NewMeta')
+newMeta.parentNames(['Metaclass'])
+newMeta.factory(SObject())
+holders = newMeta.holders()
+holders['attr11'] = Holder().name('attr11').type('String')
+holders['cattr12'] = Holder().name('cattr12').type('String').asClassType()
+
+# Define instance and class method using SmallScript
+holders['method16'] = Holder().name('method16').type('Method').method(method16)
+cmethod17 = Method().interpret(":arg1 :arg2 | arg1 * arg2 + self cattr12 asNumber")
+holders['cmethod17'] = Holder().name('cmethod17').type('Method').method(cmethod17)
+
+tobj.metaclass().name()         # 'NewMeta'
+tobj.cattr12('200')             # assign cattr12 class attribute
+tobj.cmethod17(2,3)             # 206
+tobj.attr11('100')              # assign attr11 instance attribute
+tobj.method16(2, 3)             # 305
+```
 # Potential Roadmap
 - Implement SmallScript on C/C++
  - This will open the door to access many useful binary libraries and access these functions on demand.
 - Implement SmallScript on JVM
  - Similar to C/C++
 
-
 # Release Note
+### v0.1.0 SObject with Closure
+- ref: tests/tdd_v0_1/* for details
+- Enhance SObject with class attributes.
+- Supports both instance and class methods using SObject protocol, not using Python.
+- Implemented initial elements of SmallScript.
 ### v0.0.1 SObject
-- ref: tests/tdd_v0_0 for details
+- ref: tests/tdd_v0_0/* for details
 - Provide basic object encapsulation and behavioral inheritance with trait type of multiple inheritance.
 - Everything is an SObject including nil.
 - Can be mixed with Python code seamlessly.

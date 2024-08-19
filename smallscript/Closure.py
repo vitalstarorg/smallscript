@@ -291,6 +291,7 @@ class Execution(SObject):
 
     def prepareScope(self):
         scope = self.getContext().createScope().context(self.context())
+        scope.objs().append(self.this())
         scope.setValue('self', self.this())
         return scope
 
