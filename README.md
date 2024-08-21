@@ -4,7 +4,7 @@
 We are looking for a small script capable of running on top of high level languages e.g. Python, Java, C++ and etc to manipulate high level functions provided by any of these platforms. This script provides a self-contained and platform independent environment to develop common reusable logics that can be executed in different platforms & hosts.
 
 For the impatience, please take a look at these
-- Critical [use case: fully dynamic creation using SmallScript]( {#fullyDynamic-creation-using-smallScript})
+- Critical use case[fully dynamic creation using SmallScript](https://github.com/vitalstarorg/smallscript/tree/main?tab=readme-ov-file#fully-dynamic-creation-using-smallscript)
 - [v0.2.0 SmallScript TDD](https://github.com/vitalstarorg/smallscript/blob/dev/tests/tdd_v0_2)
 - [v0.0.0 SmallScript TDD](https://github.com/vitalstarorg/smallscript/blob/dev/tests/tdd_v0_0)
 
