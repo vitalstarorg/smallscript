@@ -28,13 +28,13 @@ from tests.TestBase import SmallScriptTest, TestSObj14, DebugMethod
 class Test_Interpreter2(SmallScriptTest):
     @classmethod
     def setUpClass(cls):
-        pkg = rootContext.newPackage('Test_Interpreter2').importSingleSObject(DebugMethod)
+        pkg = rootContext.getOrNewPackage('Test_Interpreter2').importSingleSObject(DebugMethod)
 
     @skipUnless('TESTALL' in env, "disabled")
     def test500_exprs(self):
         # Multiple expressions test
         scope = rootContext.createScope()
-        ss = "obj2 := 222. obj1 := 111. obj3 := 333"
+        ss = "obj2 := 222; obj1 := 111; obj3 := 333"
         method = Method().interpret(ss)
         res = method(scope)
         self.assertEqual(333, res)
@@ -56,7 +56,7 @@ class Test_Interpreter2(SmallScriptTest):
         res = method(scope)
         self.assertEqual('TestSObj11', res.metaname())
 
-        ss = "tobj sobj11 name"         # name is a SObject method
+        ss = "tobj sobj11 describe"         # name is a SObject method
         method = Method().interpret(ss)
         res = method(scope)
         self.assertEqual('a TestSObj11', res)
@@ -94,7 +94,7 @@ class Test_Interpreter2(SmallScriptTest):
         res = Method().interpret(ss)(scope)
         self.assertEqual('100', res)
 
-        ss = "tobj attr11: 123. tobj attr11"
+        ss = "tobj attr11: 123; tobj attr11"
         method = Method().interpret(ss)
         res = method(scope)
         self.assertEqual(123, res)
@@ -103,7 +103,7 @@ class Test_Interpreter2(SmallScriptTest):
         res = Method().interpret(ss)(scope)
         self.assertEqual('200', res)
 
-        ss = "tobj cattr12: 123. tobj cattr12"
+        ss = "tobj cattr12: 123; tobj cattr12"
         res = Method().interpret(ss)(scope)
         self.assertEqual(123, res)
 
@@ -159,7 +159,7 @@ class Test_Interpreter2(SmallScriptTest):
         res = method(scope)
         self.assertEqual(111, res)
 
-        ss = "tobj cattr12: 11 + tobj attr11. tobj cattr12"
+        ss = "tobj cattr12: 11 + tobj attr11; tobj cattr12"
         method = Method().interpret(ss)
         res = method(scope)
         self.assertEqual(111, res)
@@ -180,8 +180,8 @@ class Test_Interpreter2(SmallScriptTest):
         self.assertEqual("aaAA, bbBB", res)
 
     @skipUnless('TESTALL' in env, "disabled")
-    def test540_cascade(self):
-        # Cascade test
+    def test540_chain(self):
+        # Chain test
         pkg = rootContext.loadPackage('tests')
         tobj = TestSObj14()
         tobj.attr11(100)
@@ -190,46 +190,46 @@ class Test_Interpreter2(SmallScriptTest):
         scope = rootContext.createScope()
         scope['tobj'] = tobj
 
-        ss = "7;"
+        ss = "7 |"
         method = Method().interpret(ss); res = method(scope)
         self.assertEqual(7, res)
 
-        ss = "7; + 3; + 2"
+        ss = "7 | + 3 | + 2"
         method = Method().interpret(ss); res = method(scope)
         self.assertEqual(12, res)
 
-        ss = "2; + 1; + 5"          # Antlr ok, Amber fails
+        ss = "2 | + 1 | + 5"          # Antlr ok, Amber fails
         method = Method().interpret(ss); res = method(scope)
         self.assertEqual(8, res)
 
-        ss = "tobj; attr11: 7; attr11; + 2"
+        ss = "tobj | attr11: 7 | attr11 | + 2"
         method = Method().interpret(ss); res = method(scope)
         self.assertEqual(9, res)
 
-        ss = "tobj attr11; + 2"
+        ss = "tobj attr11 | + 2"
         method = Method().interpret(ss); res = method(scope)
         self.assertEqual(9, res)
 
         tobj.sobj11().attr11(13)
-        ss = "tobj; sobj11 attr11"
+        ss = "tobj | sobj11 attr11"
         method = Method().interpret(ss); res = method(scope)
         self.assertEqual(13, res)
 
-        ss = "tobj; sobj11 attr11 + 2"              # Amber fails as it is mixed unaryMsg and binMsg
+        ss = "tobj | sobj11 attr11 + 2"              # Amber fails as it is mixed unaryMsg and binMsg
         method = Method().interpret(ss); res = method(scope)
         self.assertEqual(15, res)
 
-        ss = "tobj; attr11 + tobj sobj11 attr11"    # Amber fails as it is mixed unaryMsg and binMsg
+        ss = "tobj | attr11 + tobj sobj11 attr11"    # Amber fails as it is mixed unaryMsg and binMsg
         method = Method().interpret(ss); res = method(scope)
         self.assertEqual(20, res)
 
-        ss = "tobj attr11: 7; attr11; + 2"          # ok
+        ss = "tobj attr11: 7 | attr11 | + 2"          # ok
         method = Method().interpret(ss);
         res = method(scope)
         self.assertEqual(9, res)
 
-        ss = "tobj; method14: 7 add: 3; + tobj attr11; + tobj sobj11 attr11 + 2 + 4"
-        # ss = "7; + tobj sobj11 attr11"
+        ss = "tobj | method14: 7 add: 3 | + tobj attr11 | + tobj sobj11 attr11 + 2 + 4"
+        # ss = "7 | + tobj sobj11 attr11"
         method = Method().interpret(ss);
         res = method(scope)
         self.assertEqual(36, res)
@@ -268,7 +268,7 @@ class Test_Interpreter2(SmallScriptTest):
         scope = rootContext.createScope()
         scope['tobj'] = tobj
 
-        ss = "| tmp1 tmp2 | tmp1 := tobj attr11. tmp2 := tmp1 + 3. tobj cattr12: tmp2 + 5. tobj cattr12"
+        ss = "| tmp1 tmp2 | tmp1 := tobj attr11; tmp2 := tmp1 + 3; tobj cattr12: tmp2 + 5; tobj cattr12"
         method = Method().interpret(ss); res = method(scope)
         self.assertEqual(108, res)
 
@@ -285,17 +285,21 @@ class Test_Interpreter2(SmallScriptTest):
         self.assertEqual(11, res)
 
         # closure is a functional can be assigned to a variable.
-        ss = "b := [ :e | | a | a := e + 3]. b value: 9"
+        ss = "b := [ :e | | a | a := e + 3]; b value: 9"
         method = Method().interpret(ss); res = method(scope)
         self.assertEqual(12, res)
 
         #  b.value(...) is always run under a new scope.
-        ss = "b := [ :e | | a | a := e + 3]. b value: 9. b value: 10"
+        ss = "b := [ :e | | a | a := e + 3]; b value: 9; b value: 10"
         method = Method().interpret(ss); res = method(scope)
         self.assertEqual(13, res)
 
         # closure can be nested.
-        ss = 'b := [ :e | | a | a "comment" := [2 + 3] value + e]. b value: 9'
+        ss = """
+            // comment
+            b := [ :e | | a | a := [2 + 3] value + e]; b value: 9;
+            '''heredoc comment'''
+            """
         method = Method().interpret(ss); res = method(scope)
         self.assertEqual(14, res)
 
@@ -306,7 +310,7 @@ class Test_Interpreter2(SmallScriptTest):
         self.assertEqual(6, res)
 
         # Nested closure can access outer scope variable
-        ss = "| outer| outer := 13. [7 + outer] value"
+        ss = "| outer| outer := 13; [7 + outer] value"
         method = Method().interpret(ss); res = method(scope)
         self.assertEqual(20, res)
 
@@ -326,22 +330,30 @@ class Test_Interpreter2(SmallScriptTest):
 
         ss = 'obj1 := #F'
         method = Method().interpret(ss); res = method(scope)
-        self.assertEqual('#F', scope['obj1'])
+        self.assertEqual('F', scope['obj1'])
+
+        ss = "#()"
+        method = Method().interpret(ss); res = method(scope)
+        self.assertListEqual([], res)
+
+        ss = "#(#AAA)"
+        method = Method().interpret(ss); res = method(scope)
+        self.assertListEqual(['AAA'], res)
 
         ss = "#( #root #(1 2))"
         method = Method().interpret(ss); res = method(scope)
-        self.assertListEqual(['#root', [1,2]], res)
+        self.assertListEqual(['root', [1,2]], res)
 
         ss = "#( 'a' 12 $F #root #(1 2) #(1 #root) )"
         method = Method().interpret(ss); res = method(scope)
-        expect = List().append('a').append(12).append('$F').append('#root')\
-                .append([1,2]).append([1, '#root'])
+        expect = List().append('a').append(12).append('$F').append('root')\
+                .append([1,2]).append([1, 'root'])
         self.assertListEqual(expect, res)
 
-        ss = "#{ 'a' 12 $F true #root #(1 2) #{1 root} root }"
+        ss = "#{ 'a' 12 $F true 'root' #(1 2) #{1 #root} root }"
         method = Method().interpret(ss); res = method(scope)
-        expect = List().append('a').append(12).append('$F').append(true_).append('#root')\
-                .append([1,2]).append([1,rootContext.rootScope()]).append(rootContext.rootScope())
+        expect = List().append('a').append(12).append('$F').append(true_).append('root')\
+                .append([1,2]).append([1,'root']).append(rootContext.rootScope())
         self.assertEqual(expect, res)
 
         ss = "#(-123 1.2 1.0e-1 0x123)"

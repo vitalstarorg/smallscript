@@ -67,7 +67,6 @@ class Script(SObject):
     parser = Holder().name('parser')
     errorHandler = Holder().name('errorHandler')
     smallscriptStep = Holder().name('smallscriptStep').type('SmallScriptStep')
-    # smallscriptCxt = Holder().name('smallscriptCxt')
 
     def __init__(self): self.reset()
     def reset(self): return self.errorHandler(ScriptErrorListener())
@@ -255,22 +254,23 @@ class Method(SObject):
         self.name(pyfunc.__name__)
         return self
 
-    def compileThis(self, smallscript = ""):
-        """Try to compile to python func whatever is available."""
-        # script = self.asObj(smallscript)
-        # if script.notEmpty():
-        #     self.smallscript(script)
-        # if self.smallscript().notEmpty():
-        #     self.encode()
-        # if self.closure().not_nil():
-        #     # method may acquire closure first, so refill the smallscript in return.
-        #     if self.smallscript().isEmpty():
-        #         self.smallscript(self.closure().smallscript())
-        #     self.args(self.closure().args())
-        #     self.decode()
-        # if self.pythonscript().notEmpty():
-        #     self.compile()
-        return self
+    def signature(self, name=""):
+        params = self.params()
+        pyfunc = self.pyfunc()
+        signature = name = String(name)
+        if name.isEmpty() and self.hasKey('name'): signature = name = self.name()
+        if params.len() == 0:
+            if pyfunc != nil: signature = pyfunc.__name__
+        elif params.len() == 1:
+            if name.notEmpty():
+                signature = f"{name}__{params[0]}__"
+            else:
+                signature = f"{params[0]}"
+        elif params.len() > 1:
+            params = [f"{param}__" for param in params]
+            signature = "".join(params)
+            if name.notEmpty(): signature = f"{name}__{signature}"
+        return String(signature)
 
     def info(self):
         info = self.script().info()

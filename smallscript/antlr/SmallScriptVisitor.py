@@ -124,8 +124,8 @@ class SmallScriptVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SmallScriptParser#cascade.
-    def visitCascade(self, ctx:SmallScriptParser.CascadeContext):
+    # Visit a parse tree produced by SmallScriptParser#chain.
+    def visitChain(self, ctx:SmallScriptParser.ChainContext):
         return self.visitChildren(ctx)
 
 

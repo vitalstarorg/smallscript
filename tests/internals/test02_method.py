@@ -105,7 +105,7 @@ class Test_Method(SmallScriptTest):
     # Originate from Test_Method.test500_method() test02_method.py.
     @skipUnless('TESTALL' in env, "disabled")
     def test700_localSObj(self):
-        pkg = rootContext.newPackage('test02_method').importSingleSObject(LocalSObj14)
+        pkg = rootContext.getOrNewPackage('test02_method').importSingleSObject(LocalSObj14)
         tobj = LocalSObj14()
         meta = tobj.metaclass()
 
@@ -185,6 +185,23 @@ class Test_Method(SmallScriptTest):
         self.assertEqual(meta1.attrs(), res)    # Class attribute map is returned for set operation
         res = LocalSObj14.cattr12()              # Access class attribute cattr12
         self.assertEqual('value12_', res)
+
+    @skipUnless('TESTALL' in env, "disabled")
+    def test730_signature(self):
+        method = Method().interpret("arg1 + arg2")
+        self.assertEqual("", method.signature())
+        method.name('testMethod')
+        self.assertEqual("testMethod", method.signature())
+
+        method = Method().interpret(":arg1 | arg1 + 2")
+        self.assertEqual("arg1", method.signature())
+        method.name('testMethod')
+        self.assertEqual("testMethod__arg1__", method.signature())
+
+        method = Method().interpret(":arg1 :arg2 | arg1 + arg2")
+        self.assertEqual("arg1__arg2__", method.signature())
+        method.name('testMethod')
+        self.assertEqual("testMethod__arg1__arg2__", method.signature())
 
 if __name__ == '__main__':
     unittest.main()

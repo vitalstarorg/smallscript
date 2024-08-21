@@ -58,11 +58,11 @@ class Test_Parser(SmallScriptTest):
         self.assertTrue(script.parse(ss).noError())
         ss = "var1 := 'abc'"
         self.assertTrue(script.parse(ss).noError())
-        ss = "var1 := root. var2 := var1"
+        ss = "var1 := root; var2 := var1"
         self.assertTrue(script.parse(ss).noError())
         ss = "a := b := 2"
         self.assertTrue(script.parse(ss).noError())
-        ss = "var1 := root. var2 := _"
+        ss = "var1 := root; var2 := _"
         self.assertTrue(script.parse(ss).noError())
 
     @skipUnless('TESTALL' in env, "disabled")
@@ -78,7 +78,7 @@ class Test_Parser(SmallScriptTest):
         self.assertTrue(script.parse(ss).noError())
         ss = "obj1 method1__firstname: 'John' lastname: 'Doe'"
         self.assertTrue(script.parse(ss).noError())
-        ss = "obj1 attr1: 123. obj1 attr1"
+        ss = "obj1 attr1: 123; obj1 attr1"
         self.assertTrue(script.parse(ss).noError())
 
         # BinaryHead
@@ -94,23 +94,23 @@ class Test_Parser(SmallScriptTest):
         self.assertTrue(script.parse(ss).noError())
 
     @skipUnless('TESTALL' in env, "disabled")
-    def test520_cascade(self):
+    def test520_chain(self):
         script = Script()
 
-        # Cascade
-        ss = "7; + 3"
+        # Chain
+        ss = "7 | + 3"
         self.assertTrue(script.parse(ss).noError())
-        ss = "2; + 1; + 5" # Antlr ok, Amber fail
+        ss = "2 | + 1 | + 5" # Antlr ok, Amber fail
         self.assertTrue(script.parse(ss).noError())
-        ss = "obj1 var1; +3"
+        ss = "obj1 var1 | +3"
         self.assertTrue(script.parse(ss).noError())
-        ss = "obj1; method4 attr7 + 3"                  # Amber fails as it is mixed unaryMsg and binMsg
+        ss = "obj1 | method4 attr7 + 3"                  # Amber fails as it is mixed unaryMsg and binMsg
         self.assertTrue(script.parse(ss).noError())
-        ss = "obj1; var1 + obj1 method4 attr7"          # Amber fails as it is mixed unaryMsg and binMsg
+        ss = "obj1 | var1 + obj1 method4 attr7"          # Amber fails as it is mixed unaryMsg and binMsg
         self.assertTrue(script.parse(ss).noError())
-        ss = "obj1 var2: 7; var2; + 3" # ok
+        ss = "obj1 var2: 7 | var2 | + 3" # ok
         self.assertTrue(script.parse(ss).noError())
-        ss = "obj1; method4; method3__var1: 3 var2: 2; + obj1 var1; + 5" # ok
+        ss = "obj1; method4 | method3__var1: 3 var2: 2 | + obj1 var1 | + 5" # ok
         self.assertTrue(script.parse(ss).noError())
 
     @skipUnless('TESTALL' in env, "disabled")
@@ -132,7 +132,7 @@ class Test_Parser(SmallScriptTest):
         # BlockClosure
         ss = "[ :e | | a | a:= e + 1]" # error, 'a:' parsed as a keyword.
         self.assertTrue(not script.parse(ss).noError())
-        ss = "| tmp1 tmp2 | tmp1 := obj1 var1. tmp2 := tmp1 + 3. obj1 var2: tmp2 + 5. obj1 var2"
+        ss = "| tmp1 tmp2 | tmp1 := obj1 var1; tmp2 := tmp1 + 3; obj1 var2: tmp2 + 5; obj1 var2"
         self.assertTrue(script.parse(ss).noError())
         ss = "| tmp1 tmp2 | obj1 var1"
         self.assertTrue(script.parse(ss).noError())
@@ -140,10 +140,14 @@ class Test_Parser(SmallScriptTest):
         self.assertTrue(script.parse(ss).noError())
         ss = "[ :e | 2 + e] value: 9"
         self.assertTrue(script.parse(ss).noError())
-        ss = "b := [ :e | | a | a := e + 3]. b value: 9"
+        ss = "b := [ :e | | a | a := e + 3]; b value: 9"
         script.parse(ss)
         self.assertTrue(script.parse(ss).noError())
-        ss = 'b := [ :e | | a | a "comment" := [2 + 3] value + e]. b value: 9'
+        ss = """
+            // comment
+            b := [ :e | | a | a := [2 + 3] value + e]; b value: 9;
+            '''heredoc comment'''
+            """
         self.assertTrue(script.parse(ss).noError())
         ss = "[[2 + 3] value + [3 - 2] value]"
         self.assertTrue(script.parse(ss).noError())

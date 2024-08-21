@@ -215,12 +215,12 @@ class SmallScriptListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by SmallScriptParser#cascade.
-    def enterCascade(self, ctx:SmallScriptParser.CascadeContext):
+    # Enter a parse tree produced by SmallScriptParser#chain.
+    def enterChain(self, ctx:SmallScriptParser.ChainContext):
         pass
 
-    # Exit a parse tree produced by SmallScriptParser#cascade.
-    def exitCascade(self, ctx:SmallScriptParser.CascadeContext):
+    # Exit a parse tree produced by SmallScriptParser#chain.
+    def exitChain(self, ctx:SmallScriptParser.ChainContext):
         pass
 
 

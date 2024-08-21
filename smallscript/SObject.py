@@ -20,7 +20,7 @@ import pkgutil
 import inspect
 import builtins
 import importlib
-import xxhash
+# import xxhash
 import logging
 import traceback
 from pathlib import Path
@@ -88,7 +88,7 @@ class SObject:
             return SObject.setValue(self, 'name', String(name))
         attrname = 'name'
         if SObject.hasKey(self, attrname): return SObject.getValue(self, attrname)
-        return String(f"a {self.metaname()}")
+        return String()
 
     def metaclass(self, metaclass = ''):
         "Find the metaclass."
@@ -283,7 +283,12 @@ class SObject:
         output = buffer.getvalue()
         return String(output)
 
-    def describe(self): return self.name()  # description of this object
+    def describe(self):
+        "Description for __repr__ and self.info()"
+        if self.name().isEmpty():
+            return String(f"a {self.metaname()}")
+        return self.name()
+
     def __repr__(self): return f"{self.describe()}:{self.metaname()} {self.lastDigits()}"
 
 class Holder(SObject):
@@ -403,26 +408,10 @@ class String(str, Primitive):
     def len(self): return len(self)
     def isEmpty(self): return self.len() == 0
     def visit(self, visitor): return visitor.visitString(self)
-    def xxHash(self): return 0 if self.isEmpty() else xxhash.xxh64(self).intdigest()
-    def asString(self): return String(f"'{self}'")
+    # def xxHash(self): return 0 if self.isEmpty() else xxhash.xxh64(self).intdigest()
+    def isSymbol(self): return false_ if self.isEmpty() or self[1] != '#' else true_
+    def asString(self): return String(f"'{self[1:]}'") if self.isSymbol() else String(f"'{self}'")
     def toString(self): return self
-
-class Nil(SObject):
-    """nil is a singleton from this class represents nothing."""
-    def __new__(cls):
-        global nil
-        if not 'nil' in globals():
-            nil = super().__new__(cls)
-            nil.name('nil')
-        return nil
-
-    def __call__(self, *args, **kwargs):
-        return nil
-
-    def createEmpty(self): return self
-    def isNil(self): return true_
-
-nil = Nil()
 
 class True_(Primitive):
     """SObject true class with singleton true_."""
@@ -455,6 +444,29 @@ class False_(Primitive):
 
 true_ = True_()
 false_ = False_()
+
+class Nil(Primitive):
+    """nil is a singleton from this class represents nothing."""
+    def __new__(cls):
+        global nil
+        if not 'nil' in globals():
+            nil = super().__new__(cls)
+            nil.name('nil')
+        return nil
+
+    def __call__(self, *args, **kwargs):
+        return nil
+
+    def visit(self, visitor): return visitor.visitNil(self)
+    def createEmpty(self): return self
+    def isNil(self): return true_
+    def _keys(self): return List()
+    def _has(self, keyname): return false_
+    def _get(self, keyname, default): return nil
+    def _set(self, keyname, value): return self
+    def _del(self, keyname): return self
+
+nil = Nil()
 
 class List(list, Primitive):
     """SObject list class."""
@@ -515,6 +527,22 @@ class Metaclass(SObject):
             instance = factory.createEmpty()
         instance.metaclass(self)
         return instance
+
+    def addAttr(self, attrname, typeHint, classType=false_):
+        holders = self.holders()
+        holder = Holder().name(attrname).type(typeHint)
+        if classType: holder.asClassType()
+        holders[attrname] = holder
+        return self
+
+    def addMethod(self, name, method, classType=false_):
+        holders = self.holders()
+        signature = method.signature(name)
+        holder = Holder().name(signature).type('Method').method(method)
+        if classType: holder.asClassType()
+        holders[signature] = holder # fullname
+        holders[name] = holder      # prefix, ok if signature == name
+        return self
 
     def importFrom(self, sClass):
         self._importHolders(sClass)
@@ -688,7 +716,8 @@ class Package(SObject):
         metaclass = Metaclass().name(metaname).\
                         metaclass(metametaclass).\
                         setValue('package', self).\
-                        setValue('context', context)
+                        setValue('context', context).\
+                        factory(SObject())          # default factory, will be rewritten _createFactory()
         metaclasses[metaname] = metaclass
         return metaclass
 
@@ -720,14 +749,14 @@ class Context(SObject):
 
     def loadPackage(self, pkgname):
         "Load metaclasses from a SObject package."
-        pkg = self.newPackage(pkgname)
+        pkg = self.getOrNewPackage(pkgname)
         if pkg.isEmpty():
             pkg.importSObjects()
             pkg.importMethods()
             pkg.initClasses()
         return pkg
 
-    def newPackage(self, pkgname):
+    def getOrNewPackage(self, pkgname):
         pkgs = self.getValue('packages')
         if pkgs.isNil():
             pkgs = Map()
@@ -769,6 +798,7 @@ class Context(SObject):
             rootScope['context'] = self.getContext()
             rootScope['root'] = rootScope
         scope = Scope()
+        scope.setValue('scope', scope)
         scope.parent(rootScope)
         return scope
 

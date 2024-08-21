@@ -22,12 +22,10 @@ Another side benefit for having a small script like this is to allow us to exper
 
 Amongst all languages we used in the past, we are in favor of deriving SmallScript from Smalltalk as it is an elegant language that provides pure object-oriented support. Another attractive benefit is that SmallScript can be written by SmallScript itself. In the far-reaching future, SmallScript can be run by itself without needing an OS as SmallScript can define an OS for it to run. Even though it may not be our near term objective, having this long term vision to guide the development will provide wider possibilities how we want SmallScript to be.
 
-
 ## Install
 ```sh
 pip install smallscript
 ```
-
 
 # Sample Use Cases
 ## Basic SObject use cases  
@@ -73,10 +71,11 @@ meta1 = tobj1.metaclass()
     # After loadPackage(), TestSObj1 will be imported.
 ```
 ### Context can be separated
+
 ```python
 cxt = Context().name('test01_tdd')
-cxt.loadPackage('smallscript')      # need to load this first.
-pkg = cxt.newPackage('tmppkg')      # create a temporary package on memory
+cxt.loadPackage('smallscript')  # need to load this first.
+pkg = cxt.getOrNewPackage('tmppkg')  # create a temporary package on memory
 ```
 ### Dynamically create a new class
 ```python
@@ -146,11 +145,11 @@ tobj.cmethod17(2,3)             # 206
 tobj.attr11('100')              # assign attr11 instance attribute
 tobj.method16(2, 3)             # 305
 ```
-### Fully Dynamic Creation using SObject & SmallScript
-```python
 
+### Fully Dynamic Creation using SObject system
+```python
 # Create new metaclass with two attributes.
-pkg = rootContext.newPackage('tmppkg')      # create a temporary package
+pkg = rootContext.getOrNewPackage('tmppkg')  # create a temporary package
 newMeta = pkg.createMetaclass('NewMeta')
 newMeta.parentNames(['Metaclass'])
 newMeta.factory(SObject())
@@ -167,10 +166,51 @@ holders['cmethod17'] = Holder().name('cmethod17').type('Method').method(cmethod1
 tobj = rootContext.newInstance('NewMeta').name('tobj')
 tobj.metaclass().name()         # 'NewMeta'
 tobj.cattr12('200')             # assign cattr12 class attribute
-tobj.cmethod17(2,3)             # 206
+tobj.cmethod17(2, 3)            # 206
 tobj.attr11('100')              # assign attr11 instance attribute
 tobj.method16(2, 3)             # 305
 ```
+
+### Fully Dynamic Creation using SmallScript
+This is a critical milestone. From this point on, we have all necessary core functions to develop further libraries using SmallScript completely.
+
+SObject is a complete object system by itself. It is an interface layer between Python and SmallScript which follows Python and SmallScript protocol. In theory, SObject would very much behave like SmallScript in Python language.
+
+All objects are SObject including primitives. **nil** is SObject for **None** in Python, **true_** for **True**, **false_** for **False**, **List** for **list**, **Map** for **dict**, **Number** for both **int** and **float**.
+
+Currently SmallScript is running in interpreter mode. SmallScript will be transpiled to Python in next release than SmallScript will be running close to native speed. 
+
+```python
+smallscript = """
+// Create metaclass
+meta := scope getValue: 'context' 
+        | getOrNewPackage: 'tmppkg'
+            | createMetaclass: #AnotherMeta
+                | parentNames: #(#SObject)
+                
+                // Create two instance attributes and one class attribute.
+                | addAttr: #attr11 type: #String
+                | addAttr: #attr12 type: #List
+                | addAttr: #cattr12 type: #String classType: true
+                
+                // Create two instance methods and two class methods.
+                | addMethod: #method14 method: [:arg1 :arg2 | arg1 + arg2]
+                | addMethod: #cmethod15 method: [:arg1 :arg2 | arg1 * arg2] classType: true
+                | addMethod: #method16 method: [:arg1 :arg2 | self cattr12 asNumber + self attr11 asNumber + arg1 + arg2]
+                | addMethod: #cmethod17 method: [:arg1 :arg2 | arg1 * arg2 + self cattr12 asNumber] classType: true
+"""
+scope = rootContext.createScope()
+method = Method().interpret(ss)
+meta = method(scope)
+
+tobj = rootContext.newInstance('AnotherMeta').name('tobj')
+tobj.metaname()                 # 'AnotherMeta'
+tobj.cattr12('200')             # assign cattr12 class attribute
+tobj.cmethod17(2, 3)            # 206
+tobj.attr11('100')              # assign attr11 instance attribute
+tobj.method16(2, 3)             # 305
+```
+
 # Potential Roadmap
 - Implement SmallScript on C/C++
  - This will open the door to access many useful binary libraries and access these functions on demand.

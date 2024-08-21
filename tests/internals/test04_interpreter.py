@@ -173,7 +173,8 @@ class Test_Interpreter1(SmallScriptTest):
     def test700_scope(self):
         # SObject protocol of Scope
         scope = Scope()
-        self.assertEqual('a Scope', scope.name())
+        self.assertEqual('', scope.name())
+        self.assertEqual('a Scope', scope.describe())
         res = scope.name('scope')
         self.assertEqual('scope', scope.name())
         self.assertEqual(scope, res)

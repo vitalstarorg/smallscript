@@ -50,7 +50,7 @@ class StepVisitor(SmallScriptVisitor):
     def visitBintail(self, cxt): return self.visitCommon(cxt)
     def visitBinmsg(self, cxt): return self.visitCommon(cxt)
     def visitBinop(self, cxt): return self.visitCommon(cxt)
-    def visitCascade(self, cxt): return self.visitCommon(cxt)
+    def visitChain(self, cxt): return self.visitCommon(cxt)
     def visitPtfin(self, cxt): return self.visitCommon(cxt)
     def visitMsg(self, cxt): return self.visitCommon(cxt)
     def visitSubexpr(self, cxt): return self.visitCommon(cxt)
@@ -378,7 +378,7 @@ class KwHeadStep(RuntimeStep):
         self.runtimeRes(res)
         return res
 
-class CascadeStep(RuntimeStep):
+class ChainStep(RuntimeStep):
     def invoke(self, scope, obj, msg):
         res = obj
         tails = msg.children().values()
@@ -420,7 +420,11 @@ class ArrayStep(RuntimeStep):  # Serving both dynarr & litarr
     def interpret(self, interpreter):   # for litarr
         super().interpret(interpreter)
         litarrcnt = self.getStep('litarrcnt') # self should be litarr
-        if litarrcnt.isNil(): return self   # self should be dynarr
+        if not isinstance(litarrcnt, List):
+            if litarrcnt.isNil() or litarrcnt.compileRes().isNil():     # dynarr doesn't have litarrcnt
+                litarrcnt = List()
+            else:
+                litarrcnt = List().append(litarrcnt)
         list = self._toList(litarrcnt)
         self.compileRes(list)
         self.runtimeRes(list)
@@ -537,7 +541,7 @@ class Interpreter(SObject, StepVisitor):
     def visitKwmsg(self, cxt): return Step().retrieve(cxt).toKeep(true_).interpret(self)
     def visitBinhead(self, cxt): return BinHeadStep().retrieve(cxt).interpret(self)
     def visitBintail(self, cxt): return Step().retrieve(cxt).toKeep(true_).interpret(self)
-    def visitCascade(self, cxt): return CascadeStep().retrieve(cxt).interpret(self)
+    def visitChain(self, cxt): return ChainStep().retrieve(cxt).interpret(self)
     def visitMsg(self, cxt): return Step().retrieve(cxt).toKeep(true_).interpret(self)
     def visitDynarr(self, cxt): return ArrayStep().retrieve(cxt).interpret(self)
     def visitLitarr(self, cxt): return ArrayStep().retrieve(cxt).interpret(self)
@@ -546,8 +550,13 @@ class Interpreter(SObject, StepVisitor):
     def visitRef(self, cxt): return RefStep().retrieve(cxt).interpret(self)
     def visitChar(self, cxt): return Step().retrieve(cxt).interpret(self)
     def visitSymbol(self, cxt): return Step().retrieve(cxt).interpret(self)
-    def visitBaresym(self, cxt): return Step().retrieve(cxt).interpret(self)
     def visitPrimitive(self, cxt): return PrimitiveStep().retrieve(cxt).interpret(self)
+
+    def visitBaresym(self, cxt):
+        step = Step().retrieve(cxt)
+        res = String(step.compileRes()[1:])     # "#abc" -> "abc"
+        step.runtimeRes(res)
+        return step
 
     def visitString(self, cxt):
         step = Step().retrieve(cxt)

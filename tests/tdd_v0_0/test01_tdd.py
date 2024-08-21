@@ -31,15 +31,16 @@ class TDD_SObject(SmallScriptTest):
         # SObject also has getValue() and setValue()
         # SObject attribute is created on-demand and can be removed at runtime.
         sobj = SObject()
-        self.assertEqual('a SObject', sobj.name())  # default name
-        self.assertTrue(not sobj.hasKey('name'))    # @name not yet exists
-        res = sobj.name('sobj')                     # setter always returns obj
-        self.assertTrue(sobj.hasKey('name'))        # @name exists
-        self.assertEqual('sobj', sobj.name())       # its value is 'sobj'
-        self.assertEqual(sobj, res)                 # return sobj as to follow the builder pattern
-        self.assertEqual('sobj', sobj.getValue('name'))  # alternative way to access attribute
-        sobj.delValue('name')                       # remove @name
-        self.assertTrue(not sobj.hasKey('name'))    # @name removed
+        self.assertEqual('', sobj.name())               # default name
+        self.assertEqual('a SObject', sobj.describe())  # default description
+        self.assertTrue(not sobj.hasKey('name'))        # @name not yet exists
+        res = sobj.name('sobj')                         # setter always returns obj
+        self.assertTrue(sobj.hasKey('name'))            # @name exists
+        self.assertEqual('sobj', sobj.name())           # its value is 'sobj'
+        self.assertEqual(sobj, res)                     # return sobj as to follow the builder pattern
+        self.assertEqual('sobj', sobj.getValue('name')) # alternative way to access attribute
+        sobj.delValue('name')                           # remove @name
+        self.assertTrue(not sobj.hasKey('name'))        # @name removed
 
         # SObject structure is described by its metaclass which can be defined by Holder through Python class variables or construct programmatically. The use of Python class variable is an option to provide hint to IDE.
         sobjmeta = sobj.metaclass()
@@ -240,7 +241,7 @@ class TDD_SObject(SmallScriptTest):
         # Create a new test context and package
         cxt = Context().name('test01_tdd')
         cxt.loadPackage('smallscript')      # need to load this first.
-        pkg = cxt.newPackage('tmppkg')      # create a temporary package
+        pkg = cxt.getOrNewPackage('tmppkg')      # create a temporary package
 
         # Create new metaclass with two attributes.
         newMeta = pkg.createMetaclass('NewMeta')

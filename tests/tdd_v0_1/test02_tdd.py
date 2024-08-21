@@ -65,28 +65,28 @@ class TDD_Interpreter(SmallScriptTest):
         ss = """
         :first :last |
         | tmp1 tmp2 |
-        offset := 5.
+        offset := 5;
 
-        "Save the attributes"
-        tmp1 := tobj attr11.
-        tmp2 := tobj cattr12.
+        // Save the attributes
+        tmp1 := tobj attr11;
+        tmp2 := tobj cattr12;
 
-        "Assign new values"
-        tobj attr11: '20'.
-        tobj cattr12: 'Mr.'.
+        // Assign new values
+        tobj attr11: '20';
+        tobj cattr12: 'Mr.';
 
-        "Greeting"
+        // Greeting
         greeting := 
             tobj cattr12 + ' ' + 
             first + ', ' +
             last + ' (age: ' +
-            tobj attr11 + ')'.   
+            tobj attr11 + ')';
 
-        "Restore variable"
-        tobj attr11: tmp1.
-        tobj cattr12: tmp2.
+        /// Restore variable
+        tobj attr11: tmp1;
+        tobj cattr12: tmp2;
 
-        "last value as return value"
+        /// last value as return value
         greeting
         """
         greetMethod = Method().interpret(ss)
@@ -113,19 +113,19 @@ class TDD_Interpreter(SmallScriptTest):
         ss = """
         :fname :lname |
         
-        "Keyword message"
-        name := tobj first: fname last: lname.
+        // Keyword message
+        name := tobj first: fname last: lname;
         
-        "Unary messages"
-        age := tobj attr11 toString.
+        // Unary messages
+        age := tobj attr11 toString;
         
-        "Binary message"
-        fullname := tobj cattr12 + ' ' + name.
+        // Binary message
+        fullname := tobj cattr12 + ' ' + name;
 
-        "Cascade message"        
-        greeting := fullname;
-                    + ' (age: ';
-                    + age + ')'
+        // Chain message
+        greeting := fullname
+                    | + ' (age: ' 
+                    | + age + ')'
         """
         greetMethod = Method().interpret(ss)
         greet = greetMethod(scope, 'John', 'Doe')
@@ -144,8 +144,8 @@ class TDD_Interpreter(SmallScriptTest):
 
         ss = """
         [:fname :lname |
-        name := tobj first: fname last: lname.
-        age := tobj attr11 toString.
+        name := tobj first: fname last: lname;
+        age := tobj attr11 toString;
         greeting := 
             tobj cattr12 + ' ' + 
             name + ' (age: ' +
@@ -170,10 +170,10 @@ class TDD_Interpreter(SmallScriptTest):
         ss = """
         :array |
         | fname lname |
-        fname := array at: 0.
-        lname := array at: 1.
-        name := tobj first: fname last: lname.
-        age := tobj attr11 toString.
+        fname := array at: 0;
+        lname := array at: 1;
+        name := tobj first: fname last: lname;
+        age := tobj attr11 toString;
         greeting := 
             tobj cattr12 + ' ' + 
             name + ' (age: ' +
@@ -188,15 +188,16 @@ class TDD_Interpreter(SmallScriptTest):
         ss = """
         :array |
         | fname lname |
-        fname := array at: 0.
-        lname := array at: 1.
-        name := tobj first: fname last: lname.
-        age := tobj attr11.
+        fname := array at: 0;
+        lname := array at: 1;
+        name := tobj first: fname last: lname;
+        age := tobj attr11;
         
-        "Literal Array"
-        title := #('Name' 'Age').
+        '''HereDoc Comment'''
+        // Literal Array
+        title := #('Name' 'Age');
         
-        "Dynamic Array"
+        // Dynamic Array
         #{name age title}
         """
         greetMethod = Method().interpret(ss)

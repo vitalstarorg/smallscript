@@ -27,10 +27,27 @@ from tests.TestBase import SmallScriptTest, TestSObj14, DebugMethod
 class Test_Diagnostics(SmallScriptTest):
     @classmethod
     def setUpClass(cls):
-        pkg = rootContext.newPackage('Test_Interpreter2').importSingleSObject(DebugMethod)
+        pkg = rootContext.getOrNewPackage('Test_Interpreter2').importSingleSObject(DebugMethod)
+
+    @skipUnless('TESTALL' not in env, "disabled")
+    def test100_hack(self):
+        scope = rootContext.createScope()
+
+        ss = "#( #root #(1 2))"
+        method = Method().interpret(ss); res = method(scope)
+        self.assertListEqual(['root', [1,2]], res)
+
+        ss = "#()"
+        method = Method().interpret(ss); res = method(scope)
+        self.assertListEqual([], res)
+
+        ss = "#(#AAA)"
+        method = Method().interpret(ss); res = method(scope)
+        self.assertListEqual(['AAA'], res)
+
+        return
 
     @skip
-    @skipUnless('TESTALL' not in env, "disabled")
     def test500_DebugMethod(self):
         pkg = rootContext.loadPackage('tests')
         tobj = TestSObj14()

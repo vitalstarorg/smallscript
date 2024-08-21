@@ -108,7 +108,7 @@ class DebugMethod(Method):
             if self.toDebug():
                 stepName = instruction.toString()
                 print(stepName)
-                msgheads = {'unaryhead', 'binhead', 'kwhead', 'cascadehead'}
+                msgheads = {'unaryhead', 'binhead', 'kwhead', 'chainhead'}
                 if instruction.ruleName() in msgheads:
                     dummy = 1                           # specific steps bpt
                 res = instruction.run(scope)            # all steps bpt
