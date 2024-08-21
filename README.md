@@ -3,6 +3,11 @@
 
 We are looking for a small script capable of running on top of high level languages e.g. Python, Java, C++ and etc to manipulate high level functions provided by any of these platforms. This script provides a self-contained and platform independent environment to develop common reusable logics that can be executed in different platforms & hosts.
 
+For the impatience, please take a look at these
+- Critical [use case: fully dynamic creation using SmallScript]( {#fullyDynamic-creation-using-smallScript})
+- [v0.2.0 SmallScript TDD](https://github.com/vitalstarorg/smallscript/blob/dev/tests/tdd_v0_2)
+- [v0.0.0 SmallScript TDD](https://github.com/vitalstarorg/smallscript/blob/dev/tests/tdd_v0_0)
+
 
 ### Motivation
 We come across libraries using different architecture and designs. Since they are designed with a specific use case in mind, when we combine several of these libraries, we always need to develop additional adaptors or abstraction layers to hide their implementation or design details to fit them all into one homogenous framework.
@@ -52,7 +57,7 @@ if sobj.attr12().isNil():
   sobj.attr12('Some value')
     # BTW type() provides a hint and default value. So we can set any object into it, including non-SObject.
 
-sobj.attr12(print) 
+sobj.attr12().print() 
     # 'print' is a python build-in function.
 ```
 ### Metaclass fully describes sobject class structure.
@@ -74,8 +79,8 @@ meta1 = tobj1.metaclass()
 
 ```python
 cxt = Context().name('test01_tdd')
-cxt.loadPackage('smallscript')  # need to load this first.
-pkg = cxt.getOrNewPackage('tmppkg')  # create a temporary package on memory
+cxt.loadPackage('smallscript')          # need to load this first.
+pkg = cxt.getOrNewPackage('tmppkg')     # create a temporary package on memory
 ```
 ### Dynamically create a new class
 ```python
@@ -219,7 +224,7 @@ tobj.method16(2, 3)             # 305
 
 # Release Note
 ### v0.2.0 SmallScript
-- ref: tests/tdd_v0_2/* for details
+- ref: [https://github.com/vitalstarorg/smallscript/blob/dev/tests/tdd_v0_2) for details
 - This is non-compatible to v0.1.0 as significant grammar changes. So we removed test/tdd_v0_1 from v0.2.0. 
 - SmallScript starts to deviate from SmallTalk protocol e.g. cascade, ws, comment, sep, etc. 
 - Improve readability e.g. using SEMI as expr seperator.
