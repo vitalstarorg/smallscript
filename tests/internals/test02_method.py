@@ -131,7 +131,7 @@ class Test_Method(SmallScriptTest):
         self.assertEqual('value from metaInit', tobj.cattr13())
         self.assertEqual('value from metaInit', tobj.metaclass().attrs()['cattr14'])
 
-    # Originate tdd_v0_1/test01_tdd.py.
+    # Originate tdd_v0_2/test01_tdd.py.
     @skipUnless('TESTALL' in env, "disabled")
     def test720_localSObj(self):
         ### Access instance and class attributes and methods

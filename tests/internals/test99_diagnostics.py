@@ -33,18 +33,6 @@ class Test_Diagnostics(SmallScriptTest):
     def test100_hack(self):
         scope = rootContext.createScope()
 
-        ss = "#( #root #(1 2))"
-        method = Method().interpret(ss); res = method(scope)
-        self.assertListEqual(['root', [1,2]], res)
-
-        ss = "#()"
-        method = Method().interpret(ss); res = method(scope)
-        self.assertListEqual([], res)
-
-        ss = "#(#AAA)"
-        method = Method().interpret(ss); res = method(scope)
-        self.assertListEqual(['AAA'], res)
-
         return
 
     @skip

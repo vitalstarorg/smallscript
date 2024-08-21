@@ -218,11 +218,25 @@ tobj.method16(2, 3)             # 305
  - Similar to C/C++
 
 # Release Note
+### v0.2.0 SmallScript
+- ref: tests/tdd_v0_2/* for details
+- This is non-compatible to v0.1.0 as significant grammar changes. So we removed test/tdd_v0_1 from v0.2.0. 
+- SmallScript starts to deviate from SmallTalk protocol e.g. cascade, ws, comment, sep, etc. 
+- Improve readability e.g. using SEMI as expr seperator.
+- Free up PERIOD for later other use e.g. navigate data structure.
+- Rename Cascade to Chain to better reflects its intention.
+- Reduce much ws tokens generated that improve parsing performance of a test from 5sec to 400ms.
+- Change '//' style for comment. Leaving '"' for later use.
+- Support heredoc both as string and comment.
+- Fully capable of create metaclass within SmallScript.
+- Default SObject.nam() is an empty String instead of 'a SObject'.
+
 ### v0.1.0 SObject with Closure
 - ref: tests/tdd_v0_1/* for details
 - Enhance SObject with class attributes.
 - Supports both instance and class methods using SObject protocol, not using Python.
 - Implemented initial elements of SmallScript.
+
 ### v0.0.1 SObject
 - ref: tests/tdd_v0_0/* for details
 - Provide basic object encapsulation and behavioral inheritance with trait type of multiple inheritance.
