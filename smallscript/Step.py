@@ -28,7 +28,7 @@ from smallscript.antlr.SmallScriptVisitor import SmallScriptVisitor
 from smallscript.antlr.SmallScriptParser import SmallScriptParser
 from antlr4 import RuleContext
 
-class StepVisitor(SmallScriptVisitor):
+class RuleContextVisitor(SmallScriptVisitor):
     def visitCommon(self, cxt): return cxt.getText()
     def visitSmallscript(self, cxt): return self.visitCommon(cxt)
     def visitClosure(self, cxt): return self.visitCommon(cxt)
@@ -57,7 +57,6 @@ class StepVisitor(SmallScriptVisitor):
     def visitChar(self, cxt): return self.visitCommon(cxt)
     def visitBaresym(self, cxt): return self.visitCommon(cxt)
     def visitPrimitive(self, cxt): return self.visitCommon(cxt)
-
     def visitAssign(self, cxt): return self.visitCommon(cxt)
     def visitVar(self, cxt): return self.visitCommon(cxt)
     def visitRef(self, cxt): return self.visitCommon(cxt)
@@ -68,7 +67,6 @@ class StepVisitor(SmallScriptVisitor):
     def visitSsFloat(self, cxt): return self.visitCommon(cxt)
     def visitSsHex(self, cxt): return self.visitCommon(cxt)
     def visitSsInt(self, cxt):return self.visitCommon(cxt)
-
     def visitExprlst(self, cxt): return self.visitCommon(cxt)
     def visitBlk(self, cxt): return self.visitCommon(cxt)
     def visitPtkey(self, cxt): return self.visitCommon(cxt)
@@ -86,6 +84,12 @@ class StepVisitor(SmallScriptVisitor):
     def visitKeywords(self, cxt): return self.visitCommon(cxt)
     def visitErrorNode(self, errnode): return self.visitCommon(errnode)
 
+class StepVisitor(SObject):
+    def __getattr__(self, item):
+        def defaultVisit(step):
+            return step.visit(self)
+        return defaultVisit
+
 class Step(SObject):
     ruleCxt = Holder().name('ruleCxt')
     ruleName = Holder().name('ruleName')
@@ -96,7 +100,7 @@ class Step(SObject):
     compileRes = Holder().name('compileRes')
     runtimeRes = Holder().name('runtimeRes')
 
-    def mainStep(self): return nil if self.children().isNil() else self.children().head()
+    def visit(self, visitor): return visitor.visitStep(self)
     def keyname(self):
         return self.name() if self.hasKey('name') or self.ruleName().isNil() else self.ruleName()
     def getStep(self, name, default=nil): return self.children().getValue(name, default)
@@ -174,15 +178,20 @@ class Step(SObject):
         return self.keyname()
 
 class SmallScriptStep(Step):
+    def visit(self, step): return step.visitSmallscript(self)
+
     def getClosure(self, interpreter):
         interpreter.currentStep(self)
         ssCxt = self.ruleCxt()
         closureCxt = next(ssCxt.getChildren())
         closureStep = closureCxt.accept(interpreter)
+        interpreter.currentStep(closureStep)
         return closureStep
 
 class ClosureStep(Step):
     method = Holder().name('method')
+
+    def visit(self, step): return step.visitClosure(self)
 
     def interpret(self, interpreter):
         # Interpret the rest with a new interpreter.
@@ -222,6 +231,17 @@ class RuntimeStep(Step):
         return res
 
 class UnaryHeadStep(RuntimeStep):
+    def visit(self, step): return step.visitUnaryHead(self)
+
+    def _addToParent(self, interpreter, parentStep, toKeep):
+        if self.children().len() == 1:
+            parentStep.addStep(self.ruleName(), self.children().head())
+        else:
+            parentStep.addStep(self.ruleName(), self)
+            if interpreter.toDebug(): print(f"  {self.ruleName()} add to instructions")
+            interpreter.instructions().append(self)
+        return self
+
     def invoke(self, scope, obj, unarytail):   # obj can be Python obj
         res = obj
         while unarytail.notNil():
@@ -256,6 +276,17 @@ class UnaryHeadStep(RuntimeStep):
 
 class BinHeadStep(RuntimeStep):
     operators = Holder().name('operators').type('Map').asClassType()
+
+    def visit(self, step): return step.visitBinHead(self)
+
+    def _addToParent(self, interpreter, parentStep, toKeep):
+        if self.children().len() == 1:
+            parentStep.addStep(self.ruleName(), self.children().head())
+        else:
+            parentStep.addStep(self.ruleName(), self)
+            if interpreter.toDebug(): print(f"  {self.ruleName()} add to instructions")
+            interpreter.instructions().append(self)
+        return self
 
     @Holder().asClassType()
     def metaInit(scope):
@@ -300,6 +331,8 @@ class BinHeadStep(RuntimeStep):
         return res
 
 class KwHeadStep(RuntimeStep):
+    def visit(self, step): return step.visitKwHead(self)
+
     def _kwmsg(self, kwmsg):
         kwpairs = kwmsg.children().head()
         if not isinstance(kwpairs, List):
@@ -379,6 +412,8 @@ class KwHeadStep(RuntimeStep):
         return res
 
 class ChainStep(RuntimeStep):
+    def visit(self, step): return step.visitChain(self)
+
     def invoke(self, scope, obj, msg):
         res = obj
         tails = msg.children().values()
@@ -407,6 +442,8 @@ class ChainStep(RuntimeStep):
         return res
 
 class ArrayStep(RuntimeStep):  # Serving both dynarr & litarr
+    def visit(self, step): return step.visitArray(self)
+
     def _toList(self, steps):
         list = List()
         for step in steps:
@@ -453,6 +490,8 @@ class ArrayStep(RuntimeStep):  # Serving both dynarr & litarr
             return res
 
 class AssignStep(RuntimeStep):
+    def visit(self, step): return step.visitAssign(self)
+
     def run(self, scope):
         ref = self.getStep('ref')
         refObj = ref.runtimeRes()
@@ -462,6 +501,8 @@ class AssignStep(RuntimeStep):
         return res
 
 class VarStep(RuntimeStep):
+    def visit(self, step): return step.visitVar(self)
+
     def run(self, scope):
         ref = self.getStep('ref')
         refObj = ref.runtimeRes()
@@ -472,6 +513,8 @@ class VarStep(RuntimeStep):
     def describe(self): return f"{self.getStep('ref').compileRes()}:{self.ruleName()}"
 
 class RefStep(RuntimeStep):
+    def visit(self, step): return step.visitRef(self)
+
     def run(self, scope):
         varname = self.compileRes()
         self.name(varname)
@@ -481,6 +524,8 @@ class RefStep(RuntimeStep):
         return obj
 
 class PrimitiveStep(RuntimeStep):
+    def visit(self, step): return step.visitPrimitive(self)
+
     def interpret(self, interpreter):
         super().interpret(interpreter)
         primkey = self.getStep('primkey').compileRes()
@@ -489,7 +534,7 @@ class PrimitiveStep(RuntimeStep):
         self.compileRes(map)
         return self
 
-class Interpreter(SObject, StepVisitor):
+class Interpreter(SObject, RuleContextVisitor):
     currentStep = Holder().name('currentStep')
     instructions = Holder().name('instructions').type('List')
     method = Holder().name('method')

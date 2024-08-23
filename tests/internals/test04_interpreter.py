@@ -40,7 +40,7 @@ class Test_Interpreter1(SmallScriptTest):
         self.assertTrue('123' in res)
 
         #### AST graph of the syntax can be shown on nbs/antlr.ipynb
-        dot = script.dotGraph()
+        dot = script.astGraph()
         dot_graph = dot.source.split('\n')
         self.assertEqual('digraph G {', dot_graph[0])
 

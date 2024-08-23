@@ -413,5 +413,20 @@ class Test_Interpreter2(SmallScriptTest):
             # [: e | | a | a:= e + 1]
             #              ^
 
+    @skipUnless('TESTALL' in env, "disabled")
+    def test900_visualization(self):
+        ss = "b := [ :e | 2 + e]; b value: 9"
+        method = Method()
+        method.interpret(ss)
+        astgraph = method.astGraph()
+        irgraph = method.irGraph()
+
+        ss = "tobj | method14: 7 add: 3 | attr11 name | + tobj sobj11 attr11 + 2 + 4"
+        method = Method()
+        method.interpret(ss)
+        astgraph = method.astGraph()
+        irgraph = method.irGraph()
+
+
 if __name__ == '__main__':
     unittest.main()

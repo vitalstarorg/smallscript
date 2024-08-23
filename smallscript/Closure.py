@@ -27,7 +27,7 @@ from antlr4.tree.Trees import Trees
 from smallscript.antlr.SmallScriptLexer import SmallScriptLexer as Lexer
 from smallscript.antlr.SmallScriptParser import SmallScriptParser as Parser
 from smallscript.antlr.SmallScriptListener import SmallScriptListener as Listener
-# from smallscript.Step import Step, Precompiler
+from smallscript.Step import Step, StepVisitor, ClosureStep
 from smallscript.SObject import *
 
 class ScriptErrorListener(SObject, ErrorListener):
@@ -40,7 +40,7 @@ class ScriptErrorListener(SObject, ErrorListener):
         self.errormsg(errmsg)
         return self
 
-class DOTGrapher(Listener):
+class ASTGrapher(Listener):
     def __init__(self):
         self.graph = Digraph('G', format='png')
 
@@ -61,6 +61,74 @@ class DOTGrapher(Listener):
     def exitEveryRule(self, ctx):
         for child in ctx.getChildren():
             self.graph.edge(str(id(ctx)), str(id(child)))
+
+class IRGrapher(StepVisitor):
+    currentStep = Holder().name('currentStep')
+    childName = Holder().name('childName').type('String')
+    instructionIdx = Holder().name('instructionIdx').type('Map')
+
+    def __init__(self):
+        self.graph = Digraph('G', format='png')
+
+    def __getattr__(self, item):
+        def defaultVisit(step):
+            return self.drawOval(step)
+        return defaultVisit
+
+    def walkOn(self, name, step, firstStep):
+        "Depth-first walk on step."
+        if not firstStep and isinstance(step, ClosureStep):
+            self.childName(name)
+            method = step.method()
+            method.irGraph(self)
+            return self
+        currentStep = self.currentStep()
+        children = List()
+        # flatten child step in case it is a list.
+        for chdName, chdStep in step.children().items():
+            if isinstance(chdStep, List):
+                children.extend([(chdName, child) for child in chdStep])
+            else:
+                children.append((chdName, chdStep))
+        self.currentStep(step)
+        for chdName, chd in children:
+            self.walkOn(chdName, chd, false_)
+            self.currentStep(step)
+        self.currentStep(currentStep)
+        self.childName(name)
+        step.visit(self)
+        return self
+
+    def drawOval(self, step):
+        return self.draw(step, 'oval')
+
+    def drawBox(self, step):
+        return self.draw(step, 'box')
+
+    def draw(self, step, shape):
+        childName = self.childName()
+        currentStep = self.currentStep()
+        currentStepId = hex(id(currentStep))
+        assert not isinstance(currentStep, List), "currentStep shouldn't be a List."
+        assert not isinstance(step, List), "step shouldn't be a List."
+        ruleName = step.ruleName()
+        compileRes = step.compileRes()
+        runtimeRes = step.runtimeRes()
+        stepId = hex(id(step))
+        if currentStep.notNil():
+            label = f"  {childName}"
+            self.graph.edge(currentStepId, stepId, label=label)
+            # print(f"{currentStepId} --{childName}--> {stepId}")
+        index = self.instructionIdx().get(stepId, nil)
+        nodeName = f"{ruleName}" if index == nil else f"#{index}\n{ruleName}"
+        if compileRes.isNil():
+            self.graph.node(stepId, f"{nodeName}", shape=shape)
+        else:
+            self.graph.node(stepId, f"{nodeName}['{compileRes}' '{runtimeRes}']", shape=shape)
+        return self
+
+    def visitStep(self, step): return self.drawBox(step)
+    def visitClosure(self, step): return self.drawBox(step)
 
 class Script(SObject):
     text = Holder().name('text').type('String')
@@ -92,8 +160,8 @@ class Script(SObject):
         # self.smallscriptCxt(ast)
         return self
 
-    def dotGraph(self):
-        listener = DOTGrapher()
+    def astGraph(self):
+        listener = ASTGrapher()
         walker = ParseTreeWalker()
         walker.walk(listener, self.smallscriptStep().ruleCxt())
         return listener.graph
@@ -211,6 +279,13 @@ class Method(SObject):
     def _runSteps(self, scope, *params):
         "Use a precompiler instructions to run this method."
         instructions = self.interpreter().instructions()
+        if instructions.isEmpty():
+            currentStep = self.interpreter().currentStep()
+            if currentStep.isNil(): return nil
+            res = currentStep.children().head()
+            if isinstance(res, Step) and res.hasKey('runtimeRes'):
+                res = res.runtimeRes()
+            return res
         res = nil
         for instruction in instructions:
             res = instruction.run(scope)
@@ -235,6 +310,18 @@ class Method(SObject):
             method = closure.method()
             self.copyFrom(method)
         return self
+
+    def astGraph(self): return self.script().astGraph()
+
+    def irGraph(self, grapher=nil):
+        if grapher.isNil():
+            grapher = IRGrapher()
+        instructions = self.interpreter().instructions()
+        instructionIdx = grapher.instructionIdx()
+        for i in range(instructions.len()):
+            instructionIdx[hex(id(instructions[i]))] = i
+        grapher.walkOn('closure', self.interpreter().currentStep(), true_)
+        return grapher.graph
 
     def takePyFunc(self, pyfunc):
         self.pyfunc(pyfunc)
