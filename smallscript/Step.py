@@ -220,6 +220,34 @@ class ClosureStep(Step):
                 print(f"  {instruction}")
         return self
 
+    def flatten(self):
+        exprs = self.getStep('exprs')   # step, List
+        expr = exprs.getStep('expr')
+        exprlst = exprs.getStep('exprlst')
+        flattenList = List()
+        if expr.isNil():
+            flattenList.append(exprs)          # closure is a literal step as exprs has no expr.
+        else:
+            flattenList.append(expr)
+            if exprlst.notNil():
+                flattenList.extend(exprlst)    # closure has multiple expr vs single expr.
+        return flattenList
+
+    # def visitExprs(self, cxt):
+    #     exprsStep = Step().retrieve(cxt)
+    #     exprsStep.interpret(self)               # process list of expressions
+    #
+    #     # keep the last expression for closure
+    #     children = exprsStep.children()
+    #     if children.hasKey('exprlst'):
+    #         exprlst = children['exprlst']
+    #         if isinstance(exprlst,List):    # exprs can be a single step.
+    #             last = exprlst[-1]
+    #             children.clear()
+    #             children['exprlst'] = last
+    #     return exprsStep
+
+
 class RuntimeStep(Step):
     "Helper class for all steps that have runtime implications."
     def __init__(self): self.toKeep(true_)
@@ -564,22 +592,7 @@ class Interpreter(SObject, RuleContextVisitor):
         currentStep.addStep(step.keyname(), step)
         return step
 
-    def visitExprs(self, cxt):
-        # currentStep = self.currentStep()        # save the current step
-        exprsStep = Step().retrieve(cxt)
-        exprsStep.interpret(self)               # process list of expressions
-
-        # keep the last expression for closure
-        children = exprsStep.children()
-        if children.hasKey('exprlst'):
-            exprlst = children['exprlst']
-            if isinstance(exprlst,List):    # exprs can be a single step.
-                last = exprlst[-1]
-                children.clear()
-                children['exprlst'] = last
-        # self.currentStep(currentStep)          # restore the current step
-        return exprsStep
-
+    def visitExprs(self, cxt): return Step().retrieve(cxt).interpret(self)
     def visitUnaryhead(self, cxt): return UnaryHeadStep().retrieve(cxt).interpret(self)
     def visitUnarytail(self, cxt): return Step().retrieve(cxt).toKeep(true_).interpret(self)
     def visitKwhead(self, cxt): return KwHeadStep().retrieve(cxt).interpret(self)
@@ -612,21 +625,21 @@ class Interpreter(SObject, RuleContextVisitor):
     def visitSsFloat(self, cxt):
         step = Step().retrieve(cxt).interpret(self)
         f = Float(step.compileRes())
-        number = Number().number(f)
+        number = Number().value(f)
         step.runtimeRes(number)
         return step
 
     def visitSsHex(self, cxt):
         step = Step().retrieve(cxt).interpret(self)
         n = Integer(int(step.compileRes(), 16))
-        number = Number().number(n)
+        number = Number().value(n)
         step.runtimeRes(number)
         return step
 
     def visitSsInt(self, cxt):
         step = Step().retrieve(cxt).interpret(self)
         n = Integer(step.compileRes())
-        number = Number().number(n)
+        number = Number().value(n)
         step.runtimeRes(number)
         return step
 

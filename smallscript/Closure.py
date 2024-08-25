@@ -230,8 +230,8 @@ class Method(SObject):
     interpreter = Holder().name('interpreter').type('Interpreter')
     params = Holder().name('params').type('List')
     tempvars = Holder().name('tempvars').type('List')
-    pyfunc = Holder().name('pyfunc')
     pysource = Holder().name('pysource')
+    pyfunc = Holder().name('pyfunc')
 
     def value(self, *args, **kwargs):
         # @self @scope args...
@@ -311,6 +311,13 @@ class Method(SObject):
             self.copyFrom(method)
         return self
 
+    def toPython(self):
+        ""
+        coder = PythonCoder()
+        pythonscript = self.visit(coder)
+        self.pysource(pythonscript)
+        return pythonscript
+
     def astGraph(self): return self.script().astGraph()
 
     def irGraph(self, grapher=nil):
@@ -359,6 +366,19 @@ class Method(SObject):
             if name.notEmpty(): signature = f"{name}__{signature}"
         return String(signature)
 
+    def unname(self, body=nil):
+        if body == nil:
+            body = self.getBody()
+        name = f"unnamed{body.sha256()}"
+        return name
+
+    def getBody(self):
+        source = self.pysource()
+        if source.isNil() or source.isEmpty():
+            return ""
+        body = source.split('\n', 1)[1]     # remove the first line
+        return String(body)
+
     def info(self):
         info = self.script().info()
         return info
@@ -385,3 +405,99 @@ class Execution(SObject):
     def visitSObj(self, sobj): return self.this(sobj)
     def visitMethod(self, method): return self.method(method)
 
+class TextBuffer(SObject):
+    newLine = Holder().name('newLine').type('True_')
+
+    def skipFirstLn(self): self.newLine(false_); return self
+
+    def textIO(self, output=''):
+        output = self._getOrSet('output', output, nil)
+        if output == nil:
+            output = io.StringIO()
+            self.setValue('output', output)
+        return output
+
+    def write(self, string):
+        self.textIO().write(string)
+        return self
+
+    def writeLn(self, string = ""):
+        if not self.newLine():
+            self.textIO().write(string)
+            self.newLine(True_)
+        else:
+            self.textIO().write("\n")
+            self.textIO().write(string)
+        return self
+
+    def text(self):
+        text = self.textIO().getvalue()
+        return String(text)
+
+    def indent(self, padding="  "):
+        text = self._deindent()
+        indented = [f"{padding}{line}" for line in text]
+        res = "\n".join(indented)
+        return String(res)
+
+    def _deindent(self):
+        noIdent = self.text()
+        if noIdent.notEmpty():
+            lines = noIdent.split("\n")
+            first = lines[0]
+            nspaces = len(first) - len(first.lstrip())
+            noIndent = lines if nspaces == 0 else [line[nspaces:] for line in lines]
+        return noIndent
+
+class PythonCoder(SObject):
+    # output = Holder().name('output').type('TextBuffer')
+    delimiter = Holder().name('delimiter').type('String')
+
+    def firstArg(self, firstArg=''):
+        firstArg = self._getOrSet('firstArg', firstArg, nil)
+        if firstArg == nil:
+            firstArg = 'scope'
+            self.setValue('scope', firstArg)
+        return firstArg
+
+    def visit(self, step): return step.visit(self)
+
+    def visitMethod(self, method):
+        output = TextBuffer()
+        output.skipFirstLn()
+
+        # params
+        if method.params().notEmpty():
+            for param in method.params():
+                output.writeLn(f"_ = scope['{param}'] = {param}")
+        output.writeLn()
+        # tempvars
+        if method.tempvars().notEmpty():
+            for tempVar in method.tempvars():
+                output.write(f"_ = scope['{tempVar}'] = ")
+            output.write(f"{self.firstArg()}['nil']")
+        # expressions
+        closure = method.interpreter().currentStep()
+        exprList = closure.flatten()
+        for step in exprList:
+            res = step
+            if not step.isRuntime():
+                res = step.runtimeRes()
+            res = res.visit(self)
+            output.writeLn(f"_ = {res}")
+        output.writeLn(f"return _")
+
+        # method signature
+        body = output.indent('  ')
+        name = method.name()
+        if name.isEmpty():
+            # name = method.signature()
+            name = method.unname(body)
+        parameters = ", ".join(method.params())
+        source = String(f"def {name}({self.firstArg()}, {parameters}):\n{body}")
+        return source
+
+    def visitClosure(self, closure):
+        pass
+
+    def visitNumber(self, number): return f"{number.value()}"

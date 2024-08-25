@@ -20,7 +20,7 @@ import pkgutil
 import inspect
 import builtins
 import importlib
-# import xxhash
+import hashlib
 import logging
 import traceback
 from pathlib import Path
@@ -268,7 +268,7 @@ class SObject:
     def toString(self): return String(self)
     def print(self, suppressed=''):
         if suppressed == '': print(self.info())
-        return self
+        # return self
 
     def info(self, offset=0):
         buffer = io.StringIO()
@@ -408,7 +408,7 @@ class String(str, Primitive):
     def len(self): return len(self)
     def isEmpty(self): return self.len() == 0
     def visit(self, visitor): return visitor.visitString(self)
-    # def xxHash(self): return 0 if self.isEmpty() else xxhash.xxh64(self).intdigest()
+    def sha256(self, digits=16): return hashlib.sha256(self.encode()).hexdigest()[0:digits]
     def isSymbol(self): return false_ if self.isEmpty() or self[1] != '#' else true_
     def asString(self): return String(f"'{self[1:]}'") if self.isSymbol() else String(f"'{self}'")
     def toString(self): return self
@@ -421,11 +421,11 @@ class True_(Primitive):
             true_ = super().__new__(cls)
         return true_
 
-    def __bool__(self): return True # true_ won't work for 'not', it has to return Python bool
+    def __bool__(self): return True     # true_ won't work for 'not', it has to return Python bool
     def createEmpty(self): return self
     def isFalse(self): return false_
-    # def isTrue(self): return true_ if self == true_ else false_ # only @true.is_true will return true.
     def isTrue(self): return true_
+    def asString(self): return "true"
     def describe(self): return "true"
 
 class False_(Primitive):
@@ -440,6 +440,7 @@ class False_(Primitive):
     def createEmpty(self): return self
     def isFalse(self): return true_
     def isTrue(self): return false_
+    def asString(self): return "false"
     def describe(self): return "false"
 
 true_ = True_()
@@ -465,6 +466,7 @@ class Nil(Primitive):
     def _get(self, keyname, default): return nil
     def _set(self, keyname, value): return self
     def _del(self, keyname): return self
+    def asString(self): return "nil"
 
 nil = Nil()
 
@@ -537,11 +539,13 @@ class Metaclass(SObject):
 
     def addMethod(self, name, method, classType=false_):
         holders = self.holders()
-        signature = method.signature(name)
-        holder = Holder().name(signature).type('Method').method(method)
+        fullname = method.signature(name)
+        ssname = method.signature()
+        holder = Holder().name(fullname).type('Method').method(method)
         if classType: holder.asClassType()
-        holders[signature] = holder # fullname
-        holders[name] = holder      # prefix, ok if signature == name
+        holders[fullname] = holder  # fullname
+        holders[ssname] = holder    # Smallscript protocol
+        holders[name] = holder      # prefix for python protocol
         return self
 
     def importFrom(self, sClass):
@@ -900,15 +904,15 @@ class Scope(SObject):
         return String(output)
 
 class Number(Primitive):
-    def number(self, number=''):
-        if number != '' and not isinstance(number, SObject):
-            if isinstance(number, int):
-                number = Integer(number)
-            elif isinstance(number, float):
-                number = Float(number)
+    def value(self, value=''):
+        if value != '' and not isinstance(value, SObject):
+            if isinstance(value, int):
+                value = Integer(value)
+            elif isinstance(value, float):
+                value = Float(value)
             else:
-                number = Number().fromString(String(number))
-        return self._getOrSet('number', number, 'Integer')
+                value = Number().fromString(String(value))
+        return self._getOrSet('number', value, 'Integer')
 
     def __init__(self, number=0):
         if not isinstance(number, SObject):
@@ -919,202 +923,206 @@ class Number(Primitive):
             else:
                 self.fromString(String(number))
                 return
-        self.number(number)
+        self.value(number)
 
-    def __int__(self): return int(self.number())
-    def __float__(self): return float(self.number())
+    def visit(self, visitor): return visitor.visitNumber(self)
+    def __int__(self): return int(self.value())
+    def __float__(self): return float(self.value())
 
     def __floordiv__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         if isinstance(val, Float):
-            res = val // self.number()
+            res = val // self.value()
         else:
-            res = self.number() // val
+            res = self.value() // val
         return res
 
     def __add__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         if isinstance(val, Float):
-            res = val + self.number()
+            res = val + self.value()
         else:
-            res = self.number() + val
+            res = self.value() + val
         return res
 
     def __mul__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         if isinstance(val, Float):
-            res = val * self.number()
+            res = val * self.value()
         else:
-            res = self.number() * val
+            res = self.value() * val
         return res
 
     def __truediv__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         if isinstance(val, Float):
-            res = val / self.number()
+            res = val / self.value()
         else:
-            res = self.number() / val
+            res = self.value() / val
         return res
 
     def __eq__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         if isinstance(val, Float):
-            res = val == self.number()
+            res = val == self.value()
         else:
-            res = self.number() == val
+            res = self.value() == val
         return res
 
     def __gt__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         if isinstance(val, Float):
-            res = val <= self.number()
+            res = val <= self.value()
         else:
-            res = self.number() > val
+            res = self.value() > val
         return res
 
     def __lt__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         if isinstance(val, Float):
-            res = val >= self.number()
+            res = val >= self.value()
         else:
-            res = self.number() < val
+            res = self.value() < val
         return res
 
     def __mod__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         if isinstance(val, Float):
-            res = val % self.number()
+            res = val % self.value()
         else:
-            res = self.number() % val
+            res = self.value() % val
         return res
 
     def __sub__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         if isinstance(val, Float):
-            res = val - self.number()
+            res = val - self.value()
         else:
-            res = self.number() - val
+            res = self.value() - val
         return res
 
     def fromString(self, string):
         number = Number()
         if '.' in string:
-            number.number(Float(string))
+            number.value(Float(string))
         else:
-            number.number(Integer(string))
+            number.value(Integer(string))
         return number
 
-    def __hash__(self): return self.number().__hash__()
+    def __hash__(self): return self.value().__hash__()
     def __str__(self): return self.toString()
     def asSObj(self, pyobj): return Number(pyobj)
     def asNumber(self): return self
-    def toString(self): return String(self.number())
+    def asString(self): return self.toString()
+    def toString(self): return String(self.value())
 
 class Integer(int, Primitive):
     def __new__(cls, number = 0): return super(Integer, cls).__new__(cls, number)
     def __init__(self, value = 0): SObject.__init__(self)
 
     def __floordiv__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         res = super().__floordiv__(val)
-        return Number().number(res)
+        return Number().value(res)
 
     def __add__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         res = super().__add__(val)
-        return Number().number(res)
+        return Number().value(res)
 
     def __mul__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         res = super().__mul__(val)
-        return Number().number(res)
+        return Number().value(res)
 
     def __truediv__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         res = super().__truediv__(val)
-        return Number().number(res)
+        return Number().value(res)
 
     def __eq__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         res = super().__eq__(val)
         return res
 
     def __gt__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         res = super().__gt__(val)
         return res
 
     def __lt__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         res = super().__lt__(val)
         return res
 
     def __mod__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         res = super().__mod__(val)
-        return Number().number(res)
+        return Number().value(res)
 
     def __sub__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         res = super().__sub__(val)
-        return Number().number(res)
+        return Number().value(res)
 
     def __hash__(self): return super().__hash__()
     def asSObj(self, pyobj): return Integer(pyobj)
-    def describe(self): return f"{self} {hex(self)}"
+    def asString(self): return String(f"{self}")
+    def describe(self): return String(f"{self} {hex(self)}")
 
 class Float(float, Primitive):
     def __new__(cls, number = 0): return super(Float, cls).__new__(cls, number)
     def __init__(self, value = 0): SObject.__init__(self)
 
     def __floordiv__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         res = super().__floordiv__(val)
-        return Number().number(res)
+        return Number().value(res)
 
     def __add__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         res = super().__add__(val)
-        return Number().number(res)
+        return Number().value(res)
 
     def __mul__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         res = super().__mul__(val)
-        return Number().number(res)
+        return Number().value(res)
 
     def __truediv__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         res = super().__truediv__(val)
-        return Number().number(res)
+        return Number().value(res)
 
     def __eq__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         res = super().__eq__(val)
         return res
 
     def __gt__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         res = super().__gt__(val)
         return res
 
     def __lt__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         res = super().__lt__(val)
         return res
 
     def __mod__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         res = super().__mod__(val)
-        return Number().number(res)
+        return Number().value(res)
 
     def __sub__(self, val):
-        if isinstance(val, Number): val = val.number()
+        if isinstance(val, Number): val = val.value()
         res = super().__sub__(val)
-        return Number().number(res)
+        return Number().value(res)
 
     def __hash__(self): return super().__hash__()
 
     def asSObj(self, pyobj): return Float(pyobj)
+    def asString(self): return String(f"{self}")
     def describe(self): return f"{self}f"
 
 pytypes = Map(str = String, int = Number, float = Number, dict = Map, list = List)

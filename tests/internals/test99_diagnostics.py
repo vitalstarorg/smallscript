@@ -31,16 +31,19 @@ class Test_Diagnostics(SmallScriptTest):
 
     @skipUnless('TESTALL' not in env, "disabled")
     def test100_hack(self):
-        ss = "123"
-        ss = "b := [ :e | 2 + e]; b value: 9"
-        ss = "obj1 | method4 | method3__var1; 3 var2: 2 | + obj1 var1 | + 5"
-        ss = "obj1 | method4 | method3__var1"
+        scope = rootContext.createScope()
+
         ss = "tobj | method14: 7 add: 3 | attr11 name | + tobj sobj11 attr11 + 2 + 4"
-        m = DebugMethod()
-        # m.toDebug(true_).loglevel(0)
-        m.interpret(ss)
-        # graph = m.astGraph()
-        graph = m.irGraph()
+        # ss = ":param1 :param2| |tmp1 tmp2| tmp1 := param2"
+        # ss = ":param1 :param2| |a b| 123; a := 321; b := a"
+        ss = ":param1 :param2| |a b| 123"
+        method = DebugMethod()
+        # method.toDebug(true_).loglevel(0)
+        method.interpret(ss)
+
+        python = method.toPython()
+        python.print()
+        method(12,34)
         return
 
     @skip
