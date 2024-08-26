@@ -120,7 +120,7 @@ class Test_Parser(SmallScriptTest):
         # Subexpression
         ss = "(obj1 method4 method3__var1: 3 var2: 2) + obj1 var1 + 5"
         self.assertTrue(script.parse(ss).noError())
-        ss = "(obj := obj1) var1"
+        ss = "(obj first: 'John' last: 'Doe') var1"
         self.assertTrue(script.parse(ss).noError())
         ss = """(obj1 m1: 1) + (obj2 m2 m3) + 2"""
         self.assertTrue(script.parse(ss).noError())

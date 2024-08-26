@@ -26,6 +26,15 @@ class SmallScriptListener(ParseTreeListener):
         pass
 
 
+    # Enter a parse tree produced by SmallScriptParser#blk.
+    def enterBlk(self, ctx:SmallScriptParser.BlkContext):
+        pass
+
+    # Exit a parse tree produced by SmallScriptParser#blk.
+    def exitBlk(self, ctx:SmallScriptParser.BlkContext):
+        pass
+
+
     # Enter a parse tree produced by SmallScriptParser#temps.
     def enterTemps(self, ctx:SmallScriptParser.TempsContext):
         pass
@@ -248,15 +257,6 @@ class SmallScriptListener(ParseTreeListener):
 
     # Exit a parse tree produced by SmallScriptParser#assign.
     def exitAssign(self, ctx:SmallScriptParser.AssignContext):
-        pass
-
-
-    # Enter a parse tree produced by SmallScriptParser#blk.
-    def enterBlk(self, ctx:SmallScriptParser.BlkContext):
-        pass
-
-    # Exit a parse tree produced by SmallScriptParser#blk.
-    def exitBlk(self, ctx:SmallScriptParser.BlkContext):
         pass
 
 

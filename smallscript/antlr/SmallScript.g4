@@ -11,6 +11,7 @@ grammar SmallScript;
 
 smallscript: closure EOF;
 closure: blkparamlst? ws? temps? ws? exprs | blkparamlst? ws? exprs;
+blk: BLK_START ws? closure? BLK_END;
 temps: PIPE (ws? tempvar)+ ws? PIPE;
 tempvar: IDENT;
 blkparamlst: (ws? blkparam)+ ws? PIPE;
@@ -31,12 +32,12 @@ binhead: unaryhead bintail?;
 bintail: binmsg bintail?;
 binmsg: ws? binop ws? (unaryhead | operand);
 binop: BIN_OP;
-subexpr: OPEN_PAREN ws? expr ws? CLOSE_PAREN;
+//subexpr: OPEN_PAREN ws? expr ws? CLOSE_PAREN;
+subexpr: OPEN_PAREN ws? (kwhead | binhead | primitive) ws? CLOSE_PAREN;
 chain: (kwhead | binhead) (ws? ptfin ws? msg)+;
 ptfin: PIPE;
 msg: kwmsg| unarytail? ws? bintail?;
 assign: ref ws? ASSIGN ws? expr;
-blk: BLK_START ws? closure? BLK_END;
 
 literal: rtlit | parselit;
 rtlit: dynarr | blk;

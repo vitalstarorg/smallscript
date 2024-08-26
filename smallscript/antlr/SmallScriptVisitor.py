@@ -19,6 +19,11 @@ class SmallScriptVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
+    # Visit a parse tree produced by SmallScriptParser#blk.
+    def visitBlk(self, ctx:SmallScriptParser.BlkContext):
+        return self.visitChildren(ctx)
+
+
     # Visit a parse tree produced by SmallScriptParser#temps.
     def visitTemps(self, ctx:SmallScriptParser.TempsContext):
         return self.visitChildren(ctx)
@@ -141,11 +146,6 @@ class SmallScriptVisitor(ParseTreeVisitor):
 
     # Visit a parse tree produced by SmallScriptParser#assign.
     def visitAssign(self, ctx:SmallScriptParser.AssignContext):
-        return self.visitChildren(ctx)
-
-
-    # Visit a parse tree produced by SmallScriptParser#blk.
-    def visitBlk(self, ctx:SmallScriptParser.BlkContext):
         return self.visitChildren(ctx)
 
 

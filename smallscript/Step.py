@@ -125,11 +125,12 @@ class Step(SObject):
             return cxt.parser.ruleNames[cxt.getRuleIndex()]
         return cxt.symbol.text
 
-    def retrieve(self, cxt):
+    def retrieve(self, cxt, justName=false_):
         name = self._ruleName(cxt)
         self.ruleName(name).ruleCxt(cxt)
-        if cxt.children is None: return self
+        if cxt.children is None or justName: return self
         if not isinstance(cxt.children[0], RuleContext):
+            # Int, Float, String, Char, BareSym, Symbol, ... will go here.
             # first terminal children to determine the whole context is not reliable e.g. baresym & litarry. cxt.getText() would slow down 2.5%. Can regain the perf by reimplement these rule contexts.
             # terminal = cxt.children[0]
             # text = terminal.symbol.text
@@ -202,10 +203,12 @@ class ClosureStep(Step):
         # Create method object for this closure.
         method = interpreter.method().createEmpty()
             # new method obj from initiating method e.g. DebugMethod.
-        method.toDebug(interpreter.method().toDebug())
-        method.loglevel(interpreter.method().loglevel())
+        if interpreter.method().toDebug(): method.toDebug(true_)
+        if method.loglevel() != interpreter.method().loglevel():
+            method.loglevel(interpreter.method().loglevel())
         self.method(method)
         method.interpreter(closureInterpreter)
+
         bplStep = self.getStep('blkparamlst')
         if bplStep.notNil() and bplStep.notEmpty():
             method.params(bplStep.children().keys())
@@ -221,32 +224,22 @@ class ClosureStep(Step):
         return self
 
     def flatten(self):
+        flattenList = List()
         exprs = self.getStep('exprs')   # step, List
+        if exprs.ruleName() != 'exprs':
+            flattenList.append(exprs)
+            return flattenList
         expr = exprs.getStep('expr')
         exprlst = exprs.getStep('exprlst')
-        flattenList = List()
         if expr.isNil():
             flattenList.append(exprs)          # closure is a literal step as exprs has no expr.
         else:
             flattenList.append(expr)
+            if exprlst.notNil() and not isinstance(exprlst, List):
+                exprlst = List().append(exprlst)
             if exprlst.notNil():
                 flattenList.extend(exprlst)    # closure has multiple expr vs single expr.
         return flattenList
-
-    # def visitExprs(self, cxt):
-    #     exprsStep = Step().retrieve(cxt)
-    #     exprsStep.interpret(self)               # process list of expressions
-    #
-    #     # keep the last expression for closure
-    #     children = exprsStep.children()
-    #     if children.hasKey('exprlst'):
-    #         exprlst = children['exprlst']
-    #         if isinstance(exprlst,List):    # exprs can be a single step.
-    #             last = exprlst[-1]
-    #             children.clear()
-    #             children['exprlst'] = last
-    #     return exprsStep
-
 
 class RuntimeStep(Step):
     "Helper class for all steps that have runtime implications."
@@ -257,6 +250,16 @@ class RuntimeStep(Step):
         res = self.compileRes()
         self.runtimeRes(res)
         return res
+
+class BlockStep(RuntimeStep):
+    def visit(self, step): return step.visitBlock(self)
+
+    def run(self, scope):
+        res = self.compileRes().method()
+        self.runtimeRes(res)
+        return res
+
+    # def describe(self): return self.keyname()
 
 class UnaryHeadStep(RuntimeStep):
     def visit(self, step): return step.visitUnaryHead(self)
@@ -572,6 +575,14 @@ class Interpreter(SObject, RuleContextVisitor):
     def visitPtfin(self, cxt): return nil
     def visitCommon(self, cxt): return Step().retrieve(cxt).interpret(self)
     def visitClosure(self, cxt): return ClosureStep().toKeep(true_).retrieve(cxt).interpret(self)
+    # def visitBlk(self, cxt): return BlockStep().toKeep(true_).retrieve(cxt).interpret(self)
+    def visitBlk(self, cxt):
+        step = BlockStep().toKeep(true_)
+        step.retrieve(cxt, true_).interpret(self)
+        closure = step.getStep('closure')
+        step.compileRes(closure)
+        step.runtimeRes(closure)
+        return step
 
     def visitTemps(self, cxt): return Step().retrieve(cxt).toKeep(true_).interpret(self)
     def visitTempvar(self, cxt):

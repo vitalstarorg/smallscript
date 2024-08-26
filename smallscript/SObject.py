@@ -34,9 +34,23 @@ class SObject:
         metaclass = self.metaclass()
         if metaclass.isNil():
             return self.unimplemented(item)
+
+        # look for the holder with fullname e.g. first__last__
         holder = metaclass.holderByName(item)
         if holder.notNil():
             return holder.__get__(self)
+
+        # look for the holder with partial name e.g. first
+        partial = item.split('__')
+        if len(partial) > 1:
+            name = partial[0]
+            holder = metaclass.holderByName(name)
+            if holder.notNil():
+                return holder.__get__(self)
+            if hasattr(self, name):
+                return getattr(self, name)
+
+        # consider it as an attribute retrieval
         if SObject.hasKey(self, item):
             value = self.getValue(item)
             holder = Holder().obj(value)
@@ -69,14 +83,18 @@ class SObject:
 
     def _ss_metas(self, sClass):
         "Return a list of classnames for class hierarchy."
+        # print(f"_ss_metas: {sClass.__name__}")    # diagnoses notebook problem
         if 'ss_metas' in sClass.__dict__:
+            # print(f"{sClass.__name__} ss_meta")
             metas = getattr(sClass, 'ss_metas')
             names = [ name.strip() for name in metas.split(',') ]
             return List(names)
         if not issubclass(sClass, SObject):
+            # print(f"{sClass.__name__} not subclass SObject")  # nb reports DebugMethod is not SObject
             return List()
         names = List().append(sClass.__name__)
         if sClass != SObject:
+            # print(f"{sClass.__name__} sClass != SObject")
             for klass in sClass.__bases__:
                 if not issubclass(klass, SObject): continue
                 names.append(klass.__name__)
@@ -146,7 +164,7 @@ class SObject:
     def mutable(self, mutable=''): return self._getOrSet('mutable', mutable, true_) # set mutuable or immatable
     def undefined(self, undefined=''): return self._getOrSet('undefined', undefined, nil)
     def toDebug(self, toDebug=''): return self._getOrSet('toDebug', toDebug, false_)
-    def loglevel(self, loglevel=''): return self._getOrSet('loglevel', loglevel, 0)
+    def loglevel(self, loglevel=''): return self._getOrSet('loglevel', loglevel, Integer())
         # DEBUG: 0, INFO: 1, WARNING: 2, ERROR: 3, CRITICAL: 4
 
     def log(self, msg, level=0):
@@ -409,8 +427,8 @@ class String(str, Primitive):
     def isEmpty(self): return self.len() == 0
     def visit(self, visitor): return visitor.visitString(self)
     def sha256(self, digits=16): return hashlib.sha256(self.encode()).hexdigest()[0:digits]
-    def isSymbol(self): return false_ if self.isEmpty() or self[1] != '#' else true_
-    def asString(self): return String(f"'{self[1:]}'") if self.isSymbol() else String(f"'{self}'")
+    def isSymbol(self): return false_ if self.isEmpty() or self[0] != '#' else true_
+    def asString(self): return String(f"\"{self[1:]}\"") if self.isSymbol() else String(f"\"{self}\"")
     def toString(self): return self
 
 class True_(Primitive):
@@ -476,6 +494,7 @@ class List(list, Primitive):
         list.__init__(self, *args)
         SObject.__init__(self)
 
+    def visit(self, visitor): return visitor.visitList(self)
     def len(self): return len(self)
     def isEmpty(self): return self.len() == 0
     def notEmpty(self): return not self.isEmpty()
@@ -493,6 +512,7 @@ class Map(dict, Primitive):
         dict.__init__(self, *args)
         SObject.__init__(self)
 
+    def visit(self, visitor): return visitor.visitMap(self)
     def len(self): return len(self)
     def isEmpty(self): return self.len() == 0
     def notEmpty(self): return not self.isEmpty()
@@ -665,6 +685,7 @@ class Package(SObject):
                 module = sys.modules[module_name]
             else:
                 module = importlib.import_module(module_name)
+            # module = importlib.import_module(module_name)     # diagnose nb loading issue.
             for name, pyClass in inspect.getmembers(module, inspect.isclass):
                 # filter those class defined in this module, not imported within the module.
                 if pyClass.__module__ == module.__name__ and issubclass(pyClass, SObject):
@@ -865,6 +886,10 @@ class Scope(SObject):
         scope = Scope().parent(self)
         return scope
 
+    def newInstance(self, type):
+        method = self.getContext().newInstance(type)
+        return method
+
     def lookup(self, key, default=nil):
         "Return a sobject contains the @key from self, scopes and parent scope."
         # if self.hasKey(key): return self
@@ -945,6 +970,9 @@ class Number(Primitive):
             res = self.value() + val
         return res
 
+    def __radd__(self, val):
+        return self.__add__(val)
+
     def __mul__(self, val):
         if isinstance(val, Number): val = val.value()
         if isinstance(val, Float):
@@ -1015,6 +1043,7 @@ class Number(Primitive):
     def asNumber(self): return self
     def asString(self): return self.toString()
     def toString(self): return String(self.value())
+    def __repr__(self): return self.toString()
 
 class Integer(int, Primitive):
     def __new__(cls, number = 0): return super(Integer, cls).__new__(cls, number)

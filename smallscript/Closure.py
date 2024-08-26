@@ -17,12 +17,12 @@ import copy
 import re
 import inspect
 import io
+import traceback
+import tempfile
 from graphviz import Digraph
-import logging
 
 from antlr4 import InputStream, CommonTokenStream, ParseTreeWalker
 from antlr4.error.ErrorListener import ErrorListener
-from antlr4.tree.Trees import Trees
 
 from smallscript.antlr.SmallScriptLexer import SmallScriptLexer as Lexer
 from smallscript.antlr.SmallScriptParser import SmallScriptParser as Parser
@@ -121,10 +121,10 @@ class IRGrapher(StepVisitor):
             # print(f"{currentStepId} --{childName}--> {stepId}")
         index = self.instructionIdx().get(stepId, nil)
         nodeName = f"{ruleName}" if index == nil else f"#{index}\n{ruleName}"
-        if compileRes.isNil():
+        if compileRes.isNil() or ruleName == 'blk':
             self.graph.node(stepId, f"{nodeName}", shape=shape)
         else:
-            self.graph.node(stepId, f"{nodeName}['{compileRes}' '{runtimeRes}']", shape=shape)
+            self.graph.node(stepId, f"{nodeName}[''{runtimeRes}']", shape=shape)
         return self
 
     def visitStep(self, step): return self.drawBox(step)
@@ -215,14 +215,14 @@ class Script(SObject):
             text = f"smallscript: <no error>\n{self.text()}"
         return text
 
-        # 'context': 'Context',
-        # 'smallscript': 'String',
-        # 'closure': 'nil',
-        # 'pythonscript': 'String',
-        # 'pythonerror': 'String',
-        # 'pythonfinal': 'String',
-        # 'pythonmethod': 'nil',
-        # 'methods': 'Map',
+class SourceFile(SObject):
+    filepath = Holder().name('filepath').type('String')
+
+    def __del__(self):
+        if self.filepath().notEmpty() and os.path.exists(self.filepath()):
+            os.remove(self.filepath())
+            self.filepath("")
+
 class Method(SObject):
     "Works as a function encapsulation. Its object context is provided during method invocation."
     smallscript = Holder().name('smallscript').type('String')
@@ -230,9 +230,12 @@ class Method(SObject):
     interpreter = Holder().name('interpreter').type('Interpreter')
     params = Holder().name('params').type('List')
     tempvars = Holder().name('tempvars').type('List')
-    pysource = Holder().name('pysource')
+    sourceFile = Holder().name('sourceFile').type('SourceFile')
+    pysource = Holder().name('pysource').type('String')
     pyfunc = Holder().name('pyfunc')
+    pyerror = Holder().name('pyerror')
 
+    # @Holder()
     def value(self, *args, **kwargs):
         # @self @scope args...
         arglst = List(args)
@@ -258,10 +261,6 @@ class Method(SObject):
         return self.run(scope, *arglst)
 
     def run(self, scope, *params):
-        for param, arg in zip(self.params(), params):
-            scope[param] = arg
-        for tmp in self.tempvars():
-            scope[tmp] = nil
         if self.pyfunc() == nil:
             return self._runSteps(scope, *params)
         return self._runPy(scope, *params)
@@ -272,12 +271,18 @@ class Method(SObject):
         try:
             res = func(scope, *params)
         except Exception as e:
-            logging.error("pyfunc() execution", exc_info=True)
+            # exceptString = traceback.format_exception(type(e), e, None)
+            stackTrace = traceback.format_exc()
+            self.log(f"pyfunc() execution\n{stackTrace}", 3)
             res = nil
         return res
 
     def _runSteps(self, scope, *params):
         "Use a precompiler instructions to run this method."
+        for param, arg in zip(self.params(), params):
+            scope[param] = arg
+        for tmp in self.tempvars():
+            scope[tmp] = nil
         instructions = self.interpreter().instructions()
         if instructions.isEmpty():
             currentStep = self.interpreter().currentStep()
@@ -311,12 +316,36 @@ class Method(SObject):
             self.copyFrom(method)
         return self
 
+    def compile(self):
+        try:
+            with tempfile.NamedTemporaryFile(dir="/tmp", suffix='.py', mode='w', delete=False) as tempsrc:
+                tempsrc.write(self.pysource())
+                tempsrc.flush()
+                self.sourceFile().filepath(tempsrc.name)
+                compiled_method = compile(self.pysource(), tempsrc.name, 'exec')
+            # compiled_method = compile(self.pysource(), '<string>', 'exec')
+        except SyntaxError as e:
+            if hasattr(e, 'text'):
+                error_line = e.text.strip() if e.text is not None else ""
+                caret_position = "^".rjust(e.offset, " ")  # Adjust caret position
+                text = f"  File \"{e.filename}\", line {e.lineno}\n    {error_line}\n    {caret_position}{e.msg}"
+            else:
+                text = f"{e}"
+            self.log(self.pysource(), 3)
+            self.log(text, 3)
+            self.pyerror(text)
+        namespace = {}
+        exec(compiled_method, namespace)
+        pyfunc = namespace[self.name()]
+        self.pyfunc(pyfunc)
+        return self
+
     def toPython(self):
         ""
         coder = PythonCoder()
         pythonscript = self.visit(coder)
         self.pysource(pythonscript)
-        return pythonscript
+        return self
 
     def astGraph(self): return self.script().astGraph()
 
@@ -337,7 +366,6 @@ class Method(SObject):
         try:
             source = inspect.getsource(pyfunc)
         except Exception as e:
-            # logging.error("OSError, can't get source", exc_info=True)
             source = nil
         if source != nil:
             self.pysource(source)
@@ -369,13 +397,16 @@ class Method(SObject):
     def unname(self, body=nil):
         if body == nil:
             body = self.getBody()
-        name = f"unnamed{body.sha256()}"
+        if body == "":
+            name = "unnamed_0"
+        else:
+            name = f"unnamed_{body.sha256()}"
         return name
 
     def getBody(self):
         source = self.pysource()
         if source.isNil() or source.isEmpty():
-            return ""
+            return String("")
         body = source.split('\n', 1)[1]     # remove the first line
         return String(body)
 
@@ -406,9 +437,10 @@ class Execution(SObject):
     def visitMethod(self, method): return self.method(method)
 
 class TextBuffer(SObject):
-    newLine = Holder().name('newLine').type('True_')
+    delimiter = Holder().name('delimiter').type('String')
+    useDelimiter = Holder().name('useDelimiter').type('True_')
 
-    def skipFirstLn(self): self.newLine(false_); return self
+    def skipFirstDelimiter(self): self.useDelimiter(false_); return self
 
     def textIO(self, output=''):
         output = self._getOrSet('output', output, nil)
@@ -421,12 +453,12 @@ class TextBuffer(SObject):
         self.textIO().write(string)
         return self
 
-    def writeLn(self, string = ""):
-        if not self.newLine():
+    def writeWithDelimiter(self, string = ""):
+        if not self.useDelimiter():
             self.textIO().write(string)
-            self.newLine(True_)
+            self.useDelimiter(true_)
         else:
-            self.textIO().write("\n")
+            self.textIO().write(self.delimiter())
             self.textIO().write(string)
         return self
 
@@ -435,23 +467,29 @@ class TextBuffer(SObject):
         return String(text)
 
     def indent(self, padding="  "):
-        text = self._deindent()
-        indented = [f"{padding}{line}" for line in text]
+        # text = self._deindent()
+        text = self.text().split("\n")
+        indented = List()
+        for line in text:
+            if len(line) == 0:
+                indented.append("")
+            else:
+                indented.append(f"{padding}{line}")
         res = "\n".join(indented)
         return String(res)
 
     def _deindent(self):
-        noIdent = self.text()
-        if noIdent.notEmpty():
-            lines = noIdent.split("\n")
+        noIndent = self.text()
+        if noIndent.notEmpty():
+            lines = noIndent.split("\n")
             first = lines[0]
             nspaces = len(first) - len(first.lstrip())
             noIndent = lines if nspaces == 0 else [line[nspaces:] for line in lines]
         return noIndent
 
 class PythonCoder(SObject):
-    # output = Holder().name('output').type('TextBuffer')
     delimiter = Holder().name('delimiter').type('String')
+    methodsSource = Holder().name('methodsSource').type('TextBuffer')
 
     def firstArg(self, firstArg=''):
         firstArg = self._getOrSet('firstArg', firstArg, nil)
@@ -462,42 +500,228 @@ class PythonCoder(SObject):
 
     def visit(self, step): return step.visit(self)
 
+    def visitStep(self, step):
+        value = step.runtimeRes()
+        if value.isNil():
+            value = step.compileRes()
+        res = value.visit(self)
+        return res
+
     def visitMethod(self, method):
-        output = TextBuffer()
-        output.skipFirstLn()
+        output = TextBuffer().delimiter("\n")
+        output.skipFirstDelimiter()
 
         # params
         if method.params().notEmpty():
             for param in method.params():
-                output.writeLn(f"_ = scope['{param}'] = {param}")
-        output.writeLn()
+                output.writeWithDelimiter(f"scope.vars()['{param}'] = {param}")
         # tempvars
         if method.tempvars().notEmpty():
+            output.writeWithDelimiter()
             for tempVar in method.tempvars():
-                output.write(f"_ = scope['{tempVar}'] = ")
+                output.write(f"scope.vars()['{tempVar}'] = ")
             output.write(f"{self.firstArg()}['nil']")
         # expressions
         closure = method.interpreter().currentStep()
         exprList = closure.flatten()
-        for step in exprList:
-            res = step
-            if not step.isRuntime():
-                res = step.runtimeRes()
+        for step in exprList[:-1]:
+            res = step if step.isRuntime() else step.runtimeRes()
             res = res.visit(self)
-            output.writeLn(f"_ = {res}")
-        output.writeLn(f"return _")
+            output.writeWithDelimiter(f"{res}")
+        step = exprList[-1]
+        res = step if step.isRuntime() else step.runtimeRes()
+        res = res.visit(self)
+        if res.startswith("_ = "):
+            output.writeWithDelimiter(res)
+        else:
+            output.writeWithDelimiter(f"_ = {res}")
+        output.writeWithDelimiter(f"return _")
 
         # method signature
-        body = output.indent('  ')
+        body = TextBuffer().delimiter("\n")
+        body.write(self.methodsSource().text())
+        body.writeWithDelimiter(output.text())
+        final = body.indent('  ')
         name = method.name()
         if name.isEmpty():
-            # name = method.signature()
-            name = method.unname(body)
-        parameters = ", ".join(method.params())
-        source = String(f"def {name}({self.firstArg()}, {parameters}):\n{body}")
+            name = method.unname(final)
+            method.name(name)
+        parameters = ", ".join([self.firstArg()] + method.params())
+        source = String(f"def {name}({parameters}):{final}")
         return source
 
-    def visitClosure(self, closure):
-        pass
+    def visitChain(self, chain):        # here
+        operandStep = chain.getStep('kwhead')
+        if operandStep.isNil(): operandStep = chain.getStep('binhead')
+        operand = operandStep.visit(self)
+        output = TextBuffer().delimiter("\n").skipFirstDelimiter()
+        output.writeWithDelimiter(f"_ = {operand}")
+        msgs = chain.getStep('msg')
+        if not isinstance(msgs, List):
+            msgs = List().append(msgs)
+        for msg in msgs:
+            tails = msg.children().values()
+            for tailStep in tails:
+                ruleName = tailStep.ruleName()
+                output.writeWithDelimiter(f"_ = _")
+                if ruleName == 'kwmsg':
+                    tail = self._visitKwMsg(output, tailStep)
+                elif ruleName == 'bintail':
+                    tail = self._visitBinTail(output, tailStep)
+                elif ruleName == 'unarytail':
+                    tail = self._visitUnaryTail(output, tailStep)
+        return output.text()
 
-    def visitNumber(self, number): return f"{number.value()}"
+    def visitBlock(self, block):
+        method = block.compileRes().method()
+        source = method.toPython().pysource()
+        self.methodsSource().delimiter("\n").writeWithDelimiter(source)
+        res = String(f"{self.firstArg()}.newInstance('Method').takePyFunc({method.name()})")
+        return res
+
+    def _visitUnaryTail(self, output, unarytailStep):
+        while unarytailStep.notNil():
+            if unarytailStep.ruleName() == "unarytail":
+                unarymsg = unarytailStep.getStep('unarymsg')
+            else:
+                unarymsg = unarytailStep
+            op = unarymsg.compileRes()
+            if op.notNil():
+                output.write(f".{op}()")
+            unarytailStep = unarytailStep.getStep('unarytail')
+        return self
+
+    def visitUnaryHead(self, unaryHead):
+        operandStep = unaryHead.getStep('operand')
+        operand = operandStep.visit(self)
+        unarytailStep = unaryHead.getStep('unarytail')
+        if unarytailStep.isNil(): return unaryHead
+        output = TextBuffer()
+        output.write(f"{operand}")
+        self._visitUnaryTail(output, unarytailStep)
+        return output.text()
+
+    def _visitBinTail(self, output, bintailStep):
+        while bintailStep.notNil():
+            binmsgStep = bintailStep.getStep('binmsg') \
+                            if bintailStep.ruleName() == 'bintail' \
+                            else bintailStep
+            binop = binmsgStep.getStep('binop').compileRes()
+            output.write(f" {binop}")
+            operandStep = binmsgStep.getStep('unaryhead')
+            operand = operandStep.visit(self)
+            output.write(f" {operand}")
+            bintailStep = bintailStep.getStep('bintail')
+        return self
+
+    def visitBinHead(self, binhead):
+        unaryHeadStep = binhead.getStep('unaryhead')
+        unaryHead = unaryHeadStep.visit(self)
+        bintailStep = binhead.getStep('bintail')
+        if bintailStep.isNil(): return unaryHead
+        output = TextBuffer()
+        output.write(f"{unaryHead}")
+        self._visitBinTail(output, bintailStep)
+        return output.text()
+
+    def _visitKwMsg(self, output, kwmsg):
+        def _kwmsg(kwmsg):
+            kwpairs = kwmsg.children().head()
+            if not isinstance(kwpairs, List):
+                kwpairs = List().append(kwpairs)
+            kwMap = Map()
+            for kwpair in kwpairs:
+                ptkey = kwpair.children()['ptkey'].compileRes()[:-1]
+                binheadStep = kwpair.children()['binhead']
+                binhead = binheadStep.visit(self)
+                kwMap[ptkey] = binhead
+            return kwMap
+
+        kwMap = _kwmsg(kwmsg)
+        prefix = kwMap.keys().head()
+        fullname = prefix
+        if kwMap.len() > 1:
+            fullname = "".join([f"{key}__" for key in kwMap.keys()])
+        kwOutput = TextBuffer().delimiter(", ").skipFirstDelimiter()
+        kwOutput.write(f".{fullname}(")
+        for parameter in kwMap.values():
+            kwOutput.writeWithDelimiter(parameter.toString())
+        kwOutput.write(')')
+        output.write(kwOutput.text())
+        return self
+
+    def visitKwHead(self, kwhead):
+        def _kwmsg(kwmsg):
+            kwpairs = kwmsg.children().head()
+            if not isinstance(kwpairs, List):
+                kwpairs = List().append(kwpairs)
+            kwMap = Map()
+            for kwpair in kwpairs:
+                ptkey = kwpair.children()['ptkey'].compileRes()[:-1]
+                binheadStep = kwpair.children()['binhead']
+                binhead = binheadStep.visit(self)
+                kwMap[ptkey] = binhead
+            return kwMap
+
+        unaryheadStep = kwhead.getStep('unaryhead')
+        unaryhead = unaryheadStep.visit(self)
+        kwmsg = kwhead.getStep('kwmsg')
+
+        # output = TextBuffer().delimiter(", ").skipFirstDelimiter()
+        output = TextBuffer()
+        output.write(f"{unaryhead}")
+        self._visitKwMsg(output, kwmsg)
+        return output.text()
+
+    def visitArray(self, arrayStep):
+        steps = arrayStep.getStep('litarrcnt') # litarr
+        if steps.notNil():
+            litarr = arrayStep.compileRes()
+            litarrSrc = litarr.visit(self)
+            return litarrSrc
+        steps = arrayStep.getStep('operand') # dynarr
+        if steps.notNil():
+            dynaSrc = steps.visit(self)
+            return dynaSrc
+
+    def visitAssign(self, assignStep):
+        refStep = assignStep.getStep('ref')
+        ref = refStep.visit(self)
+        exprStep = assignStep.getStep('expr')
+        expr = exprStep.visit(self)
+        assign = f"{ref} = {expr}"
+        return assign
+
+    def visitVar(self, varStep):
+        refStep = varStep.getStep('ref')
+        var = f"{self.firstArg()}[{refStep.compileRes().asString()}]"
+        return var
+
+    def visitRef(self, refStep):
+        ref = f"{self.firstArg()}[{refStep.compileRes().asString()}]"
+        return ref
+
+    def visitList(self, list):
+        output = TextBuffer()
+        output.write(f"{self.firstArg()}.newInstance('List')")
+        for e in list:
+            eSrc = e.visit(self)
+            output.write(f".append({eSrc})")
+        return output.text()
+
+    def visitMap(self, map):
+        output = TextBuffer()
+        output.write(f"{self.firstArg()}.newInstance('Map')")
+        for k, v in map.items():
+            kSrc = k.visit(self)
+            vSrc = v.visit(self)
+            output.write(f".setValue({kSrc}, {vSrc})")
+        return output.text()
+
+    def visitString(self, string): return string.asString()
+    def visitNumber(self, number): return String(f"{number.value()}")
+
+    def visitPrimitive(self, primitive):
+        map = primitive.compileRes()
+        src = map.visit(self)
+        return src

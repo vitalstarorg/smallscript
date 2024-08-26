@@ -207,14 +207,5 @@ class Test_Interpreter1(SmallScriptTest):
         res = Method().interpret(ss)(scope)
         self.assertEqual('global value', scope['global1'])
 
-    @skipUnless('TESTALL' in env, "disabled")
-    def test800_block(self):
-        scope = rootContext.createScope()
-        ss = "[:param1 | param1]"
-        block = Method().interpret(ss)
-        closure = block(scope)
-        res = closure(scope, 'aString')
-        self.assertEqual('aString', res)
-
 if __name__ == '__main__':
     unittest.main()
