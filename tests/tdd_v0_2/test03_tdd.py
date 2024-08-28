@@ -18,34 +18,43 @@ from unittest import skip, skipUnless
 from tests.TestBase import SmallScriptTest, TestSObj14
 
 from os import environ as env
+
 env['TESTALL'] = '1'
 
 from smallscript.SObject import *
 from smallscript.Closure import Script, Method
 
-class TDD_Interpreter(SmallScriptTest):
-    ### Extend TDD_SObject.test690_context_package from tdd_v0_0/test01_tdd.py
-    ### Create a new package and metaclass  with method dynamically without existing Python class.
+
+class TDD_Compiler(SmallScriptTest):
+    ### Same as test02_tdd.py, instead of running in interpreter mode, but running in compiled mode.
 
     @skipUnless('TESTALL' in env, "disabled")
     def test500_primitives(self):
         #### Primitive: parser and run in interpreter.
-        ss = "123"; expect = 123
-        method = Method().interpret(ss); res = method()
+        ss = "123";
+        expect = 123
+        method = Method().compile(ss);
+        res = method()
         self.assertEqual(expect, res)
-        ss = "'123'"; expect = '123'
-        self.assertEqual(expect, Method().interpret(ss)())
-        ss = "true"; expect = true_
-        self.assertEqual(expect, Method().interpret(ss)())
-        ss = "false"; expect = false_
-        self.assertEqual(expect, Method().interpret(ss)())
-        ss = "nil"; expect = nil
-        self.assertEqual(expect, Method().interpret(ss)())
-        ss = "context"; expect = rootContext
-        context = Method().interpret(ss)()
+        ss = "'123'";
+        expect = '123'
+        self.assertEqual(expect, Method().compile(ss)())
+        ss = "true";
+        expect = true_
+        self.assertEqual(expect, Method().compile(ss)())
+        ss = "false";
+        expect = false_
+        self.assertEqual(expect, Method().compile(ss)())
+        ss = "nil";
+        expect = nil
+        self.assertEqual(expect, Method().compile(ss)())
+        ss = "context";
+        expect = rootContext
+        context = Method().compile(ss)()
         self.assertEqual(expect, context)
-        ss = "root"; expect = rootContext
-        rootScope = Method().interpret(ss)()
+        ss = "root";
+        expect = rootContext
+        rootScope = Method().compile(ss)()
         self.assertEqual(expect, rootScope['context'])
 
     @skipUnless('TESTALL' in env, "disabled")
@@ -86,7 +95,7 @@ class TDD_Interpreter(SmallScriptTest):
         /// last value as return value
         greeting
         """
-        greetMethod = Method().interpret(ss)
+        greetMethod = Method().compile(ss)
         greet = greetMethod(scope, 'John', 'Doe')
         expect = "Mr. John, Doe (age: 20)"
         self.assertEqual(expect, greet)
@@ -109,13 +118,13 @@ class TDD_Interpreter(SmallScriptTest):
 
         ss = """
         :fname :lname |
-        
+
         // Keyword message
         name := tobj first: fname last: lname;
-        
+
         // Unary messages
         age := tobj attr11 toString;
-        
+
         // Binary message
         fullname := tobj cattr12 + ' ' + name;
 
@@ -124,7 +133,7 @@ class TDD_Interpreter(SmallScriptTest):
                     | + ' (age: ' 
                     | + age + ')'
         """
-        greetMethod = Method().interpret(ss)
+        greetMethod = Method().compile(ss)
         greet = greetMethod(scope, 'John', 'Doe')
         expect = "Mr. John, Doe (age: 20)"
         self.assertEqual(expect, greet)
@@ -148,7 +157,7 @@ class TDD_Interpreter(SmallScriptTest):
             name + ' (age: ' +
             age + ')']
         """
-        greetBlock = Method().interpret(ss)
+        greetBlock = Method().compile(ss)
         greetMethod = greetBlock()
         greet = greetMethod(scope, 'John', 'Doe')
         expect = "Mr. John, Doe (age: 20)"
@@ -176,7 +185,7 @@ class TDD_Interpreter(SmallScriptTest):
             name + ' (age: ' +
             age + ')'
         """
-        greetMethod = Method().interpret(ss)
+        greetMethod = Method().compile(ss)
         array = List().append('John').append('Doe')
         greet = greetMethod(scope, array)
         expect = "Mr. John, Doe (age: 20)"
@@ -189,15 +198,15 @@ class TDD_Interpreter(SmallScriptTest):
         lname := array at: 1;
         name := tobj first: fname last: lname;
         age := tobj attr11;
-        
+
         '''HereDoc Comment'''
         // Literal Array
         title := #('Name' 'Age');
-        
+
         // Dynamic Array
         #{name age title}
         """
-        greetMethod = Method().interpret(ss)
+        greetMethod = Method().compile(ss)
         array = List().append('John').append('Doe')
         greet = greetMethod(scope, array)
         expect = ["John, Doe", 20, ["Name", "Age"]]

@@ -235,20 +235,25 @@ class Method(SObject):
     pyfunc = Holder().name('pyfunc')
     pyerror = Holder().name('pyerror')
 
-    # @Holder()
-    def value(self, *args, **kwargs):
-        # @self @scope args...
+    # def value(self, *args, **kwargs):
+    #     # @self @scope args...
+    #     arglst = List(args)
+    #     if arglst.isEmpty() or not isinstance(arglst.head(), Scope):
+    #         local = self.getContext().createScope()
+    #     else:
+    #         scope = arglst.head()
+    #         local = scope.createScope()
+    #         this = scope.objs().head()
+    #         local['self'] = this
+    #         local.objs().append(this)
+    #         arglst.pop(0)
+    #     return self.__call__(local, *arglst, **kwargs)
+
+    @Holder()
+    def value(scope, *args, **kwargs):
         arglst = List(args)
-        if arglst.isEmpty() or not isinstance(arglst.head(), Scope):
-            local = self.getContext().createScope()
-        else:
-            scope = arglst.head()
-            local = scope.createScope()
-            this = scope.objs().head()
-            local['self'] = this
-            local.objs().append(this)
-            arglst.pop(0)
-        return self.__call__(local, *arglst, **kwargs)
+        this = scope['self']
+        return this.run(scope, *arglst, **kwargs)
 
     def __call__(self, *args, **kwargs):
         arglst = List(args)
@@ -316,9 +321,25 @@ class Method(SObject):
             self.copyFrom(method)
         return self
 
-    def compile(self):
+    def compile(self, smallscript=""):
+        if smallscript == "":
+            if self.pyfunc() != nil: return self
+            if self.pysource().notNil(): return self._compile()
+            if self.interpreter().notNil():
+                self.toPython()
+                return self._compile()
+            if self.smallscript().isNil():
+                self.log("Warning: smallscript() is empty and nothing to compile.", Logger.LevelWarning)
+                return self
+            self.interpret()
+        else:
+            self.interpret(smallscript)
+        self.toPython()
+        return self._compile()
+
+    def _compile(self):
         try:
-            with tempfile.NamedTemporaryFile(dir="/tmp", suffix='.py', mode='w', delete=False) as tempsrc:
+            with tempfile.NamedTemporaryFile(dir="/tmp", suffix='.txt', mode='w', delete=False) as tempsrc:
                 tempsrc.write(self.pysource())
                 tempsrc.flush()
                 self.sourceFile().filepath(tempsrc.name)
@@ -427,10 +448,24 @@ class Execution(SObject):
         res = method.run(scope, *params)
         return res
 
+    def _findScopeFromFrames(self):
+        frame = inspect.currentframe()
+        outer_frame = frame.f_back
+        scope = nil
+        while outer_frame is not None:
+            scope = outer_frame.f_locals.get('scope', nil)
+            if scope.notNil(): break
+            outer_frame = outer_frame.f_back
+        return scope
+
     def prepareScope(self):
-        scope = self.getContext().createScope().context(self.context())
+        scopeVar = self._findScopeFromFrames()
+        if scopeVar.isNil():
+            scope = self.getContext().createScope().context(self.context())
+        else:
+            scope = scopeVar.createScope()
         scope.objs().append(self.this())
-        scope.setValue('self', self.this())
+        scope.vars().setValue('self', self.this())
         return scope
 
     def visitSObj(self, sobj): return self.this(sobj)
@@ -550,7 +585,7 @@ class PythonCoder(SObject):
         source = String(f"def {name}({parameters}):{final}")
         return source
 
-    def visitChain(self, chain):        # here
+    def visitChain(self, chain):
         operandStep = chain.getStep('kwhead')
         if operandStep.isNil(): operandStep = chain.getStep('binhead')
         operand = operandStep.visit(self)
@@ -571,6 +606,28 @@ class PythonCoder(SObject):
                 elif ruleName == 'unarytail':
                     tail = self._visitUnaryTail(output, tailStep)
         return output.text()
+
+    # def visitChain(self, chain):
+    #     operandStep = chain.getStep('kwhead')
+    #     if operandStep.isNil(): operandStep = chain.getStep('binhead')
+    #     operand = operandStep.visit(self)
+    #     output = f"{operand}"
+    #     msgs = chain.getStep('msg')
+    #     if not isinstance(msgs, List):
+    #         msgs = List().append(msgs)
+    #     for msg in msgs:
+    #         tails = msg.children().values()
+    #         for tailStep in tails:
+    #             ruleName = tailStep.ruleName()
+    #             output.writeWithDelimiter(f"_ = _")
+    #             if ruleName == 'kwmsg':
+    #                 tail = self._visitKwMsg(output, tailStep)
+    #                 output = f"({output}){tail}"
+    #             elif ruleName == 'bintail':
+    #                 tail = self._visitBinTail(output, tailStep)
+    #             elif ruleName == 'unarytail':
+    #                 tail = self._visitUnaryTail(output, tailStep)
+    #     return output.text()
 
     def visitBlock(self, block):
         method = block.compileRes().method()
@@ -632,6 +689,7 @@ class PythonCoder(SObject):
             kwMap = Map()
             for kwpair in kwpairs:
                 ptkey = kwpair.children()['ptkey'].compileRes()[:-1]
+                ptkey = String(ptkey)
                 binheadStep = kwpair.children()['binhead']
                 binhead = binheadStep.visit(self)
                 kwMap[ptkey] = binhead
@@ -667,7 +725,6 @@ class PythonCoder(SObject):
         unaryhead = unaryheadStep.visit(self)
         kwmsg = kwhead.getStep('kwmsg')
 
-        # output = TextBuffer().delimiter(", ").skipFirstDelimiter()
         output = TextBuffer()
         output.write(f"{unaryhead}")
         self._visitKwMsg(output, kwmsg)
@@ -695,11 +752,11 @@ class PythonCoder(SObject):
     def visitVar(self, varStep):
         refStep = varStep.getStep('ref')
         var = f"{self.firstArg()}[{refStep.compileRes().asString()}]"
-        return var
+        return String(var)
 
     def visitRef(self, refStep):
         ref = f"{self.firstArg()}[{refStep.compileRes().asString()}]"
-        return ref
+        return String(ref)
 
     def visitList(self, list):
         output = TextBuffer()

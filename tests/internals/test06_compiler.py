@@ -11,6 +11,9 @@ from smallscript.Step import *
 from tests.TestBase import SmallScriptTest, TestSObj14, DebugMethod
 
 class Test_Compiler1(SmallScriptTest):
+    #### Besides test100_smoke, rest of it essentially the same as test04_interpreter.py instead of
+    # running in interpreter mode, but running the same SmallScript in compiled mode.
+
     @classmethod
     def setUpClass(cls):
         pkg = rootContext.getOrNewPackage('Test_Interpreter2').importSingleSObject(DebugMethod)

@@ -164,16 +164,22 @@ class SObject:
     def mutable(self, mutable=''): return self._getOrSet('mutable', mutable, true_) # set mutuable or immatable
     def undefined(self, undefined=''): return self._getOrSet('undefined', undefined, nil)
     def toDebug(self, toDebug=''): return self._getOrSet('toDebug', toDebug, false_)
-    def loglevel(self, loglevel=''): return self._getOrSet('loglevel', loglevel, Integer())
-        # DEBUG: 0, INFO: 1, WARNING: 2, ERROR: 3, CRITICAL: 4
+
+    def logger(self, logger=''):
+        logger = self._getOrSet('logger', logger, nil)
+        if logger.isNil():
+            logger = Logger()
+            self.setValue('logger', logger)
+        return logger
+
+    def loglevel(self, loglevel=''):
+        "Set log level to the logger: DEBUG: 0, INFO: 1, WARNING: 2, ERROR: 3, CRITICAL: 4"
+        if loglevel == '': return self.logger().level()
+        self.logger().level(loglevel)
+        return self
 
     def log(self, msg, level=0):
-        if level >= self.loglevel():
-            if level == 0: logging.debug(msg); return self
-            if level == 1: logging.info(msg); return self
-            if level == 2: logging.warning(msg); return self
-            if level == 3: logging.error(msg); return self
-            if level == 4: logging.critical(msg); return self
+        self.logger().log(msg, level)
         return self
 
     #### Attributes accesses: these are Scope key-value access behavior.
@@ -337,6 +343,7 @@ class Holder(SObject):
 
     def __get__(self, obj, owner = None):  # owner is ignored
         """Implement the descriptor protocol."""
+        # WARNING: don't use scope as local variable. It will disrupt scope var lookup.
         def getOrSetSObj(sobj, value=None):
             attname = self.name()
             res = sobj
@@ -383,8 +390,7 @@ class Holder(SObject):
                 else:
                     # Class method invoked from sobject
                     res = obj.metaclass().attrs().runThis(method)
-                return res
-            if owner is not None:
+            elif owner is not None:
                 if not self.instanceType():
                     # Class method invoked from Python class
                     metaclass = self.getContext().metaclassByName(self._metaname(owner))
@@ -425,7 +431,6 @@ class String(str, Primitive):
     def asNumber(self): return Number().fromString(self)
     def len(self): return len(self)
     def isEmpty(self): return self.len() == 0
-    def visit(self, visitor): return visitor.visitString(self)
     def sha256(self, digits=16): return hashlib.sha256(self.encode()).hexdigest()[0:digits]
     def isSymbol(self): return false_ if self.isEmpty() or self[0] != '#' else true_
     def asString(self): return String(f"\"{self[1:]}\"") if self.isSymbol() else String(f"\"{self}\"")
@@ -1013,6 +1018,23 @@ class Number(Primitive):
             res = self.value() < val
         return res
 
+    def __ge__(self, val):
+        if isinstance(val, Number): val = val.value()
+        if isinstance(val, Float):
+            res = val < self.value()
+        else:
+            res = self.value() >= val
+        return res
+
+    def __le__(self, val):
+        if isinstance(val, Number): val = val.value()
+        if isinstance(val, Float):
+            res = val > self.value()
+        else:
+            res = self.value() <= val
+        return res
+
+
     def __mod__(self, val):
         if isinstance(val, Number): val = val.value()
         if isinstance(val, Float):
@@ -1153,6 +1175,19 @@ class Float(float, Primitive):
     def asSObj(self, pyobj): return Float(pyobj)
     def asString(self): return String(f"{self}")
     def describe(self): return f"{self}f"
+
+class Logger(SObject):
+    LevelDebug = 0; LevelInfo = 1; LevelWarning = 2; LevelError = 3; LevelCritical = 4
+    level = Holder().name('level').type('Integer')
+
+    def log(self, msg, level=0):
+        if level >= self.level():
+            if level == self.LevelDebug: logging.debug(msg); return self
+            if level == self.LevelInfo: logging.info(msg); return self
+            if level == self.LevelWarning: logging.warning(msg); return self
+            if level == self.LevelError: logging.error(msg); return self
+            if level == self.LevelCritical: logging.critical(msg); return self
+        return self
 
 pytypes = Map(str = String, int = Number, float = Number, dict = Map, list = List)
 

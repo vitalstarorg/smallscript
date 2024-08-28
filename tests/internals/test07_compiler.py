@@ -26,6 +26,10 @@ from smallscript.Step import *
 from tests.TestBase import SmallScriptTest, TestSObj14, DebugMethod
 
 class Test_Compiler2(SmallScriptTest):
+    #### It is essentially the same as test05_interpreter.py instead of
+    # running in interpreter mode, but running the same SmallScript in compiled mode.
+    # One exception is SmallScript arithmetics is different in Python.
+
     @classmethod
     def setUpClass(cls):
         pkg = rootContext.getOrNewPackage('Test_Interpreter2').importSingleSObject(DebugMethod)
@@ -232,7 +236,6 @@ class Test_Compiler2(SmallScriptTest):
         self.assertEqual(9, res)
 
         ss = "tobj | method14: 7 add: 3 | + tobj attr11 | + tobj sobj11 attr11 + 2 + 4"
-        # ss = "7 | + tobj sobj11 attr11"
         method = Method().interpret(ss).toPython().compile();
         res = method(scope)
         self.assertEqual(36, res)
@@ -320,8 +323,8 @@ class Test_Compiler2(SmallScriptTest):
 
         # Nested closure can access outer scope variable
         ss = "| outer| outer := 13; [7 + outer] value"
-        # method = Method().interpret(ss).toPython().compile(); res = method(scope)
-        # self.assertEqual(20, res)
+        method = Method().interpret(ss).toPython().compile(); res = method(scope)
+        self.assertEqual(20, res)
 
     @skipUnless('TESTALL' in env, "disabled")
     def test700_literal_array(self):

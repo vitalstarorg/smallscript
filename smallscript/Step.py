@@ -426,10 +426,7 @@ class KwHeadStep(RuntimeStep):
             method = self._methodLookup(obj, prefix, fullname, nArgs)
 
         if method != nil:
-            if prefix == 'value':
-                res = method(scope, *kwMap.values())
-            else:
-                res = method(*kwMap.values())
+            res = method(*kwMap.values())
         return res
 
     def run(self, scope):
