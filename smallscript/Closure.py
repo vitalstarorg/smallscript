@@ -105,6 +105,9 @@ class IRGrapher(StepVisitor):
     def drawBox(self, step):
         return self.draw(step, 'box')
 
+    def draw3d(self, step):
+        return self.draw(step, 'box3d')
+
     def draw(self, step, shape):
         childName = self.childName()
         currentStep = self.currentStep()
@@ -128,7 +131,7 @@ class IRGrapher(StepVisitor):
         return self
 
     def visitStep(self, step): return self.drawBox(step)
-    def visitClosure(self, step): return self.drawBox(step)
+    def visitClosure(self, step): return self.draw3d(step)
 
 class Script(SObject):
     text = Holder().name('text').type('String')
@@ -589,45 +592,23 @@ class PythonCoder(SObject):
         operandStep = chain.getStep('kwhead')
         if operandStep.isNil(): operandStep = chain.getStep('binhead')
         operand = operandStep.visit(self)
-        output = TextBuffer().delimiter("\n").skipFirstDelimiter()
-        output.writeWithDelimiter(f"_ = {operand}")
+        output = f"{operand}"
         msgs = chain.getStep('msg')
         if not isinstance(msgs, List):
             msgs = List().append(msgs)
         for msg in msgs:
             tails = msg.children().values()
             for tailStep in tails:
+                tail = ""
                 ruleName = tailStep.ruleName()
-                output.writeWithDelimiter(f"_ = _")
                 if ruleName == 'kwmsg':
-                    tail = self._visitKwMsg(output, tailStep)
+                    tail = self._visitKwMsg(tailStep)
                 elif ruleName == 'bintail':
-                    tail = self._visitBinTail(output, tailStep)
+                    tail = self._visitBinTail(tailStep)
                 elif ruleName == 'unarytail':
-                    tail = self._visitUnaryTail(output, tailStep)
-        return output.text()
-
-    # def visitChain(self, chain):
-    #     operandStep = chain.getStep('kwhead')
-    #     if operandStep.isNil(): operandStep = chain.getStep('binhead')
-    #     operand = operandStep.visit(self)
-    #     output = f"{operand}"
-    #     msgs = chain.getStep('msg')
-    #     if not isinstance(msgs, List):
-    #         msgs = List().append(msgs)
-    #     for msg in msgs:
-    #         tails = msg.children().values()
-    #         for tailStep in tails:
-    #             ruleName = tailStep.ruleName()
-    #             output.writeWithDelimiter(f"_ = _")
-    #             if ruleName == 'kwmsg':
-    #                 tail = self._visitKwMsg(output, tailStep)
-    #                 output = f"({output}){tail}"
-    #             elif ruleName == 'bintail':
-    #                 tail = self._visitBinTail(output, tailStep)
-    #             elif ruleName == 'unarytail':
-    #                 tail = self._visitUnaryTail(output, tailStep)
-    #     return output.text()
+                    tail = self._visitUnaryTail(tailStep)
+                output = f"({output}){tail}"
+        return output
 
     def visitBlock(self, block):
         method = block.compileRes().method()
@@ -636,7 +617,8 @@ class PythonCoder(SObject):
         res = String(f"{self.firstArg()}.newInstance('Method').takePyFunc({method.name()})")
         return res
 
-    def _visitUnaryTail(self, output, unarytailStep):
+    def _visitUnaryTail(self, unarytailStep):
+        output = TextBuffer()
         while unarytailStep.notNil():
             if unarytailStep.ruleName() == "unarytail":
                 unarymsg = unarytailStep.getStep('unarymsg')
@@ -646,7 +628,7 @@ class PythonCoder(SObject):
             if op.notNil():
                 output.write(f".{op}()")
             unarytailStep = unarytailStep.getStep('unarytail')
-        return self
+        return output.text()
 
     def visitUnaryHead(self, unaryHead):
         operandStep = unaryHead.getStep('operand')
@@ -655,10 +637,12 @@ class PythonCoder(SObject):
         if unarytailStep.isNil(): return unaryHead
         output = TextBuffer()
         output.write(f"{operand}")
-        self._visitUnaryTail(output, unarytailStep)
+        tail = self._visitUnaryTail(unarytailStep)
+        output.write(tail)
         return output.text()
 
-    def _visitBinTail(self, output, bintailStep):
+    def _visitBinTail(self, bintailStep):
+        output = TextBuffer()
         while bintailStep.notNil():
             binmsgStep = bintailStep.getStep('binmsg') \
                             if bintailStep.ruleName() == 'bintail' \
@@ -669,7 +653,7 @@ class PythonCoder(SObject):
             operand = operandStep.visit(self)
             output.write(f" {operand}")
             bintailStep = bintailStep.getStep('bintail')
-        return self
+        return output.text()
 
     def visitBinHead(self, binhead):
         unaryHeadStep = binhead.getStep('unaryhead')
@@ -678,10 +662,11 @@ class PythonCoder(SObject):
         if bintailStep.isNil(): return unaryHead
         output = TextBuffer()
         output.write(f"{unaryHead}")
-        self._visitBinTail(output, bintailStep)
+        tail = self._visitBinTail(bintailStep)
+        output.write(tail)
         return output.text()
 
-    def _visitKwMsg(self, output, kwmsg):
+    def _visitKwMsg(self, kwmsg):
         def _kwmsg(kwmsg):
             kwpairs = kwmsg.children().head()
             if not isinstance(kwpairs, List):
@@ -695,6 +680,7 @@ class PythonCoder(SObject):
                 kwMap[ptkey] = binhead
             return kwMap
 
+        output = TextBuffer()
         kwMap = _kwmsg(kwmsg)
         prefix = kwMap.keys().head()
         fullname = prefix
@@ -706,7 +692,7 @@ class PythonCoder(SObject):
             kwOutput.writeWithDelimiter(parameter.toString())
         kwOutput.write(')')
         output.write(kwOutput.text())
-        return self
+        return output.text()
 
     def visitKwHead(self, kwhead):
         def _kwmsg(kwmsg):
@@ -727,7 +713,8 @@ class PythonCoder(SObject):
 
         output = TextBuffer()
         output.write(f"{unaryhead}")
-        self._visitKwMsg(output, kwmsg)
+        msg = self._visitKwMsg(kwmsg)
+        output.write(msg)
         return output.text()
 
     def visitArray(self, arrayStep):

@@ -23,7 +23,9 @@ from smallscript.Closure import Method
 from tests.TestBase import SmallScriptTest, TestSObj14, DebugMethod
 
 # Use this to test individual failed test cases.
-# This won't run when "all tests" is run.
+# This won't run when "all_tests" is run
+#  $ TESTALL=1 python -m unittest discover -s .
+
 # @skip
 class Test_Diagnostics(SmallScriptTest):
     @classmethod
@@ -40,12 +42,14 @@ class Test_Diagnostics(SmallScriptTest):
         scope = rootContext.createScope()
         scope['tobj'] = tobj
 
-        ss = ":fullname | | tmp1 | tmp1 := fullname | + ' (age: '"
+        ss = ":fullname | | tmp1 | tmp1 := fullname | + ', ' | + 'hello'"
+        # ss = ":param1| param1 + 13"
         method = Method().name("test").interpret(ss)
         method.toPython()
         method.pysource().print()
         method.compile()
-        res = method(scope)
+        res = method(scope, "John")
+        self.assertEqual("John, hello", res)
         return
 
     @skip
@@ -105,14 +109,14 @@ class Test_Diagnostics(SmallScriptTest):
         unnamed = Method().takePyFunc(test)
         res = unnamed(scope)
 
-        ss = "| outer| outer := 13; [7 + outer] value"
+        ss = ":param | | outer| outer := 13; [7 + outer] value + param"
         # ss = ":param | param"
         method = Method().name("test").interpret(ss)
         method.toPython()
         method.pysource().print()
         method.compile()
-        res = method(scope)
-        self.assertEqual(20, res)
+        res = method(scope, 5)
+        self.assertEqual(25, res)
         return
 
     @skip
@@ -153,10 +157,5 @@ class Test_Diagnostics(SmallScriptTest):
 
     #### More Tests
     # SObj super: instance and class
-    # simple instant method: interpreter vs compiled
-    # simple class method: interpreter vs compiled
-    # rootScope
     # packages
     # Python globals
-    # Create new class with new method in interpreter mode. (Execution)
-    # basically SObject mechanics is completed.

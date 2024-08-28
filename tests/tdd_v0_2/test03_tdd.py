@@ -137,6 +137,7 @@ class TDD_Compiler(SmallScriptTest):
         greet = greetMethod(scope, 'John', 'Doe')
         expect = "Mr. John, Doe (age: 20)"
         self.assertEqual(expect, greet)
+        self.assertEqual(expect, scope['greeting'])
 
     @skipUnless('TESTALL' in env, "disabled")
     def test710_smallscript(self):

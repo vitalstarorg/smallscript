@@ -176,14 +176,14 @@ tobj.attr11('100')              # assign attr11 instance attribute
 tobj.method16(2, 3)             # 305
 ```
 
-### Fully Dynamic Creation using SmallScript
+### Fully Dynamic Creation using SmallScript in Interpreter Mode
 This is a critical milestone. From this point on, we have all necessary core functions to develop further libraries using SmallScript completely.
 
 SObject is a complete object system by itself. It is an interface layer between Python and SmallScript which follows Python and SmallScript protocol. In theory, SObject would very much behave like SmallScript in Python language.
 
 All objects are SObject including primitives. **nil** is SObject for **None** in Python, **true_** for **True**, **false_** for **False**, **List** for **list**, **Map** for **dict**, **Number** for both **int** and **float**.
 
-Currently SmallScript is running in interpreter mode. SmallScript will be transpiled to Python in next release than SmallScript will be running close to native speed. 
+Currently SmallScript is running in interpreter mode. 
 
 ```python
 smallscript = """
@@ -216,14 +216,100 @@ tobj.attr11('100')              # assign attr11 instance attribute
 tobj.method16(2, 3)             # 305
 ```
 
+### SmallScript in Compiler Mode
+```python
+smallscript = """
+// Create metaclass
+meta := scope getValue: 'context' 
+        | getOrNewPackage: 'tmppkg'
+            | createMetaclass: #AnotherMeta
+                | parentNames: #(#SObject)
+                
+                // Create two instance attributes and one class attribute.
+                | addAttr: #attr11 type: #String
+                | addAttr: #attr12 type: #List
+                | addAttr: #cattr12 type: #String classType: true
+                
+                // Create two instance methods and two class methods.
+                | addMethod: #method14 method: [:arg1 :arg2 | arg1 + arg2]
+                | addMethod: #cmethod15 method: [:arg1 :arg2 | arg1 * arg2] classType: true
+                | addMethod: #method16 method: [:arg1 :arg2 | self cattr12 asNumber + self attr11 asNumber + arg1 + arg2]
+                | addMethod: #cmethod17 method: [:arg1 :arg2 | arg1 * arg2 + self cattr12 asNumber] classType: true
+"""
+scope = rootContext.createScope()
+method = Method().compile(ss)
+meta = method(scope)
+
+tobj = rootContext.newInstance('AnotherMeta').name('tobj')
+tobj.metaname()                 # 'AnotherMeta'
+tobj.cattr12('200')             # assign cattr12 class attribute
+tobj.cmethod17(2, 3)            # 206
+tobj.attr11('100')              # assign attr11 instance attribute
+tobj.method16(2, 3)             # 305
+```
+SmallScript is transpiled to Python, and run in native Python speed. Essentially we re-implement SmallScript using SObject in Python. Except SmallScript has no arithmetic precedence, Python implement should behave exactly the same as SmallScript. 
+
+### SmallScript Diagnostics
+Just in case, here is an example to so see what Python code got generated from SmallScript.
+```python
+ss = ":param | | outer| outer := 13; [7 + outer] value + param"
+method = Method().name("test").interpret(ss)
+method.toPython()
+method.pysource().print()
+    # def test(scope, param):
+    #   def unnamed_296d5eab92dbf300(scope):
+    #     _ = 7 + scope["outer"]
+    #     return _
+    #   scope.vars()['param'] = param
+    #   scope.vars()['outer'] = scope['nil']
+    #   scope["outer"] = 13
+    #   _ = scope.newInstance('Method').takePyFunc(unnamed_296d5eab92dbf300).value() + scope["param"]
+    #   return _
+method.compile()
+res = method(scope, 5)
+self.assertEqual(25, res)
+```
+In case your debugger does not display the source code, you can copy the shown Python code and do the following.
+```python
+def test(scope, param):
+  def unnamed_296d5eab92dbf300(scope):
+    _ = 7 + scope["outer"]
+    return _
+  scope.vars()['param'] = param
+  scope.vars()['outer'] = scope['nil']
+  scope["outer"] = 13
+  _ = scope.newInstance('Method').takePyFunc(unnamed_296d5eab92dbf300).value() + scope["param"]
+  return _
+
+method = Method().takePyFunc(test)
+res = method(scope, 5)
+self.assertEqual(25, res)
+```
+If you really want to deep dive to both the interperter and the compiler, you may want to do this on the [notebook](https://github.com/vitalstarorg/smallscript/blob/main/nbs/antlr.ipynb).
+```python
+# Try these on the notebook
+method.astGraph()       # show the Antlr Abstract Syntax Tree
+method.irGraph()        # show the optimized Intermediate Representation
+```
+
 # Potential Roadmap
 - Implement SmallScript on C/C++
- - This will open the door to access many useful binary libraries and access these functions on demand.
+  - This will open the door to access many useful binary libraries and access these functions on demand.
 - Implement SmallScript on JVM
- - Similar to C/C++
+  - Similar to C/C++
 
 # Release Note
-### v0.2.0 SmallScript
+### v0.2.2 SmallScript - Compiler mode
+- ref: [https://github.com/vitalstarorg/smallscript/blob/dev/tests/tdd_v0_2) for details
+- Implemented all SmallScript language elements
+- Transpile/Compile closure to Python using SObject.
+- Compiler now will generate code to a temporary file for debugging purpose. Debugger may debug into the generated code.
+- Change the holder lookup with partial matches to allow ss and python to co-exist.
+- Add __radd__, __ge__, __le__ to Number to make Number arithematics seamless.
+- Method.irGraph to visualize the IR graph on notebook
+- Add Logger class.
+
+### v0.2.0 SmallScript - Interpreter Mode
 - ref: [https://github.com/vitalstarorg/smallscript/blob/dev/tests/tdd_v0_2) for details
 - This is non-compatible to v0.1.0 as significant grammar changes. So we removed test/tdd_v0_1 from v0.2.0. 
 - SmallScript starts to deviate from SmallTalk protocol e.g. cascade, ws, comment, sep, etc. 

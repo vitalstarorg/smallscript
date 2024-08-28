@@ -90,6 +90,7 @@ class TDD_Interpreter(SmallScriptTest):
         greet = greetMethod(scope, 'John', 'Doe')
         expect = "Mr. John, Doe (age: 20)"
         self.assertEqual(expect, greet)
+        self.assertEqual(expect, scope['greeting'])
 
         # temporary variables are saved in scope
         self.assertEqual(100, scope['tmp1'])
