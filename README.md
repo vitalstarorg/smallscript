@@ -163,10 +163,10 @@ holders['attr11'] = Holder().name('attr11').type('String')
 holders['cattr12'] = Holder().name('cattr12').type('String').asClassType()
 
 # Define instance and class method using SmallScript
-method16 = Method().interpret(":arg1 :arg2 | self cattr12 asNumber + self attr11 asNumber + arg1 + arg2")
-holders['method16'] = Holder().name('method16').type('Method').method(method16)
-cmethod17 = Method().interpret(":arg1 :arg2 | arg1 * arg2 + self cattr12 asNumber")
-holders['cmethod17'] = Holder().name('cmethod17').type('Method').method(cmethod17)
+method16 = Closure().interpret(":arg1 :arg2 | self cattr12 asNumber + self attr11 asNumber + arg1 + arg2")
+holders['method16'] = Holder().name('method16').type('Closure').method(method16)
+cmethod17 = Closure().interpret(":arg1 :arg2 | arg1 * arg2 + self cattr12 asNumber")
+holders['cmethod17'] = Holder().name('cmethod17').type('Closure').method(cmethod17)
 
 tobj = rootContext.newInstance('NewMeta').name('tobj')
 tobj.metaclass().name()         # 'NewMeta'
@@ -205,8 +205,8 @@ meta := scope getValue: 'context'
                 | addMethod: #cmethod17 method: [:arg1 :arg2 | arg1 * arg2 + self cattr12 asNumber] classType: true
 """
 scope = rootContext.createScope()
-method = Method().interpret(ss)
-meta = method(scope)
+closure = Closure().interpret(ss)
+meta = closure(scope)
 
 tobj = rootContext.newInstance('AnotherMeta').name('tobj')
 tobj.metaname()                 # 'AnotherMeta'
@@ -237,8 +237,8 @@ meta := scope getValue: 'context'
                 | addMethod: #cmethod17 method: [:arg1 :arg2 | arg1 * arg2 + self cattr12 asNumber] classType: true
 """
 scope = rootContext.createScope()
-method = Method().compile(ss)
-meta = method(scope)
+closure = Closure().compile(ss)
+meta = closure(scope)
 
 tobj = rootContext.newInstance('AnotherMeta').name('tobj')
 tobj.metaname()                 # 'AnotherMeta'
@@ -253,9 +253,9 @@ SmallScript is transpiled to Python, and run in native Python speed. Essentially
 Just in case, here is an example to see what Python code got generated from SmallScript.
 ```python
 ss = ":param | | outer| outer := 13; [7 + outer] value + param"
-method = Method().name("test").interpret(ss)
-method.toPython()
-method.pysource().print()
+closure = Closure().name("test").interpret(ss)
+closure.toPython()
+closure.pysource().print()
     # def test(scope, param):
     #   def unnamed_296d5eab92dbf300(scope):
     #     _ = 7 + scope["outer"]
@@ -263,10 +263,10 @@ method.pysource().print()
     #   scope.vars()['param'] = param
     #   scope.vars()['outer'] = scope['nil']
     #   scope["outer"] = 13
-    #   _ = scope.newInstance('Method').takePyFunc(unnamed_296d5eab92dbf300).value() + scope["param"]
+    #   _ = scope.newInstance('Closure').takePyFunc(unnamed_296d5eab92dbf300).value() + scope["param"]
     #   return _
-method.compile()
-res = method(scope, 5)
+closure.compile()
+res = closure(scope, 5)
 self.assertEqual(25, res)
 ```
 In case your debugger does not display the source code, you can copy the shown Python code and do the following.
@@ -278,18 +278,18 @@ def test(scope, param):
   scope.vars()['param'] = param
   scope.vars()['outer'] = scope['nil']
   scope["outer"] = 13
-  _ = scope.newInstance('Method').takePyFunc(unnamed_296d5eab92dbf300).value() + scope["param"]
+  _ = scope.newInstance('Closure').takePyFunc(unnamed_296d5eab92dbf300).value() + scope["param"]
   return _
 
-method = Method().takePyFunc(test)
-res = method(scope, 5)
+closure = Closure().takePyFunc(test)
+res = closure(scope, 5)
 self.assertEqual(25, res)
 ```
 If you really want to deep dive to both the interperter and the compiler, you may want to do this on the [notebook](https://github.com/vitalstarorg/smallscript/blob/main/nbs/antlr.ipynb).
 ```python
 # Try these on the notebook
-method.astGraph()       # show the Antlr Abstract Syntax Tree
-method.irGraph()        # show the optimized Intermediate Representation
+closure.astGraph()       # show the Antlr Abstract Syntax Tree
+closure.irGraph()        # show the optimized Intermediate Representation
 ```
 
 # Potential Roadmap

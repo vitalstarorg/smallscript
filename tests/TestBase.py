@@ -15,7 +15,7 @@
 
 import unittest
 from smallscript.SObject import *
-from smallscript.Closure import Method
+from smallscript.Closure import Closure
 
 # WARNING: these test classes shouldn't be defined and loaded from the same test case Python file as the class definition would be load twice, causing inconsistency between the holder in the class definition and metaclass.
 class TestSObj1(SObject):
@@ -92,7 +92,7 @@ class TestSObj14(SObject):
         return f"{first}, {last} ({self.attr11()})"
 
 loglevel = 4
-class DebugMethod(Method):
+class DebugClosure(Closure):
     def __init__(self): self.loglevel(loglevel)
 
     def _getInterpreter(self):

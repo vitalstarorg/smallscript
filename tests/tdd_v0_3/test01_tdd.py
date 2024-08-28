@@ -15,15 +15,15 @@
 
 import unittest
 from unittest import skip, skipUnless
-from tests.TestBase import SmallScriptTest, TestSObj14, DebugMethod
+from tests.TestBase import SmallScriptTest, TestSObj14, DebugClosure
 
 from os import environ as env
 env['TESTALL'] = '1'
 
 from smallscript.SObject import *
-from smallscript.Closure import Method
+from smallscript.Closure import Closure
 
-class TDD_Method(SmallScriptTest):
+class TDD_Closure(SmallScriptTest):
     @classmethod
     def setUpClass(cls):
         pkg = rootContext.loadPackage('tests')
@@ -88,7 +88,7 @@ class TDD_Method(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test600_Dynamic_Invocation(self):
         #### SObject attributes protocol, not through Python
-        # Same as Test_Method.test500_method(), but totally SObject protocol.
+        # Same as Test_Closure.test500_method(), but totally SObject protocol.
         pkg = rootContext.loadPackage('tests')
         meta = rootContext.metaclassByName('TestSObj15')
         tobj = SObject().metaclass(meta)
@@ -145,11 +145,11 @@ class TDD_Method(SmallScriptTest):
                .addAttr('cattr12', 'String', true_)
 
         # Define instance and class method using SmallScript
-        method14 = Method().interpret(":m14 :arg2 | m14 + arg2")
-        cmethod15 = Method().interpret(":m15 :arg2 | m15 * arg2")
-        method16 = Method().\
+        method14 = Closure().interpret(":m14 :arg2 | m14 + arg2")
+        cmethod15 = Closure().interpret(":m15 :arg2 | m15 * arg2")
+        method16 = Closure().\
                     interpret(":m16 :arg2 | self cattr12 asNumber + self attr11 asNumber + m16 + arg2")
-        cmethod17 = Method().interpret(":m17 :arg2 | m17 * arg2 + self cattr12 asNumber")
+        cmethod17 = Closure().interpret(":m17 :arg2 | m17 * arg2 + self cattr12 asNumber")
         newMeta.addMethod('method14', method14)
         newMeta.addMethod('cmethod15', cmethod15, true_)
         newMeta.addMethod('method16', method16)
@@ -192,8 +192,8 @@ class TDD_Method(SmallScriptTest):
         """
 
         scope = rootContext.createScope()
-        method = Method().interpret(ss)
-        meta = method(scope)
+        closure = Closure().interpret(ss)
+        meta = closure(scope)
 
         tobj = rootContext.newInstance('AnotherMeta').name('tobj')
         self.assertEqual(SObject, type(tobj))

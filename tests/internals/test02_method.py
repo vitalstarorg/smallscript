@@ -21,7 +21,7 @@ from os import environ as env
 env['TESTALL'] = '1'
 
 from smallscript.SObject import *
-from smallscript.Closure import Script, Method
+from smallscript.Closure import Script, Closure
 from smallscript.Step import *
 from tests.TestBase import *
 
@@ -63,7 +63,7 @@ class LocalSObj14(SObject):
         ret = self['cattr12'].asNumber()
         return ret + arg1 * arg2
 
-class Test_Method(SmallScriptTest):
+class Test_Closure(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test500_method(self):
         pkg = rootContext.loadPackage('tests')
@@ -102,7 +102,7 @@ class Test_Method(SmallScriptTest):
     # Testing local import class
     #
 
-    # Originate from Test_Method.test500_method() test02_method.py.
+    # Originate from Test_Closure.test500_method() test02_method.py.
     @skipUnless('TESTALL' in env, "disabled")
     def test700_localSObj(self):
         pkg = rootContext.getOrNewPackage('test02_method').importSingleSObject(LocalSObj14)
@@ -131,7 +131,7 @@ class Test_Method(SmallScriptTest):
         self.assertEqual('value from metaInit', tobj.cattr13())
         self.assertEqual('value from metaInit', tobj.metaclass().attrs()['cattr14'])
 
-    # Originate tdd_v0_2/test01_tdd.py.
+    # Originate tdd_v0_3/test01_tdd.py.
     @skipUnless('TESTALL' in env, "disabled")
     def test720_localSObj(self):
         ### Access instance and class attributes and methods
@@ -188,22 +188,22 @@ class Test_Method(SmallScriptTest):
 
     @skipUnless('TESTALL' in env, "disabled")
     def test730_signature(self):
-        method = Method().interpret("arg1 + arg2")
-        self.assertEqual("", method.ssSignature())
-        method.name('testName')
-        self.assertEqual("", method.ssSignature())
-        self.assertEqual("testMethod", method.ssSignature("testMethod"))
+        closure = Closure().interpret("arg1 + arg2")
+        self.assertEqual("", closure.ssSignature())
+        closure.name('testName')
+        self.assertEqual("", closure.ssSignature())
+        self.assertEqual("testClosure", closure.ssSignature("testClosure"))
 
-        method = Method().interpret(":arg1 | arg1 + 2")
-        self.assertEqual("arg1", method.ssSignature())
-        method.name('testName')
-        self.assertEqual("arg1", method.ssSignature())
-        self.assertEqual("testMethod__arg1__", method.ssSignature("testMethod"))
+        closure = Closure().interpret(":arg1 | arg1 + 2")
+        self.assertEqual("arg1", closure.ssSignature())
+        closure.name('testName')
+        self.assertEqual("arg1", closure.ssSignature())
+        self.assertEqual("testClosure__arg1__", closure.ssSignature("testClosure"))
 
-        method = Method().interpret(":arg1 :arg2 | arg1 + arg2")
-        self.assertEqual("arg1__arg2__", method.ssSignature())
-        method.name('testName')
-        self.assertEqual("testMethod__arg1__arg2__", method.ssSignature("testMethod"))
+        closure = Closure().interpret(":arg1 :arg2 | arg1 + arg2")
+        self.assertEqual("arg1__arg2__", closure.ssSignature())
+        closure.name('testName')
+        self.assertEqual("testClosure__arg1__arg2__", closure.ssSignature("testClosure"))
 
 if __name__ == '__main__':
     unittest.main()

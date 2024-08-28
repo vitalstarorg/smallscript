@@ -22,7 +22,7 @@ from os import environ as env
 env['TESTALL'] = '1'
 
 from smallscript.SObject import *
-from smallscript.Closure import Script, Method
+from smallscript.Closure import Script, Closure
 
 
 class TDD_Compiler(SmallScriptTest):
@@ -33,28 +33,28 @@ class TDD_Compiler(SmallScriptTest):
         #### Primitive: parser and run in interpreter.
         ss = "123";
         expect = 123
-        method = Method().compile(ss);
-        res = method()
+        closure = Closure().compile(ss);
+        res = closure()
         self.assertEqual(expect, res)
         ss = "'123'";
         expect = '123'
-        self.assertEqual(expect, Method().compile(ss)())
+        self.assertEqual(expect, Closure().compile(ss)())
         ss = "true";
         expect = true_
-        self.assertEqual(expect, Method().compile(ss)())
+        self.assertEqual(expect, Closure().compile(ss)())
         ss = "false";
         expect = false_
-        self.assertEqual(expect, Method().compile(ss)())
+        self.assertEqual(expect, Closure().compile(ss)())
         ss = "nil";
         expect = nil
-        self.assertEqual(expect, Method().compile(ss)())
+        self.assertEqual(expect, Closure().compile(ss)())
         ss = "context";
         expect = rootContext
-        context = Method().compile(ss)()
+        context = Closure().compile(ss)()
         self.assertEqual(expect, context)
         ss = "root";
         expect = rootContext
-        rootScope = Method().compile(ss)()
+        rootScope = Closure().compile(ss)()
         self.assertEqual(expect, rootScope['context'])
 
     @skipUnless('TESTALL' in env, "disabled")
@@ -95,7 +95,7 @@ class TDD_Compiler(SmallScriptTest):
         /// last value as return value
         greeting
         """
-        greetMethod = Method().compile(ss)
+        greetMethod = Closure().compile(ss)
         greet = greetMethod(scope, 'John', 'Doe')
         expect = "Mr. John, Doe (age: 20)"
         self.assertEqual(expect, greet)
@@ -133,7 +133,7 @@ class TDD_Compiler(SmallScriptTest):
                     | + ' (age: ' 
                     | + age + ')'
         """
-        greetMethod = Method().compile(ss)
+        greetMethod = Closure().compile(ss)
         greet = greetMethod(scope, 'John', 'Doe')
         expect = "Mr. John, Doe (age: 20)"
         self.assertEqual(expect, greet)
@@ -158,7 +158,7 @@ class TDD_Compiler(SmallScriptTest):
             name + ' (age: ' +
             age + ')']
         """
-        greetBlock = Method().compile(ss)
+        greetBlock = Closure().compile(ss)
         greetMethod = greetBlock()
         greet = greetMethod(scope, 'John', 'Doe')
         expect = "Mr. John, Doe (age: 20)"
@@ -186,7 +186,7 @@ class TDD_Compiler(SmallScriptTest):
             name + ' (age: ' +
             age + ')'
         """
-        greetMethod = Method().compile(ss)
+        greetMethod = Closure().compile(ss)
         array = List().append('John').append('Doe')
         greet = greetMethod(scope, array)
         expect = "Mr. John, Doe (age: 20)"
@@ -207,7 +207,7 @@ class TDD_Compiler(SmallScriptTest):
         // Dynamic Array
         #{name age title}
         """
-        greetMethod = Method().compile(ss)
+        greetMethod = Closure().compile(ss)
         array = List().append('John').append('Doe')
         greet = greetMethod(scope, array)
         expect = ["John, Doe", 20, ["Name", "Age"]]

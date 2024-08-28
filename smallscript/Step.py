@@ -181,7 +181,7 @@ class Step(SObject):
 class SmallScriptStep(Step):
     def visit(self, step): return step.visitSmallscript(self)
 
-    def getClosure(self, interpreter):
+    def getClosureStep(self, interpreter):
         interpreter.currentStep(self)
         ssCxt = self.ruleCxt()
         closureCxt = next(ssCxt.getChildren())
@@ -190,36 +190,36 @@ class SmallScriptStep(Step):
         return closureStep
 
 class ClosureStep(Step):
-    method = Holder().name('method')
+    closure = Holder().name('closure')
 
     def visit(self, step): return step.visitClosure(self)
 
     def interpret(self, interpreter):
         # Interpret the rest with a new interpreter.
-        closureInterpreter = Interpreter().currentStep(self).method(interpreter.method())
+        closureInterpreter = Interpreter().currentStep(self).closure(interpreter.closure())
         if interpreter.toDebug(): closureInterpreter.toDebug(true_)
         super().interpret(closureInterpreter)
 
-        # Create method object for this closure.
-        method = interpreter.method().createEmpty()
-            # new method obj from initiating method e.g. DebugMethod.
-        if interpreter.method().toDebug(): method.toDebug(true_)
-        if method.loglevel() != interpreter.method().loglevel():
-            method.loglevel(interpreter.method().loglevel())
-        self.method(method)
-        method.interpreter(closureInterpreter)
+        # Create closure object for this closure.
+        closure = interpreter.closure().createEmpty()
+            # new closure obj from initiating closure e.g. DebugClosure.
+        if interpreter.closure().toDebug(): closure.toDebug(true_)
+        if closure.loglevel() != interpreter.closure().loglevel():
+            closure.loglevel(interpreter.closure().loglevel())
+        self.closure(closure)
+        closure.interpreter(closureInterpreter)
 
         bplStep = self.getStep('blkparamlst')
         if bplStep.notNil() and bplStep.notEmpty():
-            method.params(bplStep.children().keys())
+            closure.params(bplStep.children().keys())
         tsStep = self.getStep('temps')
         if tsStep.notNil() and tsStep.notEmpty():
-            method.tempvars(tsStep.children().keys())
-        self.runtimeRes(method)
+            closure.tempvars(tsStep.children().keys())
+        self.runtimeRes(closure)
 
         if interpreter.toDebug():
             print("Instruction List:")
-            for instruction in method.interpreter().instructions():
+            for instruction in closure.interpreter().instructions():
                 print(f"  {instruction}")
         return self
 
@@ -255,11 +255,9 @@ class BlockStep(RuntimeStep):
     def visit(self, step): return step.visitBlock(self)
 
     def run(self, scope):
-        res = self.compileRes().method()
+        res = self.compileRes().closure()
         self.runtimeRes(res)
         return res
-
-    # def describe(self): return self.keyname()
 
 class UnaryHeadStep(RuntimeStep):
     def visit(self, step): return step.visitUnaryHead(self)
@@ -565,7 +563,7 @@ class PrimitiveStep(RuntimeStep):
 class Interpreter(SObject, RuleContextVisitor):
     currentStep = Holder().name('currentStep')
     instructions = Holder().name('instructions').type('List')
-    method = Holder().name('method')
+    closure = Holder().name('closure')
 
     def visitWs(self, cxt): return nil
     def visitTerminal(self, tnode): return nil

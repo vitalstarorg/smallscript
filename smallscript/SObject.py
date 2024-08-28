@@ -90,7 +90,7 @@ class SObject:
             names = [ name.strip() for name in metas.split(',') ]
             return List(names)
         if not issubclass(sClass, SObject):
-            # print(f"{sClass.__name__} not subclass SObject")  # nb reports DebugMethod is not SObject
+            # print(f"{sClass.__name__} not subclass SObject")  # nb reports DebugClosure is not SObject
             return List()
         names = List().append(sClass.__name__)
         if sClass != SObject:
@@ -337,7 +337,7 @@ class Holder(SObject):
         return value
 
     def __call__(self, func):
-        self.name(func.__name__).type('Method')
+        self.name(func.__name__).type('Closure')
         self.pyfunc(func)
         return self
 
@@ -562,11 +562,11 @@ class Metaclass(SObject):
         holders[attrname] = holder
         return self
 
-    def addMethod(self, name, method, classType=false_):
+    def addMethod(self, name, closure, classType=false_):
         holders = self.holders()
-        fullname = method.ssSignature(name)
-        ssname = method.ssSignature()
-        holder = Holder().name(fullname).type('Method').method(method)
+        fullname = closure.ssSignature(name)
+        ssname = closure.ssSignature()
+        holder = Holder().name(fullname).type('Closure').method(closure)
         if classType: holder.asClassType()
         holders[fullname] = holder  # fullname
         holders[ssname] = holder    # Smallscript protocol
@@ -704,8 +704,8 @@ class Package(SObject):
 
         # from importMethods()
         for holder in metaclass.holders().values():
-            if holder.type() == 'Method' and holder.pyfunc() != nil:
-                method = self.context().newInstance('Method')
+            if holder.type() == 'Closure' and holder.pyfunc() != nil:
+                method = self.context().newInstance('Closure')
                 holder.method(method)
                 pyfunc = holder.pyfunc()
                 method.takePyFunc(pyfunc)
@@ -748,8 +748,8 @@ class Package(SObject):
         "Import Method definitions from SObject class."
         for metaclass in self.metaclasses().values():
             for holder in metaclass.holders().values():
-                if holder.type() == 'Method' and holder.pyfunc() != nil:
-                    method = self.context().newInstance('Method')
+                if holder.type() == 'Closure' and holder.pyfunc() != nil:
+                    method = self.context().newInstance('Closure')
                     holder.method(method)
                     pyfunc = holder.pyfunc()
                     method.takePyFunc(pyfunc)
@@ -937,8 +937,8 @@ class Scope(SObject):
         return scope
 
     def newInstance(self, type):
-        method = self.getContext().newInstance(type)
-        return method
+        instance = self.getContext().newInstance(type)
+        return instance
 
     def lookup(self, key, default=nil):
         "Return a sobject contains the @key from self, scopes and parent scope."

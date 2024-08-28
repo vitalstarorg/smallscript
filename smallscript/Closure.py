@@ -79,8 +79,8 @@ class IRGrapher(StepVisitor):
         "Depth-first walk on step."
         if not firstStep and isinstance(step, ClosureStep):
             self.childName(name)
-            method = step.method()
-            method.irGraph(self)
+            closure = step.closure()
+            closure.irGraph(self)
             return self
         currentStep = self.currentStep()
         children = List()
@@ -123,7 +123,7 @@ class IRGrapher(StepVisitor):
             self.graph.edge(currentStepId, stepId, label=label)
             # print(f"{currentStepId} --{childName}--> {stepId}")
         index = self.instructionIdx().get(stepId, nil)
-        nodeName = f"{ruleName}" if index == nil else f"#{index}\n{ruleName}"
+        nodeName = f"{ruleName}Step" if index == nil else f"#{index}\n{ruleName}Step"
         if compileRes.isNil() or ruleName == 'blk':
             self.graph.node(stepId, f"{nodeName}", shape=shape)
         else:
@@ -226,8 +226,8 @@ class SourceFile(SObject):
             os.remove(self.filepath())
             self.filepath("")
 
-class Method(SObject):
-    "Works as a function encapsulation. Its object context is provided during method invocation."
+class Closure(SObject):
+    "Works as a function encapsulation. Its object context is provided during closure invocation."
     smallscript = Holder().name('smallscript').type('String')
     script = Holder().name('script').type('Script')
     interpreter = Holder().name('interpreter').type('Interpreter')
@@ -260,7 +260,7 @@ class Method(SObject):
         return self._runPy(scope, *params)
 
     def _runPy(self, scope, *params):
-        "Using a compiled Python func to run this method."
+        "Using a compiled Python func to run this closure."
         func = self.pyfunc()
         try:
             res = func(scope, *params)
@@ -272,7 +272,7 @@ class Method(SObject):
         return res
 
     def _runSteps(self, scope, *params):
-        "Use a precompiler instructions to run this method."
+        "Use a precompiler instructions to run this closure."
         for param, arg in zip(self.params(), params):
             scope[param] = arg
         for tmp in self.tempvars():
@@ -291,7 +291,7 @@ class Method(SObject):
         return res
 
     def _getInterpreter(self): return self.interpreter()    # to be overridden
-    def visit(self, visitor): return visitor.visitMethod(self)
+    def visit(self, visitor): return visitor.visitClosure(self)
 
     def interpret(self, smallscript=""):
         smallscript = self.asSObj(smallscript)
@@ -303,11 +303,11 @@ class Method(SObject):
             return nil
         smallscriptStep = script.smallscriptStep()
         interpreter = self._getInterpreter()
-        interpreter.method(self)        # interpreter reference this method e.g. toDebug
-        closure = smallscriptStep.getClosure(interpreter)
-        if closure.notNil():
-            method = closure.method()
-            self.copyFrom(method)
+        interpreter.closure(self)        # interpreter reference this closure e.g. toDebug
+        closureStep = smallscriptStep.getClosureStep(interpreter)
+        if closureStep.notNil():
+            closure = closureStep.closure()
+            self.copyFrom(closure)
         return self
 
     def compile(self, smallscript=""):
@@ -450,7 +450,7 @@ class Execution(SObject):
     "Execution provides a context linking a sobject with a method i.e. function encapsulation."
     this = Holder().name('this')
     context = Holder().name('context').type('Context')
-    method = Holder().name('method').type('Method')
+    method = Holder().name('method').type('Closure')
 
     def __call__(self, *args, **kwargs):
         method = self.method()
@@ -480,7 +480,7 @@ class Execution(SObject):
         return scope
 
     def visitSObj(self, sobj): return self.this(sobj)
-    def visitMethod(self, method): return self.method(method)
+    def visitClosure(self, closure): return self.method(closure)
 
 class TextBuffer(SObject):
     delimiter = Holder().name('delimiter').type('String')
@@ -548,23 +548,23 @@ class PythonCoder(SObject):
         res = value.visit(self)
         return res
 
-    def visitMethod(self, method):
+    def visitClosure(self, closure):
         output = TextBuffer().delimiter("\n")
         output.skipFirstDelimiter()
 
         # params
-        if method.params().notEmpty():
-            for param in method.params():
+        if closure.params().notEmpty():
+            for param in closure.params():
                 output.writeLine(f"scope.vars()['{param}'] = {param}")
         # tempvars
-        if method.tempvars().notEmpty():
+        if closure.tempvars().notEmpty():
             output.writeLine()
-            for tempVar in method.tempvars():
+            for tempVar in closure.tempvars():
                 output.writeString(f"scope.vars()['{tempVar}'] = ")
             output.writeString(f"{self.firstArg()}['nil']")
         # expressions
-        closure = method.interpreter().currentStep()
-        exprList = closure.flatten()
+        closureStep = closure.interpreter().currentStep()
+        exprList = closureStep.flatten()
         for step in exprList[:-1]:
             res = step if step.isRuntime() else step.runtimeRes()
             res = res.visit(self)
@@ -583,11 +583,11 @@ class PythonCoder(SObject):
         body.writeString(self.methodsSource().text())
         body.writeLine(output.text())
         final = body.indent('  ')
-        name = method.name()
+        name = closure.name()
         if name.isEmpty():
-            name = method.unname(final)
-            method.name(name)
-        pySignature = method.pySignature(name)
+            name = closure.unname(final)
+            closure.name(name)
+        pySignature = closure.pySignature(name)
         source = String(f"{pySignature}{final}")
         return source
 
@@ -614,10 +614,10 @@ class PythonCoder(SObject):
         return output
 
     def visitBlock(self, block):
-        method = block.compileRes().method()
-        source = method.toPython().pysource()
+        closure = block.compileRes().closure()
+        source = closure.toPython().pysource()
         self.methodsSource().delimiter("\n").writeLine(source)
-        res = String(f"{self.firstArg()}.newInstance('Method').takePyFunc({method.name()})")
+        res = String(f"{self.firstArg()}.newInstance('Closure').takePyFunc({closure.name()})")
         return res
 
     def _visitUnaryTail(self, unarytailStep):

@@ -22,7 +22,7 @@ from os import environ as env
 env['TESTALL'] = '1'
 
 from smallscript.SObject import *
-from smallscript.Closure import Script, Method
+from smallscript.Closure import Script, Closure
 
 
 class TDD_Package(SmallScriptTest):
@@ -36,7 +36,7 @@ class TDD_Package(SmallScriptTest):
         scope = rootContext.createScope()
         scope['tobj'] = tobj
 
-        # Method.getBody() remove decorator and method signature from method source.
+        # Closure.getBody() remove decorator and method signature from method source.
         c17 = rootContext.metaclassByName('TestSObj15').holderByName('cmethod17').method()
         pysource = c17.pysource()
         self.assertTrue("@Holder" in pysource)
@@ -50,7 +50,7 @@ class TDD_Package(SmallScriptTest):
 
     @skipUnless('TESTALL' in env, "disabled")
     def test500_smoke(self):
-        #### Based on TDD_Method.test710_Dynamic_Creation_in_SS() from tdd_0_2/test01_tdd.py
+        #### Based on TDD_Closure.test710_Dynamic_Creation_in_SS() from tdd_0_2/test01_tdd.py
         pkg = rootContext.loadPackage('tests')
         tobj = TestSObj14()
         tobj.attr11(100)
@@ -78,14 +78,14 @@ class TDD_Package(SmallScriptTest):
                         | addMethod: #cmethod17 method: [:m17 :arg2 | m17 * arg2 + self cattr12 asNumber] classType: true
         """
         scope = rootContext.createScope()
-        method = Method().compile(ss)
+        closure = Closure().compile(ss)
         # method.pysource().print()
-        meta = method(scope)
+        meta = closure(scope)
 
-        meta.toPython().print()
+        # meta.toPython().print()
 
         m17 = meta.holderByName("cmethod17").method()
-        m17.pysource().print()
+        # m17.pysource().print()
 
         c17 = rootContext.metaclassByName('TestSObj15').holderByName('cmethod17').method()
 
