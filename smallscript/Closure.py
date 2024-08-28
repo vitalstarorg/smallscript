@@ -238,20 +238,6 @@ class Method(SObject):
     pyfunc = Holder().name('pyfunc')
     pyerror = Holder().name('pyerror')
 
-    # def value(self, *args, **kwargs):
-    #     # @self @scope args...
-    #     arglst = List(args)
-    #     if arglst.isEmpty() or not isinstance(arglst.head(), Scope):
-    #         local = self.getContext().createScope()
-    #     else:
-    #         scope = arglst.head()
-    #         local = scope.createScope()
-    #         this = scope.objs().head()
-    #         local['self'] = this
-    #         local.objs().append(this)
-    #         arglst.pop(0)
-    #     return self.__call__(local, *arglst, **kwargs)
-
     @Holder()
     def value(scope, *args, **kwargs):
         arglst = List(args)
@@ -364,13 +350,6 @@ class Method(SObject):
         self.pyfunc(pyfunc)
         return self
 
-    def toPython(self):
-        ""
-        coder = PythonCoder()
-        pythonscript = self.visit(coder)
-        self.pysource(pythonscript)
-        return self
-
     def astGraph(self): return self.script().astGraph()
 
     def irGraph(self, grapher=nil):
@@ -400,11 +379,30 @@ class Method(SObject):
         self.name(pyfunc.__name__)
         return self
 
-    def signature(self, name=""):
+    def toPython(self):
+        ""
+        coder = PythonCoder()
+        pythonscript = self.visit(coder)
+        self.pysource(pythonscript)
+        return self
+
+    def toNamedPython(self, name):
+        firstArg = self.getContext().FirstArg()
+        pySignature = self.pySignature(name)
+        body = self.getBody(true_)
+        source = String(f"{pySignature}\n{body}")
+        return source
+
+    def pySignature(self, name=""):
+        firstArg = self.getContext().FirstArg()
+        parameters = ", ".join([firstArg] + self.params())
+        source = String(f"def {name}({parameters}):")
+        return source
+
+    def ssSignature(self, name=""):
         params = self.params()
         pyfunc = self.pyfunc()
         signature = name = String(name)
-        if name.isEmpty() and self.hasKey('name'): signature = name = self.name()
         if params.len() == 0:
             if pyfunc != nil: signature = pyfunc.__name__
         elif params.len() == 1:
@@ -427,12 +425,22 @@ class Method(SObject):
             name = f"unnamed_{body.sha256()}"
         return name
 
-    def getBody(self):
+    def getBody(self, deindent=false_):
+        def removeHead(body, heading):
+            if body[0].lstrip().startswith(heading):
+                body.pop(0)
+
         source = self.pysource()
         if source.isNil() or source.isEmpty():
             return String("")
-        body = source.split('\n', 1)[1]     # remove the first line
-        return String(body)
+        body = source.split('\n')
+        removeHead(body, "@Holder()")   # try to remove "@Holder()" descriptor
+        removeHead(body, "def ")        # remove the method signature
+        bodyText = "\n".join(body)
+        if deindent:
+            buffer = TextBuffer().writeString(bodyText)
+            bodyText = buffer.indent("  ", true_)
+        return String(bodyText)
 
     def info(self):
         info = self.script().info()
@@ -487,11 +495,11 @@ class TextBuffer(SObject):
             self.setValue('output', output)
         return output
 
-    def write(self, string):
+    def writeString(self, string):
         self.textIO().write(string)
         return self
 
-    def writeWithDelimiter(self, string = ""):
+    def writeLine(self, string=""):
         if not self.useDelimiter():
             self.textIO().write(string)
             self.useDelimiter(true_)
@@ -504,16 +512,17 @@ class TextBuffer(SObject):
         text = self.textIO().getvalue()
         return String(text)
 
-    def indent(self, padding="  "):
-        # text = self._deindent()
-        text = self.text().split("\n")
-        indented = List()
-        for line in text:
-            if len(line) == 0:
-                indented.append("")
-            else:
-                indented.append(f"{padding}{line}")
-        res = "\n".join(indented)
+    def indent(self, padding, deindent=false_):
+        lines = self._deindent() if deindent else self.text().split("\n")
+        if padding != "":
+            indented = List()
+            for line in lines:
+                if len(line) == 0:
+                    indented.append("")
+                else:
+                    indented.append(f"{padding}{line}")
+            lines = indented
+        res = "\n".join(lines)
         return String(res)
 
     def _deindent(self):
@@ -529,13 +538,7 @@ class PythonCoder(SObject):
     delimiter = Holder().name('delimiter').type('String')
     methodsSource = Holder().name('methodsSource').type('TextBuffer')
 
-    def firstArg(self, firstArg=''):
-        firstArg = self._getOrSet('firstArg', firstArg, nil)
-        if firstArg == nil:
-            firstArg = 'scope'
-            self.setValue('scope', firstArg)
-        return firstArg
-
+    def firstArg(self, firstArg=''): return self.getContext().FirstArg()
     def visit(self, step): return step.visit(self)
 
     def visitStep(self, step):
@@ -552,40 +555,40 @@ class PythonCoder(SObject):
         # params
         if method.params().notEmpty():
             for param in method.params():
-                output.writeWithDelimiter(f"scope.vars()['{param}'] = {param}")
+                output.writeLine(f"scope.vars()['{param}'] = {param}")
         # tempvars
         if method.tempvars().notEmpty():
-            output.writeWithDelimiter()
+            output.writeLine()
             for tempVar in method.tempvars():
-                output.write(f"scope.vars()['{tempVar}'] = ")
-            output.write(f"{self.firstArg()}['nil']")
+                output.writeString(f"scope.vars()['{tempVar}'] = ")
+            output.writeString(f"{self.firstArg()}['nil']")
         # expressions
         closure = method.interpreter().currentStep()
         exprList = closure.flatten()
         for step in exprList[:-1]:
             res = step if step.isRuntime() else step.runtimeRes()
             res = res.visit(self)
-            output.writeWithDelimiter(f"{res}")
+            output.writeLine(f"{res}")
         step = exprList[-1]
         res = step if step.isRuntime() else step.runtimeRes()
         res = res.visit(self)
         if res.startswith("_ = "):
-            output.writeWithDelimiter(res)
+            output.writeLine(res)
         else:
-            output.writeWithDelimiter(f"_ = {res}")
-        output.writeWithDelimiter(f"return _")
+            output.writeLine(f"_ = {res}")
+        output.writeLine(f"return _")
 
         # method signature
         body = TextBuffer().delimiter("\n")
-        body.write(self.methodsSource().text())
-        body.writeWithDelimiter(output.text())
+        body.writeString(self.methodsSource().text())
+        body.writeLine(output.text())
         final = body.indent('  ')
         name = method.name()
         if name.isEmpty():
             name = method.unname(final)
             method.name(name)
-        parameters = ", ".join([self.firstArg()] + method.params())
-        source = String(f"def {name}({parameters}):{final}")
+        pySignature = method.pySignature(name)
+        source = String(f"{pySignature}{final}")
         return source
 
     def visitChain(self, chain):
@@ -613,7 +616,7 @@ class PythonCoder(SObject):
     def visitBlock(self, block):
         method = block.compileRes().method()
         source = method.toPython().pysource()
-        self.methodsSource().delimiter("\n").writeWithDelimiter(source)
+        self.methodsSource().delimiter("\n").writeLine(source)
         res = String(f"{self.firstArg()}.newInstance('Method').takePyFunc({method.name()})")
         return res
 
@@ -626,7 +629,7 @@ class PythonCoder(SObject):
                 unarymsg = unarytailStep
             op = unarymsg.compileRes()
             if op.notNil():
-                output.write(f".{op}()")
+                output.writeString(f".{op}()")
             unarytailStep = unarytailStep.getStep('unarytail')
         return output.text()
 
@@ -636,9 +639,9 @@ class PythonCoder(SObject):
         unarytailStep = unaryHead.getStep('unarytail')
         if unarytailStep.isNil(): return unaryHead
         output = TextBuffer()
-        output.write(f"{operand}")
+        output.writeString(f"{operand}")
         tail = self._visitUnaryTail(unarytailStep)
-        output.write(tail)
+        output.writeString(tail)
         return output.text()
 
     def _visitBinTail(self, bintailStep):
@@ -648,10 +651,10 @@ class PythonCoder(SObject):
                             if bintailStep.ruleName() == 'bintail' \
                             else bintailStep
             binop = binmsgStep.getStep('binop').compileRes()
-            output.write(f" {binop}")
+            output.writeString(f" {binop}")
             operandStep = binmsgStep.getStep('unaryhead')
             operand = operandStep.visit(self)
-            output.write(f" {operand}")
+            output.writeString(f" {operand}")
             bintailStep = bintailStep.getStep('bintail')
         return output.text()
 
@@ -661,9 +664,9 @@ class PythonCoder(SObject):
         bintailStep = binhead.getStep('bintail')
         if bintailStep.isNil(): return unaryHead
         output = TextBuffer()
-        output.write(f"{unaryHead}")
+        output.writeString(f"{unaryHead}")
         tail = self._visitBinTail(bintailStep)
-        output.write(tail)
+        output.writeString(tail)
         return output.text()
 
     def _visitKwMsg(self, kwmsg):
@@ -687,11 +690,11 @@ class PythonCoder(SObject):
         if kwMap.len() > 1:
             fullname = "".join([f"{key}__" for key in kwMap.keys()])
         kwOutput = TextBuffer().delimiter(", ").skipFirstDelimiter()
-        kwOutput.write(f".{fullname}(")
+        kwOutput.writeString(f".{fullname}(")
         for parameter in kwMap.values():
-            kwOutput.writeWithDelimiter(parameter.toString())
-        kwOutput.write(')')
-        output.write(kwOutput.text())
+            kwOutput.writeLine(parameter.toString())
+        kwOutput.writeString(')')
+        output.writeString(kwOutput.text())
         return output.text()
 
     def visitKwHead(self, kwhead):
@@ -712,9 +715,9 @@ class PythonCoder(SObject):
         kwmsg = kwhead.getStep('kwmsg')
 
         output = TextBuffer()
-        output.write(f"{unaryhead}")
+        output.writeString(f"{unaryhead}")
         msg = self._visitKwMsg(kwmsg)
-        output.write(msg)
+        output.writeString(msg)
         return output.text()
 
     def visitArray(self, arrayStep):
@@ -747,19 +750,19 @@ class PythonCoder(SObject):
 
     def visitList(self, list):
         output = TextBuffer()
-        output.write(f"{self.firstArg()}.newInstance('List')")
+        output.writeString(f"{self.firstArg()}.newInstance('List')")
         for e in list:
             eSrc = e.visit(self)
-            output.write(f".append({eSrc})")
+            output.writeString(f".append({eSrc})")
         return output.text()
 
     def visitMap(self, map):
         output = TextBuffer()
-        output.write(f"{self.firstArg()}.newInstance('Map')")
+        output.writeString(f"{self.firstArg()}.newInstance('Map')")
         for k, v in map.items():
             kSrc = k.visit(self)
             vSrc = v.visit(self)
-            output.write(f".setValue({kSrc}, {vSrc})")
+            output.writeString(f".setValue({kSrc}, {vSrc})")
         return output.text()
 
     def visitString(self, string): return string.asString()

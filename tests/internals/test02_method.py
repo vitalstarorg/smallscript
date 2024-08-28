@@ -189,19 +189,21 @@ class Test_Method(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test730_signature(self):
         method = Method().interpret("arg1 + arg2")
-        self.assertEqual("", method.signature())
-        method.name('testMethod')
-        self.assertEqual("testMethod", method.signature())
+        self.assertEqual("", method.ssSignature())
+        method.name('testName')
+        self.assertEqual("", method.ssSignature())
+        self.assertEqual("testMethod", method.ssSignature("testMethod"))
 
         method = Method().interpret(":arg1 | arg1 + 2")
-        self.assertEqual("arg1", method.signature())
-        method.name('testMethod')
-        self.assertEqual("testMethod__arg1__", method.signature())
+        self.assertEqual("arg1", method.ssSignature())
+        method.name('testName')
+        self.assertEqual("arg1", method.ssSignature())
+        self.assertEqual("testMethod__arg1__", method.ssSignature("testMethod"))
 
         method = Method().interpret(":arg1 :arg2 | arg1 + arg2")
-        self.assertEqual("arg1__arg2__", method.signature())
-        method.name('testMethod')
-        self.assertEqual("testMethod__arg1__arg2__", method.signature())
+        self.assertEqual("arg1__arg2__", method.ssSignature())
+        method.name('testName')
+        self.assertEqual("testMethod__arg1__arg2__", method.ssSignature("testMethod"))
 
 if __name__ == '__main__':
     unittest.main()

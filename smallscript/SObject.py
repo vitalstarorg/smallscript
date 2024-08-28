@@ -564,8 +564,8 @@ class Metaclass(SObject):
 
     def addMethod(self, name, method, classType=false_):
         holders = self.holders()
-        fullname = method.signature(name)
-        ssname = method.signature()
+        fullname = method.ssSignature(name)
+        ssname = method.ssSignature()
         holder = Holder().name(fullname).type('Method').method(method)
         if classType: holder.asClassType()
         holders[fullname] = holder  # fullname
@@ -594,22 +594,10 @@ class Metaclass(SObject):
                     if hasattr(item, 'holder'):
                         holder = item.holder
                         holders[attname] = holder.name(attname)
-                        continue
-                    # signature = inspect.signature(var)
-                    # params = List(signature.parameters.values())
-                    # if params.notEmpty() and params.head().name == self.cxtName():
-                    #     attrMap[attname] = var
                     continue
                 if isinstance(item, Holder):
                     holders[attname] = item.name(attname)
                     continue
-                # if isinstance(item, Holder.Wrapper):
-                #     if hasattr(item, 'holder'):
-                #         holder = item.holder()
-                #         # print(f"_importHolders {holder}")
-                #         holders[attname] = holder.name(attname)
-                #         continue
-
         self.setValue('holders', holders)
         return self
 
@@ -650,6 +638,56 @@ class Metaclass(SObject):
             if parent.isNil(): continue
             parent._parentMetaclasses(parentMap)
         return parentMap
+
+    def toPython(self):
+        classname = self.name()
+
+        metas = List().append(classname)
+        for parent in self.parentNames():
+            if parent == 'SObject': continue
+            metas.append(parent)
+        metas = ", ".join(metas)
+
+        attributes = List()
+        methods = Map()         # use it as ordered Set
+        for holder in self.holders().values():
+            if holder.method().isNil():
+                attributes.append(holder)
+            else:
+                methods[holder] = 1
+
+        source = self.getContext().newInstance('TextBuffer')
+        source.delimiter("\n").skipFirstDelimiter()
+        source.writeLine("from smallscript.SObject import SObject, Holder\n")
+        source.writeLine(f"class {classname}(SObject):")
+
+        attrSource = self.getContext().newInstance('TextBuffer')
+        attrSource.delimiter("\n").skipFirstDelimiter()
+        attrSource.writeLine(f"ss_metas = '{metas}'")
+        for attrHolder in attributes:
+            attrDef = f"{attrHolder.name()} = Holder().name('{attrHolder.name()})"
+            if attrHolder.type().notNil():
+                attrDef = f"{attrDef}.type('{attrHolder.type()}')"
+            if not attrHolder.instanceType():
+                attrDef = f"{attrDef}.asClassType()"
+            attrSource.writeLine(attrDef)
+        attrSource.writeLine()
+
+        methodSource = self.getContext().newInstance('TextBuffer')
+        methodSource.delimiter("\n").skipFirstDelimiter()
+        for methodHolder in methods.keys():
+            method = methodHolder.method()
+            if methodHolder.instanceType():
+                methodSource.writeLine("@Holder()")
+            else:
+                methodSource.writeLine("@Holder().asClassType()")
+            name = method.ssSignature()
+            namedMethod = method.toNamedPython(name)
+            methodSource.writeLine(namedMethod)
+
+        source.writeLine(attrSource.indent("  "))
+        source.writeLine(methodSource.indent("  ", true_))
+        return source.text()
 
 class Package(SObject):
     "Package to a set of metaclass loaded from files, or created dynamically."
@@ -776,6 +814,13 @@ class Context(SObject):
     """
     packages = Holder().name('packages').type('Map')
     rootScope = Holder().name('rootScope').type('Scope')
+    FirstArg = Holder().name('FirstArg').type('String').asClassType()
+
+    @Holder().asClassType()
+    def metaInit(scope):
+        self = scope['self']
+        self.FirstArg('scope')
+        return self
 
     def loadPackage(self, pkgname):
         "Load metaclasses from a SObject package."

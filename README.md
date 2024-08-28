@@ -250,7 +250,7 @@ tobj.method16(2, 3)             # 305
 SmallScript is transpiled to Python, and run in native Python speed. Essentially we re-implement SmallScript using SObject in Python. Except SmallScript has no arithmetic precedence, Python implement should behave exactly the same as SmallScript. 
 
 ### SmallScript Diagnostics
-Just in case, here is an example to so see what Python code got generated from SmallScript.
+Just in case, here is an example to see what Python code got generated from SmallScript.
 ```python
 ss = ":param | | outer| outer := 13; [7 + outer] value + param"
 method = Method().name("test").interpret(ss)

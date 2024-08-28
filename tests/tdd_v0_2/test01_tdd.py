@@ -145,11 +145,11 @@ class TDD_Method(SmallScriptTest):
                .addAttr('cattr12', 'String', true_)
 
         # Define instance and class method using SmallScript
-        method14 = Method().interpret(":arg1 :arg2 | arg1 + arg2")
-        cmethod15 = Method().interpret(":arg1 :arg2 | arg1 * arg2")
+        method14 = Method().interpret(":m14 :arg2 | m14 + arg2")
+        cmethod15 = Method().interpret(":m15 :arg2 | m15 * arg2")
         method16 = Method().\
-                    interpret(":arg1 :arg2 | self cattr12 asNumber + self attr11 asNumber + arg1 + arg2")
-        cmethod17 = Method().interpret(":arg1 :arg2 | arg1 * arg2 + self cattr12 asNumber")
+                    interpret(":m16 :arg2 | self cattr12 asNumber + self attr11 asNumber + m16 + arg2")
+        cmethod17 = Method().interpret(":m17 :arg2 | m17 * arg2 + self cattr12 asNumber")
         newMeta.addMethod('method14', method14)
         newMeta.addMethod('cmethod15', cmethod15, true_)
         newMeta.addMethod('method16', method16)
@@ -185,10 +185,10 @@ class TDD_Method(SmallScriptTest):
                         | addAttr: #cattr12 type: #String classType: true
                         
                         // Create two instance methods and two class methods.
-                        | addMethod: #method14 method: [:arg1 :arg2 | arg1 + arg2]
-                        | addMethod: #cmethod15 method: [:arg1 :arg2 | arg1 * arg2] classType: true
-                        | addMethod: #method16 method: [:arg1 :arg2 | self cattr12 asNumber + self attr11 asNumber + arg1 + arg2]
-                        | addMethod: #cmethod17 method: [:arg1 :arg2 | arg1 * arg2 + self cattr12 asNumber] classType: true
+                        | addMethod: #method14 method: [:m14 :arg2 | m14 + arg2]
+                        | addMethod: #cmethod15 method: [:m15 :arg2 | m15 * arg2] classType: true
+                        | addMethod: #method16 method: [:m16 :arg2 | self cattr12 asNumber + self attr11 asNumber + m16 + arg2]
+                        | addMethod: #cmethod17 method: [:m17 :arg2 | m17 * arg2 + self cattr12 asNumber] classType: true
         """
 
         scope = rootContext.createScope()
