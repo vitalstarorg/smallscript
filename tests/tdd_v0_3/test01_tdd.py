@@ -81,7 +81,7 @@ class TDD_Closure(SmallScriptTest):
         res = tobj1.cattr12()
         self.assertEqual('200', res)            # Class attribute cattr12 is '200'
         res = TestSObj14.cattr12('value12_')    # Set value to class attribute cattr12()
-        self.assertEqual(meta1.attrs(), res)    # Class attribute map is returned for set operation
+        self.assertEqual(TestSObj14, res)    # Class attribute map is returned for set operation
         res = TestSObj14.cattr12()              # Access class attribute cattr12
         self.assertEqual('value12_', res)
 
@@ -107,7 +107,7 @@ class TDD_Closure(SmallScriptTest):
         self.assertEqual('', tobj.cattr12())
         self.assertTrue(tobj.metaclass().attrs().hasKey('cattr12'))
         ret = tobj.cattr12('value12')
-        self.assertEqual(meta.attrs(), ret)
+        self.assertEqual(tobj, ret)
         self.assertEqual('value12', tobj.cattr12())
 
         #### SObject methods protocol, not through Python

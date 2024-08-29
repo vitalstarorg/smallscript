@@ -386,10 +386,10 @@ class Closure(SObject):
         self.pysource(pythonscript)
         return self
 
-    def toNamedPython(self, name):
+    def toNamedPython(self, padding, name):
         firstArg = self.getContext().FirstArg()
         pySignature = self.pySignature(name)
-        body = self.getBody(true_)
+        body = self.getBody(padding, true_)
         source = String(f"{pySignature}\n{body}")
         return source
 
@@ -418,14 +418,14 @@ class Closure(SObject):
 
     def unname(self, body=nil):
         if body == nil:
-            body = self.getBody()
+            body = self.getBody("")
         if body == "":
             name = "unnamed_0"
         else:
             name = f"unnamed_{body.sha256()}"
         return name
 
-    def getBody(self, deindent=false_):
+    def getBody(self, padding, deindent=false_):
         def removeHead(body, heading):
             if body[0].lstrip().startswith(heading):
                 body.pop(0)
@@ -439,7 +439,7 @@ class Closure(SObject):
         bodyText = "\n".join(body)
         if deindent:
             buffer = TextBuffer().writeString(bodyText)
-            bodyText = buffer.indent("  ", true_)
+            bodyText = buffer.indent(padding, true_)
         return String(bodyText)
 
     def info(self):

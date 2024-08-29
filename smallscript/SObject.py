@@ -344,9 +344,10 @@ class Holder(SObject):
     def __get__(self, obj, owner = None):  # owner is ignored
         """Implement the descriptor protocol."""
         # WARNING: don't use scope as local variable. It will disrupt scope var lookup.
-        def getOrSetSObj(sobj, value=None):
+        original = owner if obj is None else obj
+        def getOrSetSObj(original, sobj, value=None):
             attname = self.name()
-            res = sobj
+            res = original
             if value is None:
                 if sobj.hasKey(attname):
                     return sobj.getValue(attname)
@@ -365,7 +366,7 @@ class Holder(SObject):
                 sobj.setValue(attname, value)
             return res
 
-        def getOrSet(value=None): return getOrSetSObj(obj, value)
+        def getOrSet(value=None): return getOrSetSObj(original, obj, value)
 
         res = nil
         method = self.method()
@@ -564,11 +565,11 @@ class Metaclass(SObject):
 
     def addMethod(self, name, closure, classType=false_):
         holders = self.holders()
-        fullname = closure.ssSignature(name)
+        # fullname = closure.ssSignature(name)
         ssname = closure.ssSignature()
-        holder = Holder().name(fullname).type('Closure').method(closure)
+        holder = Holder().name(name).type('Closure').method(closure)
         if classType: holder.asClassType()
-        holders[fullname] = holder  # fullname
+        # holders[fullname] = holder  # fullname
         holders[ssname] = holder    # Smallscript protocol
         holders[name] = holder      # prefix for python protocol
         return self
@@ -665,7 +666,7 @@ class Metaclass(SObject):
         attrSource.delimiter("\n").skipFirstDelimiter()
         attrSource.writeLine(f"ss_metas = '{metas}'")
         for attrHolder in attributes:
-            attrDef = f"{attrHolder.name()} = Holder().name('{attrHolder.name()})"
+            attrDef = f"{attrHolder.name()} = Holder().name('{attrHolder.name()}')"
             if attrHolder.type().notNil():
                 attrDef = f"{attrDef}.type('{attrHolder.type()}')"
             if not attrHolder.instanceType():
@@ -681,19 +682,20 @@ class Metaclass(SObject):
                 methodSource.writeLine("@Holder()")
             else:
                 methodSource.writeLine("@Holder().asClassType()")
-            name = method.ssSignature()
-            namedMethod = method.toNamedPython(name)
+            # name = method.ssSignature()
+            name = methodHolder.name()
+            namedMethod = method.toNamedPython("    ", name)
             methodSource.writeLine(namedMethod)
 
-        source.writeLine(attrSource.indent("  "))
-        source.writeLine(methodSource.indent("  ", true_))
+        source.writeLine(attrSource.indent("    "))
+        source.writeLine(methodSource.indent("    ", true_))
         return source.text()
 
 class Package(SObject):
     "Package to a set of metaclass loaded from files, or created dynamically."
     context = Holder().name('context').type('Context')
     metaclasses = Holder().name('metaclasses').type('Map')
-    path = Holder().name('path').type('Nil')
+    path = Holder().name('path').type('String')
 
     #### Metaclass definition import: limited SObject features before initialization.
     def importSingleSObject(self, sClass):
@@ -728,7 +730,6 @@ class Package(SObject):
                 module = sys.modules[module_name]
             else:
                 module = importlib.import_module(module_name)
-            # module = importlib.import_module(module_name)     # diagnose nb loading issue.
             for name, pyClass in inspect.getmembers(module, inspect.isclass):
                 # filter those class defined in this module, not imported within the module.
                 if pyClass.__module__ == module.__name__ and issubclass(pyClass, SObject):
@@ -798,15 +799,19 @@ class Package(SObject):
         if not self.hasKey('metaclasses'): return true_
         return self.metaclasses().isEmpty()
 
-    # def findPath(self, pkgname):
-    #     pkgpath = nil
-    #     for p in sys.path:
-    #         path = Path(p)
-    #         ppath = List(path.glob(f"{pkgname}/"))
-    #         if ppath.notEmpty():
-    #             pkgpath = String(ppath.head())
-    #             break
-    #     return pkgpath
+    def findPath(self, pkgname=""):
+        if pkgname == "":
+            pkgname = self.path()
+            if pkgname == "":
+                return String()
+        pkgpath = nil
+        for p in sys.path:
+            path = Path(p)
+            ppath = List(path.glob(f"{pkgname}/"))
+            if ppath.notEmpty():
+                pkgpath = String(ppath.head())
+                break
+        return pkgpath
 
 class Context(SObject):
     """

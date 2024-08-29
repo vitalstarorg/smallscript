@@ -41,11 +41,11 @@ class TDD_Package(SmallScriptTest):
         pysource = c17.pysource()
         self.assertTrue("@Holder" in pysource)
         self.assertTrue("def " in pysource)
-        body = c17.getBody()
+        body = c17.getBody("")
         self.assertTrue("@Holder" not in body)
         self.assertTrue("def " not in body)
 
-        source = c17.toNamedPython(c17.ssSignature())
+        source = c17.toNamedPython("", c17.ssSignature())
         return
 
     @skipUnless('TESTALL' in env, "disabled")
@@ -72,21 +72,53 @@ class TDD_Package(SmallScriptTest):
                         | addAttr: #cattr12 type: #String classType: true
 
                         // Create two instance methods and two class methods.
-                        | addMethod: #method14 method: [:m14 :arg2 | m14 + arg2]
-                        | addMethod: #cmethod15 method: [:m15 :arg2 | m15 * arg2] classType: true
-                        | addMethod: #method16 method: [:m16 :arg2 | self cattr12 asNumber + self attr11 asNumber + m16 + arg2]
-                        | addMethod: #cmethod17 method: [:m17 :arg2 | m17 * arg2 + self cattr12 asNumber] classType: true
+                        | addMethod: #method14 
+                            method: [:m14 :arg2 | m14 + arg2]
+                        | addMethod: #cmethod15 
+                            method: [:m15 :arg2 | m15 * arg2] 
+                            classType: true
+                        | addMethod: #method16 
+                            method: [:m16 :arg2 | self cattr12 asNumber + self attr11 asNumber + m16 + arg2]
+                        | addMethod: #cmethod17 
+                            method: [:m17 :arg2 | self cattr12 asNumber + m17 * arg2] 
+                            classType: true
         """
         scope = rootContext.createScope()
         closure = Closure().compile(ss)
-        # method.pysource().print()
+        # closure.pysource().print()
         meta = closure(scope)
 
-        # meta.toPython().print()
+        x = meta.toPython()
+        # x.print()
 
         m17 = meta.holderByName("cmethod17").method()
         # m17.pysource().print()
 
         c17 = rootContext.metaclassByName('TestSObj15').holderByName('cmethod17').method()
+
+        # from tests.testpkg.TestObj import AnotherMeta
+
+
+        import importlib.util
+        import sys
+        import os
+
+        pkg = rootContext.getOrNewPackage('tstpkg')
+        package_path = pkg.findPath('testpkg')
+        package_name = "testpkg"
+
+        init_file = os.path.join(package_path, '__init__.py')
+        spec = importlib.util.spec_from_file_location(package_name, init_file)
+        package = importlib.util.module_from_spec(spec)
+        sys.modules[package_name] = package
+        spec.loader.exec_module(package)
+
+        submodule = importlib.import_module(f"{package_name}.TestObj")
+
+        # MyClass = submodule.AnotherMeta
+        # MyClass= getattr(submodule, 'AnotherMeta')
+        # instance = MyClass()
+
+        x = [k for k in sys.modules.keys() if 'testpkg' in k]
 
         return
