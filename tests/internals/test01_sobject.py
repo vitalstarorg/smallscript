@@ -90,10 +90,10 @@ class Test_SObject(SmallScriptTest):
         self.assertEqual({'a':1,'b':2,'c':3}, obj)
         obj = rootContext.asSObj(123)
         self.assertEqual('Number', obj.metaname())
-        self.assertEqual('Integer', obj.number().metaname())
+        self.assertEqual('Integer', obj.value().metaname())
         obj = rootContext.asSObj(0.123)
         self.assertEqual('Number', obj.metaname())
-        self.assertEqual('Float', obj.number().metaname())
+        self.assertEqual('Float', obj.value().metaname())
         obj = rootContext.asSObj(None)
         self.assertEqual(nil, obj)
 

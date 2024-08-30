@@ -22,7 +22,7 @@ env['TESTALL'] = '1'
 from smallscript.SObject import *
 from tests.TestBase import *
 
-class TDD(SmallScriptTest):
+class TDD_SObject(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test500_getter_setter(self):
         ### SObject uses builder pattern for its attributes.
