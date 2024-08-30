@@ -58,9 +58,9 @@ symbol: (IDENT | BIN_OP) | KEYWORD+ | string;
 baresym: HASH IDENT;
 char: CHAR;
 string: (STRING | HEREDOC);
-primitive: P_START primkey ws? primtxt P_END ws?;
+primitive: P_START primkey ws? closure P_END ws?;
 primkey: KEYWORD;
-primtxt: STRING;
+//primtxt: STRING;
 var: ref;
 ref: IDENT;
 ws: (WS | COMMENT)+;
@@ -84,10 +84,11 @@ ST_FLOAT: MINUS? DIGIT+ PERIOD DIGIT+;
 
 P_START: LT (SPACES | CR)*;
 P_END: (SPACES | CR)* GT;
+//STRING: '\'' (.)*? '\'';
+STRING: '\'' (.)*? '\'' | '"' (.)*? '"';
 WS: (SPACES | CR)+;
 SPACES: ([ \t])+;
 CR: ([\r\n])+;
-STRING: '\'' (.)*? '\'';
 COMMENT: ('//' '/'* (.)*? CR | HEREDOC CR)+;
 HEREDOC:
 '\'\'\'' (.)*? '\'\'\'';

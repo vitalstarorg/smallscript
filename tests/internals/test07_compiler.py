@@ -327,12 +327,9 @@ class Test_Compiler2(SmallScriptTest):
         self.assertEqual(20, res)
 
     @skipUnless('TESTALL' in env, "disabled")
-    def test700_literal_array(self):
+    def test700_array(self):
         pkg = rootContext.loadPackage('tests')
-        tobj = TestSObj14()
-        tobj.attr11(100)
-        tobj.cattr12('200')
-        metaclass = tobj.metaclass()
+        tobj = TestSObj14().attr11(100).cattr12('200')
         scope = rootContext.createScope()
         scope['tobj'] = tobj
 
@@ -387,9 +384,20 @@ class Test_Compiler2(SmallScriptTest):
         closure = Closure().interpret(ss).toPython().compile(); res = closure(scope)
         self.assertEqual(expect, res)
 
+    @skipUnless('TESTALL' in env, "disabled")
+    def test710_primitive(self):
+        pkg = rootContext.loadPackage('tests')
+        tobj = TestSObj14().attr11(100).cattr12('200')
+        scope = rootContext.createScope()
+        scope['tobj'] = tobj
+
         ss = f"<python: 'def hello:'>"
-        closure = Closure().interpret(ss).toPython().compile(); res = closure(scope)
-        self.assertEqual({'python:': "'def hello:'"}, res)
+        closure = Closure().compile(ss); res = closure(scope)
+        self.assertEqual({'python': "def hello:"}, res)
+
+        closure = Closure().compile("<python: 'isinstance(' + tobj attr11 asString + ', SObject)' >")
+        res = closure(scope)
+        self.assertEqual({'python': "isinstance(100, SObject)"}, res)
 
 
 if __name__ == '__main__':

@@ -259,6 +259,26 @@ class BlockStep(RuntimeStep):
         self.runtimeRes(res)
         return res
 
+class PrimitiveStep(RuntimeStep):
+    def visit(self, step): return step.visitPrimitive(self)
+
+    def interpret(self, interpreter):
+        super().interpret(interpreter)
+        primkey = self.getStep('primkey').compileRes()[:-1]
+        closure = self.getStep('closure').runtimeRes()
+        pmap = Map().setValue(primkey, closure)
+        self.compileRes(pmap)
+        return self
+
+    def run(self, scope):
+        pmap = self.compileRes()
+        primkey = self.getStep('primkey').compileRes()[:-1]
+        closure = pmap[primkey]
+        res = closure(scope)
+        pmap[primkey] = res
+        self.runtimeRes(pmap)
+        return pmap
+
 class UnaryHeadStep(RuntimeStep):
     def visit(self, step): return step.visitUnaryHead(self)
 
@@ -548,17 +568,6 @@ class RefStep(RuntimeStep):
         if obj.isNil(): obj = scope     # if @varname was not defined, consider it in local scope.
         self.runtimeRes(obj)
         return obj
-
-class PrimitiveStep(RuntimeStep):
-    def visit(self, step): return step.visitPrimitive(self)
-
-    def interpret(self, interpreter):
-        super().interpret(interpreter)
-        primkey = self.getStep('primkey').compileRes()
-        primtxt = self.getStep('primtxt').compileRes()
-        map = Map().setValue(primkey, primtxt)
-        self.compileRes(map)
-        return self
 
 class Interpreter(SObject, RuleContextVisitor):
     currentStep = Holder().name('currentStep')

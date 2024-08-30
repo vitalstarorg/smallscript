@@ -256,8 +256,10 @@ class Closure(SObject):
 
     def run(self, scope, *params):
         if self.pyfunc() == nil:
-            return self._runSteps(scope, *params)
-        return self._runPy(scope, *params)
+            res = self._runSteps(scope, *params)
+        else:
+            res = self._runPy(scope, *params)
+        return self.asSObj(res)
 
     def _runPy(self, scope, *params):
         "Using a compiled Python func to run this closure."
@@ -313,16 +315,12 @@ class Closure(SObject):
     def compile(self, smallscript=""):
         if smallscript == "":
             if self.pyfunc() != nil: return self
-            if self.pysource().notNil(): return self._compile()
-            if self.interpreter().notNil():
-                self.toPython()
-                return self._compile()
-            if self.smallscript().isNil():
-                self.log("Warning: smallscript() is empty and nothing to compile.", Logger.LevelWarning)
+            if self.pysource().notNil() and self.pysource().notEmpty(): return self._compile()
+            if self.smallscript().isNil() or self.smallscript().isEmpty():
+                self.log("Warning: smallscript() is empty and has nothing to compile.", Logger.LevelWarning)
                 return self
-            self.interpret()
-        else:
-            self.interpret(smallscript)
+            smallscript = self.smallscript()
+        self.interpret(smallscript)
         self.toPython()
         return self._compile()
 
@@ -465,7 +463,8 @@ class Execution(SObject):
         scope = nil
         while outer_frame is not None:
             scope = outer_frame.f_locals.get('scope', nil)
-            if scope.notNil(): break
+            if scope.notNil():
+                break
             outer_frame = outer_frame.f_back
         return scope
 
@@ -620,6 +619,17 @@ class PythonCoder(SObject):
         res = String(f"{self.firstArg()}.newInstance('Closure').takePyFunc({closure.name()})")
         return res
 
+    def visitPrimitive(self, primitive):
+        # map = primitive.compileRes()
+        # src = map.visit(self)
+        # return src
+        primkey = primitive.getStep('primkey').compileRes()[:-1]
+        closure = primitive.compileRes()[primkey]
+        source = closure.toPython().pysource()
+        self.methodsSource().delimiter("\n").writeLine(source)
+        res = String(f"{self.firstArg()}.newInstance('Map').setValue('{primkey}', {self.firstArg()}.newInstance('Closure').takePyFunc({closure.name()})(scope))")
+        return res
+
     def _visitUnaryTail(self, unarytailStep):
         output = TextBuffer()
         while unarytailStep.notNil():
@@ -767,8 +777,3 @@ class PythonCoder(SObject):
 
     def visitString(self, string): return string.asString()
     def visitNumber(self, number): return String(f"{number.value()}")
-
-    def visitPrimitive(self, primitive):
-        map = primitive.compileRes()
-        src = map.visit(self)
-        return src

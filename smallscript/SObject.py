@@ -438,7 +438,8 @@ class String(str, Primitive):
     def isEmpty(self): return self.len() == 0
     def sha256(self, digits=16): return hashlib.sha256(self.encode()).hexdigest()[0:digits]
     def isSymbol(self): return false_ if self.isEmpty() or self[0] != '#' else true_
-    def asString(self): return String(f"\"{self[1:]}\"") if self.isSymbol() else String(f"\"{self}\"")
+    # def asString(self): return String(f"\"{self[1:]}\"") if self.isSymbol() else String(f"\"{self}\"")
+    def asString(self): return String(f"'{self[1:]}'") if self.isSymbol() else String(f"'{self}'")
     def toString(self): return self
 
 class True_(Primitive):
@@ -999,12 +1000,6 @@ class Context(SObject):
         pkgs[pkg.name()] = pkg
         return pkg
 
-    def removePackage(self, pkgname):
-        pkgs = self.getValue('packages')
-        if pkgname in pkgs:
-            del pkgs[pkgname]
-        return self
-
     def metaclassByName(self, metaname):
         "Find metaclass in last-in-first-out by name. Later package can override earlier package to allow deferred implementation."
         pkgs = self.getValue('packages', Map())
@@ -1038,6 +1033,14 @@ class Context(SObject):
         scope = Scope()
         scope.setValue('scope', scope)
         scope.parent(rootScope)
+
+        # Add calling locals & globals into scope object. Looks like they are snapshots.
+        frame = inspect.currentframe()
+        outer_frame = frame.f_back
+        pyscope = PyGlobals().name("pyglobals").locals(outer_frame.f_globals)
+        scope.addScope(pyscope)
+        pyscope = PyGlobals().name("pylocals").locals(outer_frame.f_locals)
+        scope.addScope(pyscope)
         return scope
 
 class Scope(SObject):
@@ -1109,8 +1112,6 @@ class Scope(SObject):
         if self.locals().hasKey(key): return self.locals()
         classAttrs = self.metaclass().attrs()
         if classAttrs.hasKey(key): return classAttrs
-        for scope in self.scopes():
-            if scope.hasKey(key): return scope
         for obj in self.objs():
             if obj.hasKey(key): return obj
             classAttrs = obj.metaclass().attrs()
@@ -1120,6 +1121,8 @@ class Scope(SObject):
             # if obj.hasKey(key): return obj
             if obj.locals().hasKey(key): return obj
             obj = obj.parent()
+        for scope in self.scopes():
+            if scope.hasKey(key): return scope
         return default
 
     #### Helpers
@@ -1140,6 +1143,31 @@ class Scope(SObject):
             buffer.write(f"{padding}parent = {self.parent().toString()}\n")
         output = buffer.getvalue()
         return String(output)
+
+class PyGlobals(Scope):
+    "Interfacing scope on Python global dictionary which keeps track of global namespace at realtime."
+
+    # Disable the following scope protocol.
+    def scopes(self, scopes=''): return self if scopes != '' else List()
+    def objs(self, objs=''):  return self if objs != '' else List()
+    def parent(self, parent=''):  return self if parent != '' else nil
+    def setSelf(self, obj): return self
+    def addScope(self, scope): return self
+
+    # Redefine these protocols.
+    def keys(self): return self.locals().keys()
+    def hasKey(self, attname): return attname in self.locals()
+
+    def delValue(self, attname):
+        if self.hasKey(attname):
+            del self.locals()[attname]
+        return self
+
+    def getValue(self, attname, default=nil):
+        return self.locals()[attname] if self.hasKey(attname) else default
+
+    def setValue(self, attname, value): self.locals()[attname] = value; return self
+    def lookup(self, key, default=nil): return self if self.hasKey(key) else default
 
 class Number(Primitive):
     def value(self, value=''):

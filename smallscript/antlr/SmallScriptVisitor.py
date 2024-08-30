@@ -214,11 +214,6 @@ class SmallScriptVisitor(ParseTreeVisitor):
         return self.visitChildren(ctx)
 
 
-    # Visit a parse tree produced by SmallScriptParser#primtxt.
-    def visitPrimtxt(self, ctx:SmallScriptParser.PrimtxtContext):
-        return self.visitChildren(ctx)
-
-
     # Visit a parse tree produced by SmallScriptParser#var.
     def visitVar(self, ctx:SmallScriptParser.VarContext):
         return self.visitChildren(ctx)

@@ -324,6 +324,17 @@ closure.irGraph()        # show the optimized Intermediate Representation
   - Similar to C/C++
 
 # Release Note
+### v0.3.0 SmallScript - Package
+- ref: [] for details
+- This is non-compatible to v0.2.0 for renaming Method as Closure.
+- Rename Method as Closure to better reflect their purpose. Basically a closure in an object becomes it method.
+- Rename Scope.vars() to Scope.locals().
+- Metaclass.toPython(), generate Python source.
+- Fixed return original object instead of metaclass.attrs() for class variable update.
+- Package.load(): unloadSObjects(), refreshSources(), loadSObjects().
+- Proper logging configuration.
+- Enhanced primitive to work like autoexecuted block.
+
 ### v0.2.2 SmallScript - Compiler mode
 - ref: [https://github.com/vitalstarorg/smallscript/blob/dev/tests/tdd_v0_2) for details
 - Implemented all SmallScript language elements

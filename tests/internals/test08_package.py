@@ -79,7 +79,7 @@ class Test_Package(SmallScriptTest):
         self.assertEqual(1, pkg.listFilePaths("__init*.py").len())
 
     @skipUnless('TESTALL' in env, "disabled")
-    def test300_load(self):
+    def test510_load(self):
         tpkg = rootContext.getOrNewPackage('testpkg')
         tpkg.findPath("not_a_pkg/testpkg")
             # Python wouldn't be able to find testpkg as it is out of PYTHONPATH unless specified.
@@ -100,7 +100,7 @@ class Test_Package(SmallScriptTest):
         self.assertTrue(tpkg.notLoaded())
 
     @skipUnless('TESTALL' in env, "disabled")
-    def test500_readSS_writePy(self):
+    def test520_readSS_writePy(self):
         #### Based on TDD_Closure.test710_Dynamic_Creation_in_SS() from tdd_0_2/test01_tdd.py
         tpkg = rootContext.getOrNewPackage('testpkg')
         tpkg.findPath("not_a_pkg/testpkg")
@@ -147,17 +147,23 @@ class Test_Package(SmallScriptTest):
 
         tpkg.unloadSObjects()
 
-    def test600_refresh(self):
+    @skipUnless('TESTALL' in env, "disabled")
+    def test530_refresh(self):
         tpkg = rootContext.getOrNewPackage('testpkg')
         tpkg.findPath("not_a_pkg/testpkg")
         tpkg._touchFile("TestObj.ss")
         tpkg.refreshSources()
 
-    def test900_hack(self):
-        # only SObject definitions are regconized.
-        metaclass = rootContext.metaclassByName('TestSObj15')
-        metaclass.toPython()
+    @skipUnless('TESTALL' in env, "disabled")
+    def test600_python_globals(self):
+        localVar = 'This is a string'
+            # Need to be set before createScope() for scope to recognize this variable.
+            # Otherwise, the following test will pass intermittently.
+        scope = rootContext.createScope()
+        closure = Closure().compile('localVar')
+        res = closure(scope)
+        self.assertEqual(localVar, res)
 
-        # Read from .py and metaclass.toPython() and compare the diff
-
-        # Python globals and locals access.
+        closure = Closure().compile("os getenv: 'SHELL'")
+        res = closure(scope)
+        self.assertTrue(res.notEmpty())

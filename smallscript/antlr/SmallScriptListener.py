@@ -377,15 +377,6 @@ class SmallScriptListener(ParseTreeListener):
         pass
 
 
-    # Enter a parse tree produced by SmallScriptParser#primtxt.
-    def enterPrimtxt(self, ctx:SmallScriptParser.PrimtxtContext):
-        pass
-
-    # Exit a parse tree produced by SmallScriptParser#primtxt.
-    def exitPrimtxt(self, ctx:SmallScriptParser.PrimtxtContext):
-        pass
-
-
     # Enter a parse tree produced by SmallScriptParser#var.
     def enterVar(self, ctx:SmallScriptParser.VarContext):
         pass
