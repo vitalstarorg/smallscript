@@ -4,8 +4,8 @@
 We are looking for a small script capable of running on top of high level languages e.g. Python, Java, C++ and etc to manipulate high level functions provided by any of these platforms. This script provides a self-contained and platform independent environment to develop common reusable logics that can be executed in different platforms & hosts.
 
 For the impatience, please take a look at these
-- Critical use case [fully dynamic creation using SmallScript](https://github.com/vitalstarorg/smallscript/tree/main?tab=readme-ov-file#fully-dynamic-creation-using-smallscript)
-- [v0.2.0 SmallScript TDD](https://github.com/vitalstarorg/smallscript/blob/dev/tests/tdd_v0_2)
+- Critical use case [SmallScript in Compiler Mode](https://github.com/vitalstarorg/smallscript/tree/main?tab=readme-ov-file#smallscript-in-compiler-mode)
+- [v0.3.0 SmallScript TDD](https://github.com/vitalstarorg/smallscript/blob/dev/tests/tdd_v0_3)
 - [v0.0.0 SmallScript TDD](https://github.com/vitalstarorg/smallscript/blob/dev/tests/tdd_v0_0)
 
 
@@ -255,6 +255,9 @@ SmallScript package can be situated anyway and load into system. Any updated .ss
 tpkg = rootContext.getOrNewPackage('testpkg')
 tpkg.findPath("not_a_pkg/testpkg")      # to show we can find testpkg without Python discovery.
 tpkg.load()
+    # We move the SmallScript to not_a_pkg/testpkg/TestObj.ss.
+    # Package.load() will compile and save output to TestObj.py;
+    # then it load the metaclass defined in AnotherMeta SObject.
 
 tobj = rootContext.newInstance('AnotherMeta').name('tobj')
 self.assertEqual('AnotherMeta', tobj.metaname())

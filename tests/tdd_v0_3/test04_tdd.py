@@ -45,6 +45,9 @@ class TDD_Package(SmallScriptTest):
         tpkg = rootContext.getOrNewPackage('testpkg')
         tpkg.findPath("not_a_pkg/testpkg")
         tpkg.load()
+            # We move the SmallScript to not_a_pkg/testpkg/TestObj.ss.
+            # Package.load() will compile and save output to TestObj.py;
+            # then it load the metaclass defined in AnotherMeta SObject.
 
         tobj = rootContext.newInstance('AnotherMeta').name('tobj')
         self.assertEqual('AnotherMeta', tobj.metaname())
