@@ -776,6 +776,7 @@ class Package(SObject):
         return self
 
     def createMetaclass(self, metaname):
+        "Create an initial metaclass."
         context = self.getValue('context')
         if not self.hasKey('metaclasses'):  # init metaclasses
             metaclasses = Map()
@@ -800,6 +801,7 @@ class Package(SObject):
         return metaclass
 
     def metaclassByName(self, metaname):
+        "Lookup metaclass in this package."
         classes = self.getValue('metaclasses', Map())
         res = classes.get(metaname, nil)
         return res
@@ -814,6 +816,7 @@ class Package(SObject):
         if not self.hasKey('metaclasses'): return true_
         return self.metaclasses().isEmpty()
 
+    #### Package loading and unloading.
     def setAndValidatePath(self, pathname=""):
         "Validate and set the path to @path."
         pathname = self.path() if pathname == "" else pathname
@@ -846,6 +849,7 @@ class Package(SObject):
         return self
 
     def loadSObjects(self):
+        "Load the metaclasses from SObjects defined in this package."
         self.log(f"Loading SObjects from '{self.name()}'", Logger.LevelInfo)
         if self.path().isEmpty(): return self
         pkgName = self.name()
@@ -858,6 +862,7 @@ class Package(SObject):
         return self
 
     def unloadSObjects(self):
+        "Unload the metaclasses from this package, and SObject found from sys.modules, leaving this package object empty."
         self.log(f"Unloading SObjects from '{self.name()}'", Logger.LevelInfo)
         self.metaclasses(Map())
         # self.getContext().removePackage(self.name())
@@ -867,14 +872,15 @@ class Package(SObject):
             if ss in sys.modules:
                 self.log(f"sys.modules['{ss}'] deleted.", Logger.LevelInfo)
                 del sys.modules[ss]
-
         return self
 
     def reloadSObjects(self):
+        "unloadSObjects() and loadSObjects from pacakge source."
         self.unloadSObjects();
         return self.loadSObjects()
 
     def refreshSources(self, forced=false_):
+        "Generate the .py sources from updated .ss sources."
         self.log(f"Refreshing SmallScript package '{self.name()}'.", Logger.LevelInfo)
         ssnames = self.listFilenames("*.ss")
         for name in ssnames:
@@ -896,6 +902,7 @@ class Package(SObject):
         return self
 
     def load(self, forced=false_):
+        "Load SObjects from sources. Regenerate py sources if necessary."
         self.log(f"Loading SmallScript package '{self.name()}'.", Logger.LevelInfo)
         self.unloadSObjects();
         self.refreshSources(forced);

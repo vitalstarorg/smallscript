@@ -1,4 +1,4 @@
-# SmallScript - WIP
+# SmallScript - Beta
 
 
 We are looking for a small script capable of running on top of high level languages e.g. Python, Java, C++ and etc to manipulate high level functions provided by any of these platforms. This script provides a self-contained and platform independent environment to develop common reusable logics that can be executed in different platforms & hosts.
@@ -248,6 +248,28 @@ tobj.attr11('100')              # assign attr11 instance attribute
 tobj.method16(2, 3)             # 305
 ```
 SmallScript is transpiled to Python, and run in native Python speed. Essentially we re-implement SmallScript using SObject in Python. Except SmallScript has no arithmetic precedence, Python implement should behave exactly the same as SmallScript. 
+
+### SmallScript Package
+SmallScript package can be situated anyway and load into system. Any updated .ss files will be compiled and run, and its output will be saved to corresponding .py files. So these Python files would be served as the cache to avoid compiling SmallScript sources everytime. All metaclasses will be unloaded first, and load from refreshed sources during `Package.load()`.
+```python
+tpkg = rootContext.getOrNewPackage('testpkg')
+tpkg.findPath("not_a_pkg/testpkg")      # to show we can find testpkg without Python discovery.
+tpkg.load()
+
+tobj = rootContext.newInstance('AnotherMeta').name('tobj')
+self.assertEqual('AnotherMeta', tobj.metaname())
+
+res = tobj.method14(2,3)       # accessing instance method method14().
+self.assertEqual(5, res)
+res = tobj.cmethod15(2,3)      # accessing class method cmethod15().
+self.assertEqual(6, res)
+tobj.cattr12('200')            # accessing class attribute catt12.
+res = tobj.cmethod17(2,3)      # accessing class method that accesses cattr12
+self.assertEqual(206, res)
+tobj.attr11('100')             # set an instance attribute attr11.
+res = tobj.method16(2,3)       # accessing instance method that accesses attr11.
+self.assertEqual(305, res)
+```
 
 ### SmallScript Diagnostics
 Just in case, here is an example to see what Python code got generated from SmallScript.

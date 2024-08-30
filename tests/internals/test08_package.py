@@ -152,8 +152,12 @@ class Test_Package(SmallScriptTest):
         tpkg.findPath("not_a_pkg/testpkg")
         tpkg._touchFile("TestObj.ss")
         tpkg.refreshSources()
-        return
 
     def test900_hack(self):
+        # only SObject definitions are regconized.
         metaclass = rootContext.metaclassByName('TestSObj15')
-        metaclass.toPython()    # only SObject definitions are regconized.
+        metaclass.toPython()
+
+        # Read from .py and metaclass.toPython() and compare the diff
+
+        # Python globals and locals access.
