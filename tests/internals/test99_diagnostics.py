@@ -65,7 +65,7 @@ class Test_Diagnostics(SmallScriptTest):
 
         def unnamed_b87a5abe86f2f8c9(scope):
             def unnamed_54d7d3621cab5729(scope, e):
-                scope.vars()['e'] = e
+                scope.locals()['e'] = e
                 _ = 2 + scope["e"]
                 return _
 
@@ -101,7 +101,7 @@ class Test_Diagnostics(SmallScriptTest):
                 _ = 7 + scope["outer"]
                 return _
 
-            scope.vars()['outer'] = scope['nil']
+            scope.locals()['outer'] = scope['nil']
             scope["outer"] = 13
             _ = scope.newInstance('Closure').takePyFunc(unnamed_296d5eab92dbf300).value()
             return _

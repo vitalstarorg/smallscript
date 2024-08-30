@@ -270,16 +270,19 @@ res = closure(scope, 5)
 self.assertEqual(25, res)
 ```
 In case your debugger does not display the source code, you can copy the shown Python code and do the following.
+
 ```python
 def test(scope, param):
   def unnamed_296d5eab92dbf300(scope):
     _ = 7 + scope["outer"]
     return _
-  scope.vars()['param'] = param
-  scope.vars()['outer'] = scope['nil']
+
+  scope.locals()['param'] = param
+  scope.locals()['outer'] = scope['nil']
   scope["outer"] = 13
   _ = scope.newInstance('Closure').takePyFunc(unnamed_296d5eab92dbf300).value() + scope["param"]
   return _
+
 
 closure = Closure().takePyFunc(test)
 res = closure(scope, 5)

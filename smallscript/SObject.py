@@ -1021,7 +1021,7 @@ class Context(SObject):
 
     def createScope(self):
         rootScope = self.rootScope()
-        if not rootScope.vars().hasKey('root'):
+        if not rootScope.locals().hasKey('root'):
             rootScope.name('rootScope')
             rootScope['true'] = true_
             rootScope['false'] = false_
@@ -1038,19 +1038,19 @@ class Scope(SObject):
     Scope object defines the variable lookup.
     """
     #### Attributes that can't use Holder as Scope overridden major protocols.
-    def vars(self, vars=''): return self._getOrSetDefault('vars', 'Map', vars)
+    def locals(self, locals=''): return self._getOrSetDefault('locals', 'Map', locals)
     def scopes(self, scopes=''): return self._getOrSetDefault('scopes', 'List', scopes)
     def objs(self, objs=''):  return self._getOrSetDefault('objs', 'List', objs)
     def parent(self, parent=''):  return self._getOrSet('parent', parent, nil)
     def context(self, context=''): return self._getOrSet('context', context, nil)
 
-    #### Add scopes, objs, and vars
+    #### Add scopes, objs, and locals
     def setSelf(self, obj): self.setValue('self', obj); return self
     def addScope(self, scope): self.scopes().insert(0, scope); return self
 
     def addVars(self, map):
         varScope = Scope()
-        varScope.vars(map)
+        varScope.locals(map)
         self.addScope(varScope)
 
     def addObj(self, obj):
@@ -1061,28 +1061,28 @@ class Scope(SObject):
     #### Override SObject get and set behavior
     def keys(self):
         # if super().hasKey('masquerade'): return super().keys()
-        return self.vars().keys()
+        return self.locals().keys()
 
     def hasKey(self, attname):
         # if super().hasKey('masquerade'): return super().hasKey(attname)
-        return self.vars().hasKey(attname)
+        return self.locals().hasKey(attname)
 
     def delValue(self, attname):
         # if super().hasKey('masquerade'): return super().delValue(attname)
-        if self.vars().hasKey(attname):
-            del self.vars()[attname]
+        if self.locals().hasKey(attname):
+            del self.locals()[attname]
         return self
 
     def getValue(self, attname, default=nil):
         ref = self.lookup(attname)
         if ref.isNil(): return default
         return ref.getValue(attname)
-        # return self.vars().getValue(attname, default)
+        # return self.locals().getValue(attname, default)
 
     def setValue(self, attname, value):
         ref = self.lookup(attname)
         if ref.isNil():
-            self.vars().setValue(attname, self.asSObj(value))
+            self.locals().setValue(attname, self.asSObj(value))
         else:
             ref.setValue(attname, self.asSObj(value))
         return self
@@ -1099,7 +1099,7 @@ class Scope(SObject):
     def lookup(self, key, default=nil):
         "Return a sobject contains the @key from self, scopes and parent scope."
         # if self.hasKey(key): return self
-        if self.vars().hasKey(key): return self.vars()
+        if self.locals().hasKey(key): return self.locals()
         classAttrs = self.metaclass().attrs()
         if classAttrs.hasKey(key): return classAttrs
         for scope in self.scopes():
@@ -1111,7 +1111,7 @@ class Scope(SObject):
         obj = self.parent()
         while obj.notNil():
             # if obj.hasKey(key): return obj
-            if obj.vars().hasKey(key): return obj
+            if obj.locals().hasKey(key): return obj
             obj = obj.parent()
         return default
 

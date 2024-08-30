@@ -476,7 +476,7 @@ class Execution(SObject):
         else:
             scope = scopeVar.createScope()
         scope.objs().append(self.this())
-        scope.vars().setValue('self', self.this())
+        scope.locals().setValue('self', self.this())
         return scope
 
     def visitSObj(self, sobj): return self.this(sobj)
@@ -555,12 +555,12 @@ class PythonCoder(SObject):
         # params
         if closure.params().notEmpty():
             for param in closure.params():
-                output.writeLine(f"scope.vars()['{param}'] = {param}")
+                output.writeLine(f"scope.locals()['{param}'] = {param}")
         # tempvars
         if closure.tempvars().notEmpty():
             output.writeLine()
             for tempVar in closure.tempvars():
-                output.writeString(f"scope.vars()['{tempVar}'] = ")
+                output.writeString(f"scope.locals()['{tempVar}'] = ")
             output.writeString(f"{self.firstArg()}['nil']")
         # expressions
         closureStep = closure.interpreter().currentStep()
