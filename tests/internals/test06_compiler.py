@@ -8,7 +8,8 @@ env['TESTALL'] = '1'
 from smallscript.SObject import *
 from smallscript.Closure import Script, Closure
 from smallscript.Step import *
-from tests.TestBase import SmallScriptTest, TestSObj14, DebugClosure
+from tests.TestBase import SmallScriptTest, DebugClosure
+from tests.TestSObj14 import TestSObj14
 
 class Test_Compiler1(SmallScriptTest):
     #### Besides test100_smoke, rest of it essentially the same as test04_interpreter.py instead of
@@ -31,32 +32,32 @@ class Test_Compiler1(SmallScriptTest):
 
         # Testing basic code gen for closure require only visitClosure and visitNumber.
         ss = "321"
-        closure = Closure().name('testfunc').interpret(ss).toPython()
-        res = closure.pysource()
+        closure = Closure().name('testfunc').interpret(ss)
+        res = closure.toPython()
         self.assertEqual("def testfunc(scope):\n  _ = 321\n  return _", res)
         res = closure(scope)
         self.assertEqual(321, res)
 
         ss = ":param1 :param2| |a b| 123"
-        closure = Closure().interpret(ss).toPython().compile()
+        closure = Closure().compile(ss)
         res = closure(scope, 12,34)
         self.assertEqual(123, res)
 
         # Testing visitString()
         ss = "'abc'"
-        closure = Closure().interpret(ss).toPython().compile()
+        closure = Closure().compile(ss)
         res = closure()
         self.assertEqual('abc', res)
 
         # Testing parameter passing
         ss = ":param1| param1"
-        closure = Closure().interpret(ss).toPython().compile()
+        closure = Closure().compile(ss)
         res = closure(222)
         self.assertEqual(222, res)
 
         # Testing assignment and the use of scope for parameters and temp variables.
         ss = ":param1| | a | a := param1; a"
-        closure = Closure().interpret(ss).toPython().compile()
+        closure = Closure().compile(ss)
         res = closure(scope, 333)
         self.assertEqual(333, res)
         self.assertEqual(333, scope['a'])
@@ -64,47 +65,47 @@ class Test_Compiler1(SmallScriptTest):
 
         # Testing unary message
         ss = "tobj attr11"
-        closure = Closure().interpret(ss).toPython().compile()
+        closure = Closure().compile(ss)
         res = closure(scope)
         self.assertEqual(100, res)
 
         # Testing binary message
         ss = ":param1| param1 + 13"
-        closure = Closure().interpret(ss).toPython().compile()
+        closure = Closure().compile(ss)
         res = closure(scope, 123)
         self.assertEqual(136, res)
 
         # Testing keyword message
         ss = "tobj attr11: 444"
-        closure = Closure().interpret(ss).toPython().compile()
+        closure = Closure().compile(ss)
         res = closure(scope)
         self.assertEqual(444, tobj.attr11())
 
         ss = "tobj method14: 222 add: 333"
-        closure = Closure().interpret(ss).toPython().compile()
+        closure = Closure().compile(ss)
         res = closure(scope)
         self.assertEqual(555, res)
 
         # Testing subexpression
         ss = "tobj attr11: (22 + 33); tobj attr11"
-        closure = Closure().interpret(ss).toPython().compile()
+        closure = Closure().compile(ss)
         res = closure(scope)
         self.assertEqual(55, res)
 
         # Testing chain
         ss = "tobj | attr11: 7"
-        closure = Closure().interpret(ss).toPython().compile()
+        closure = Closure().compile(ss)
         res = closure(scope)
         self.assertEqual(tobj, res)
 
         ss = "tobj | attr11: 7 | attr11"
-        closure = Closure().interpret(ss).toPython().compile()
+        closure = Closure().compile(ss)
         res = closure(scope)
         self.assertEqual(7, res)
 
         # Testing block
         ss = "[:param1 | param1]"
-        block = Closure().name('test').interpret(ss).toPython().compile()
+        block = Closure().name('test').compile(ss)
         closure = block(scope)
         res = closure(321)
         self.assertEqual(321, res)
@@ -113,7 +114,7 @@ class Test_Compiler1(SmallScriptTest):
     def test520_param_access(self):
         scope = rootContext.createScope()
         ss = ":param1 | param1"
-        closure = Closure().interpret(ss).toPython().compile()
+        closure = Closure().compile(ss)
         res = closure(scope, 'aString')
         self.assertEqual('aString', res)
         self.assertTrue(scope.hasKey('param1'))
@@ -122,7 +123,7 @@ class Test_Compiler1(SmallScriptTest):
 
         scope = rootContext.createScope()
         ss = ":param1 :param2| param2"
-        closure = Closure().interpret(ss).toPython().compile()
+        closure = Closure().compile(ss)
         res = closure(scope, nil, nil)
         self.assertEqual(nil, res)
         self.assertTrue(scope.hasKey('param1'))
@@ -137,20 +138,20 @@ class Test_Compiler1(SmallScriptTest):
     def test530_assignment(self):
         scope = rootContext.createScope()
         ss = "obj1 := 123"
-        closure = Closure().interpret(ss).toPython().compile()
+        closure = Closure().compile(ss)
         res = closure(scope)
         self.assertEqual(123, res)
         self.assertTrue(scope.hasKey('obj1'))
         self.assertEqual(123, scope.getValue('obj1'))
 
         ss = "obj1 := 'str1'"
-        closure = Closure().interpret(ss).toPython().compile()
+        closure = Closure().compile(ss)
         res = closure(scope)
         self.assertEqual('str1', res)
 
         scope = rootContext.createScope()
         ss = "_ := obj1 := 123"
-        closure = Closure().interpret(ss).toPython().compile()
+        closure = Closure().compile(ss)
         res = closure(scope)
         self.assertEqual(123, res)
         self.assertEqual(123, scope.getValue('obj1'))
@@ -158,7 +159,7 @@ class Test_Compiler1(SmallScriptTest):
 
         scope = rootContext.createScope()
         ss = ":param1 :param2| |tmp1| tmp1 := param2"
-        closure = Closure().interpret(ss).toPython().compile()
+        closure = Closure().compile(ss)
         res = closure(scope, 'str1', 'str2')
         self.assertEqual('str2', res)
         self.assertTrue('str1', scope.getValue('param1'))
@@ -179,20 +180,20 @@ class Test_Compiler1(SmallScriptTest):
         scope = rootContext.createScope()
         scope.addObj(tobj)
         ss = "attr11"
-        closure = Closure().interpret(ss).toPython().compile()
+        closure = Closure().compile(ss)
         res = closure(scope)
         self.assertEqual(123, res)
         ss = "cattr12"
-        closure = Closure().interpret(ss).toPython().compile()
+        closure = Closure().compile(ss)
         res = closure(scope)
         self.assertEqual('cvalue12', res)
 
         ss = "attr11 := 321"
-        closure = Closure().interpret(ss).toPython().compile()
+        closure = Closure().compile(ss)
         res = closure(scope)
         self.assertEqual(321, tobj.attr11())
         ss = "cattr12 := 'anotherValue'"
-        closure = Closure().interpret(ss).toPython().compile()
+        closure = Closure().compile(ss)
         res = closure(scope)
         self.assertEqual('anotherValue', tobj.cattr12())
 
@@ -231,7 +232,7 @@ class Test_Compiler1(SmallScriptTest):
         root = scope['root']
         root['global1'] = nil
         ss = "global1 := 'global value'"
-        closure = Closure().interpret(ss).toPython().compile()
+        closure = Closure().compile(ss)
         res = closure(scope)
         self.assertEqual('global value', scope['global1'])
 

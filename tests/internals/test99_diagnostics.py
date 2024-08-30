@@ -20,7 +20,8 @@ env['TESTALL'] = '1'
 from smallscript.SObject import *
 from smallscript.Closure import Closure
 # from smallscript.Step import *
-from tests.TestBase import SmallScriptTest, TestSObj14, DebugClosure
+from tests.TestBase import SmallScriptTest, DebugClosure
+from tests.TestSObj14 import TestSObj14
 
 # Use this to test individual failed test cases.
 # This won't run when "all_tests" is run
@@ -46,8 +47,7 @@ class Test_Diagnostics(SmallScriptTest):
         ss = ":fullname | | tmp1 | tmp1 := fullname | + ', ' | + 'hello'"
         # ss = ":param1| param1 + 13"
         closure = Closure().name("test").interpret(ss)
-        closure.toPython()
-        closure.pysource().print()
+        closure.toPython().print()
         closure.compile()
         res = closure(scope, "John")
         self.assertEqual("John, hello", res)
@@ -82,8 +82,7 @@ class Test_Diagnostics(SmallScriptTest):
         ss = ":param | | outer| outer := 13; [7 + outer] value + param"
         # ss = ":param | param"
         closure = Closure().name("test").interpret(ss)
-        closure.toPython()
-        closure.pysource().print()
+        closure.toPython().print()
         closure.compile()
         res = closure(scope, 5)
         self.assertEqual(25, res)
@@ -117,7 +116,7 @@ class Test_Diagnostics(SmallScriptTest):
 
         ss = f"<python: 'def hello:'>"
         closure = Closure().name('test').interpret(ss)
-        closure.toPython().pysource().print()
+        closure.toPython().print()
         res = closure(scope)        # running in intepreter mode
         self.assertEqual({'python': "def hello:"}, res)
         closure.compile()
@@ -135,24 +134,20 @@ class Test_Diagnostics(SmallScriptTest):
         tobj = TestSObj14().attr11(100).cattr12('200')
         scope['tobj'] = tobj
 
+        # only SObject definitions are regconized.
+        metaclass = rootContext.metaclassByName('TestSObj15')
+        metaclass.toPython().print()
+
+        # Read from .py and metaclass.toPython() and compare the diff
+        return
+
         closure = Closure().compile('py os environ')
             # scope["py"].os().environ()
         closure = Closure().compile("py isinstance: obj attr: 'name'")
             # scope["py"].isinstance__attr__(scope["obj"], "name")
             # getattr(globals()['builtins'],'isinstance')
         closure = Closure().compile("<py: 'isinstance(' + tobj attr11 asString + ', SObject)' >")
-        closure.toPython().pysource().print()
+        closure.toPython().print()
         res = closure(scope)
 
         return
-
-        # only SObject definitions are regconized.
-        metaclass = rootContext.metaclassByName('TestSObj15')
-        metaclass.toPython()
-
-        # Read from .py and metaclass.toPython() and compare the diff
-
-    #### More Tests
-    # SObj super: instance and class
-    # packages
-    # Python globals

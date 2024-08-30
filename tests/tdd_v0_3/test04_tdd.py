@@ -15,7 +15,8 @@
 
 import unittest
 from unittest import skip, skipUnless
-from tests.TestBase import SmallScriptTest, TestSObj14
+from tests.TestBase import SmallScriptTest
+from tests.TestSObj14 import TestSObj14
 
 from os import environ as env
 

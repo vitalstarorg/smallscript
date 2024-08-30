@@ -15,7 +15,8 @@
 
 import unittest
 from unittest import skip, skipUnless
-from tests.TestBase import SmallScriptTest, TestSObj14, DebugClosure
+from tests.TestBase import SmallScriptTest, DebugClosure
+from tests.TestSObj14 import TestSObj14
 
 from os import environ as env
 env['TESTALL'] = '1'

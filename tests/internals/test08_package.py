@@ -23,7 +23,8 @@ env['TESTALL'] = '1'
 from smallscript.SObject import *
 from smallscript.Closure import Script, Closure
 from smallscript.Step import *
-from tests.TestBase import SmallScriptTest, TestSObj14, DebugClosure
+from tests.TestBase import SmallScriptTest, DebugClosure
+from tests.TestSObj14 import TestSObj14
 
 class Test_Package(SmallScriptTest):
     @classmethod
@@ -57,10 +58,6 @@ class Test_Package(SmallScriptTest):
         body = c17.getBody("")
         self.assertTrue("@Holder" not in body)
         self.assertTrue("def " not in body)
-
-        source = c17.toNamedPython("    ", c17.name())
-
-        return
 
     @skipUnless('TESTALL' in env, "disabled")
     def test200_findPath(self):
@@ -167,3 +164,18 @@ class Test_Package(SmallScriptTest):
         closure = Closure().compile("os getenv: 'SHELL'")
         res = closure(scope)
         self.assertTrue(res.notEmpty())
+
+    @skipUnless('TESTALL' in env, "disabled")
+    def test700_reciprocal_generation(self):
+        tpkg = rootContext.getOrNewPackage('testpkg')
+
+        # Both TestSObj15.py and TestObj.py are generated source based on tests/TestSObj14.py
+        # 1. TestSbj15.py was generated based on the metaclass imported from SObject TestSObj14.py.
+        # 2. TestSObj15.py only includes SObject methods, does not include Python methods in TestSObj14.
+        # 3. TestSObj15.py are method bodies is from TestSObj14 directly. Rest is generated.
+        # 4. TestObj.py was generated based on the metaclass defined in TestObj.ss.
+        # 5. TestObj.py contains Python equivalence to TestSObj14 implementation.
+        filename = 'TestSObj15'
+        metaclass = rootContext.metaclassByName(filename)
+        source = metaclass.toPython()
+        tpkg.writeFile(f"{filename}.py", source)

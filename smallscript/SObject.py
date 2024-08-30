@@ -1417,6 +1417,12 @@ class Logger(SObject):
     level = Holder().name('level').type('Integer')
 
     def log(self, msg, level=0):
+        frame = inspect.currentframe().f_back.f_back
+        if frame is not None:
+            filename = frame.f_code.co_filename
+            lineno = frame.f_lineno
+            msg = f"{msg} - {filename} line {lineno}"
+
         if level >= self.level():
             if level == self.LevelDebug: logging.debug(msg); return self
             if level == self.LevelInfo: logging.info(msg); return self

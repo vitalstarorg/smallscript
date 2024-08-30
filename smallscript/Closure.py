@@ -382,7 +382,7 @@ class Closure(SObject):
         coder = PythonCoder()
         pythonscript = self.visit(coder)
         self.pysource(pythonscript)
-        return self
+        return pythonscript
 
     def toNamedPython(self, padding, name):
         firstArg = self.getContext().FirstArg()
@@ -614,7 +614,7 @@ class PythonCoder(SObject):
 
     def visitBlock(self, block):
         closure = block.compileRes().closure()
-        source = closure.toPython().pysource()
+        source = closure.toPython()
         self.methodsSource().delimiter("\n").writeLine(source)
         res = String(f"{self.firstArg()}.newInstance('Closure').takePyFunc({closure.name()})")
         return res
@@ -625,7 +625,7 @@ class PythonCoder(SObject):
         # return src
         primkey = primitive.getStep('primkey').compileRes()[:-1]
         closure = primitive.compileRes()[primkey]
-        source = closure.toPython().pysource()
+        source = closure.toPython()
         self.methodsSource().delimiter("\n").writeLine(source)
         res = String(f"{self.firstArg()}.newInstance('Map').setValue('{primkey}', {self.firstArg()}.newInstance('Closure').takePyFunc({closure.name()})(scope))")
         return res

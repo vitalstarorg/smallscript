@@ -23,7 +23,8 @@ env['TESTALL'] = '1'
 from smallscript.SObject import *
 from smallscript.Closure import Script, Closure
 from smallscript.Step import *
-from tests.TestBase import SmallScriptTest, TestSObj14, DebugClosure
+from tests.TestBase import SmallScriptTest, DebugClosure
+from tests.TestSObj14 import TestSObj14
 
 class Test_Interpreter2(SmallScriptTest):
     @classmethod

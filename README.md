@@ -276,8 +276,7 @@ Just in case, here is an example to see what Python code got generated from Smal
 ```python
 ss = ":param | | outer| outer := 13; [7 + outer] value + param"
 closure = Closure().name("test").interpret(ss)
-closure.toPython()
-closure.pysource().print()
+closure.toPython().print()
     # def test(scope, param):
     #   def unnamed_296d5eab92dbf300(scope):
     #     _ = 7 + scope["outer"]
@@ -325,18 +324,18 @@ closure.irGraph()        # show the optimized Intermediate Representation
 
 # Release Note
 ### v0.3.0 SmallScript - Package
-- ref: [] for details
+- ref: [tests/tdd_v0_3](https://github.com/vitalstarorg/smallscript/blob/dev/tests/tdd_v0_3) for details
 - This is non-compatible to v0.2.0 for renaming Method as Closure.
-- Rename Method as Closure to better reflect their purpose. Basically a closure in an object becomes it method.
+- [Package.load()](https://github.com/vitalstarorg/smallscript/blob/dev/tests/internals/test08_package.py) will sync up the .ss source and generated .py files.
+- Rename Method as Closure to better reflect their purpose. Basically a closure in an object becomes its method.
 - Rename Scope.vars() to Scope.locals().
-- Metaclass.toPython(), generate Python source.
-- Fixed return original object instead of metaclass.attrs() for class variable update.
-- Package.load(): unloadSObjects(), refreshSources(), loadSObjects().
-- Proper logging configuration.
+- Metaclass.toPython(), generate Python code.
 - Enhanced primitive to work like autoexecuted block.
+- Fixed return original object for class variable access.
+- Proper logging configuration.
 
 ### v0.2.2 SmallScript - Compiler mode
-- ref: [https://github.com/vitalstarorg/smallscript/blob/dev/tests/tdd_v0_2) for details
+- ref: [tests/tdd_v0_2](https://github.com/vitalstarorg/smallscript/blob/dev/tests/tdd_v0_2) for details
 - Implemented all SmallScript language elements
 - Transpile/Compile closure to Python using SObject.
 - Compiler now will generate code to a temporary file for debugging purpose. Debugger may debug into the generated code.
@@ -346,7 +345,7 @@ closure.irGraph()        # show the optimized Intermediate Representation
 - Add Logger class.
 
 ### v0.2.0 SmallScript - Interpreter Mode
-- ref: [https://github.com/vitalstarorg/smallscript/blob/dev/tests/tdd_v0_2) for details
+- ref: [tests/tdd_v0_2](https://github.com/vitalstarorg/smallscript/blob/dev/tests/tdd_v0_2) for details
 - This is non-compatible to v0.1.0 as significant grammar changes. So we removed test/tdd_v0_1 from v0.2.0. 
 - SmallScript starts to deviate from SmallTalk protocol e.g. cascade, ws, comment, sep, etc. 
 - Improve readability e.g. using SEMI as expr seperator.
