@@ -24,101 +24,37 @@ env['TESTALL'] = '1'
 from smallscript.SObject import *
 from smallscript.Closure import Script, Closure
 
-
 class TDD_Package(SmallScriptTest):
-    @skipUnless('TESTALL' in env, "disabled")
-    def test100_smoke(self):
-        pkg = rootContext.loadPackage('tests')
-        tobj = TestSObj14()     # Real metaname is TestSObj15. TestSObj14 is Python name.
-        tobj.attr11(100)
-        tobj.cattr12('200')
-        metaclass = tobj.metaclass()
-        scope = rootContext.createScope()
-        scope['tobj'] = tobj
 
-        # Closure.getBody() remove decorator and method signature from method source.
-        c17 = rootContext.metaclassByName('TestSObj15').holderByName('cmethod17').method()
-        pysource = c17.pysource()
-        self.assertTrue("@Holder" in pysource)
-        self.assertTrue("def " in pysource)
-        body = c17.getBody("")
-        self.assertTrue("@Holder" not in body)
-        self.assertTrue("def " not in body)
-
-        source = c17.toNamedPython("", c17.ssSignature())
-        return
+    def sysModulesByName(self, moduleName):
+        moduleNames = [key for key in sys.modules.keys() if moduleName in key]
+        return List(moduleNames)
 
     @skipUnless('TESTALL' in env, "disabled")
-    def test500_smoke(self):
+    def test500_load(self):
         #### Based on TDD_Closure.test710_Dynamic_Creation_in_SS() from tdd_0_2/test01_tdd.py
-        pkg = rootContext.loadPackage('tests')
-        tobj = TestSObj14()
-        tobj.attr11(100)
-        tobj.cattr12('200')
-        metaclass = tobj.metaclass()
-        scope = rootContext.createScope()
-        scope['tobj'] = tobj
 
-        ss = """
-        // Create metaclass
-        meta := scope getValue: 'context' 
-                | getOrNewPackage: 'tmppkg'
-                    | createMetaclass: #AnotherMeta
-                        | parentNames: #(#SObject)
+        # Package.load() is Package.unloadSObjects().refreshSources().loadSObjects()
+        # unloadSObjects() : it removes all metaclasses in the package from sys.module and package itself.
+        # refreshSources(): it compiles and runs .ss files and save the output to corresponding .py files.
+        # loadSObjects(): it loads all metaclass from SObjects into memory.
+        # So Package.load() will always keep .ss and .py in sync, almost work like Python "import".
+        # Package.setAndValidatePath(...) can be any path other than sys.path.
 
-                        // Create two instance attributes and one class attribute.
-                        | addAttr: #attr11 type: #String
-                        | addAttr: #attr12 type: #List
-                        | addAttr: #cattr12 type: #String classType: true
+        tpkg = rootContext.getOrNewPackage('testpkg')
+        tpkg.findPath("not_a_pkg/testpkg")
+        tpkg.load()
 
-                        // Create two instance methods and two class methods.
-                        | addMethod: #method14 
-                            method: [:m14 :arg2 | m14 + arg2]
-                        | addMethod: #cmethod15 
-                            method: [:m15 :arg2 | m15 * arg2] 
-                            classType: true
-                        | addMethod: #method16 
-                            method: [:m16 :arg2 | self cattr12 asNumber + self attr11 asNumber + m16 + arg2]
-                        | addMethod: #cmethod17 
-                            method: [:m17 :arg2 | self cattr12 asNumber + m17 * arg2] 
-                            classType: true
-        """
-        scope = rootContext.createScope()
-        closure = Closure().compile(ss)
-        # closure.pysource().print()
-        meta = closure(scope)
+        tobj = rootContext.newInstance('AnotherMeta').name('tobj')
+        self.assertEqual('AnotherMeta', tobj.metaname())
 
-        x = meta.toPython()
-        # x.print()
-
-        m17 = meta.holderByName("cmethod17").method()
-        # m17.pysource().print()
-
-        c17 = rootContext.metaclassByName('TestSObj15').holderByName('cmethod17').method()
-
-        # from tests.testpkg.TestObj import AnotherMeta
-
-
-        import importlib.util
-        import sys
-        import os
-
-        pkg = rootContext.getOrNewPackage('tstpkg')
-        package_path = pkg.findPath('testpkg')
-        package_name = "testpkg"
-
-        init_file = os.path.join(package_path, '__init__.py')
-        spec = importlib.util.spec_from_file_location(package_name, init_file)
-        package = importlib.util.module_from_spec(spec)
-        sys.modules[package_name] = package
-        spec.loader.exec_module(package)
-
-        submodule = importlib.import_module(f"{package_name}.TestObj")
-
-        # MyClass = submodule.AnotherMeta
-        # MyClass= getattr(submodule, 'AnotherMeta')
-        # instance = MyClass()
-
-        x = [k for k in sys.modules.keys() if 'testpkg' in k]
-
-        return
+        res = tobj.method14(2,3)       # accessing instance method method14().
+        self.assertEqual(5, res)
+        res = tobj.cmethod15(2,3)      # accessing class method cmethod15().
+        self.assertEqual(6, res)
+        tobj.cattr12('200')            # accessing class attribute catt12.
+        res = tobj.cmethod17(2,3)      # accessing class method that accesses cattr12
+        self.assertEqual(206, res)
+        tobj.attr11('100')             # set an instance attribute attr11.
+        res = tobj.method16(2,3)       # accessing instance method that accesses attr11.
+        self.assertEqual(305, res)

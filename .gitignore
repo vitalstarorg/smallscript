@@ -133,3 +133,4 @@ dmypy.json
 *.marshal
 *.pkl
 
+/not_a_pkg/testpkg/*.py

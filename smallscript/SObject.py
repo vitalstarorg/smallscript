@@ -25,6 +25,10 @@ import logging
 import traceback
 from pathlib import Path
 
+loglevel = os.environ.get('LOG_LEVEL', 'WARNING')
+logging.basicConfig(level=getattr(logging, loglevel.upper()),
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+
 class SObject:
     """
     The base parent for all SObject. SObject setter always return self for chaining multiple updates together.
@@ -537,6 +541,8 @@ class Metaclass(SObject):
     holders = Holder().name('holders').type('Map')
     parentNames = Holder().name('parentNames').type('List')
 
+    def __call__(self): return self.createEmpty()
+
     def attrs(self):
         keyname = self._keyName('attrs')
         if not self._has(keyname):
@@ -659,6 +665,7 @@ class Metaclass(SObject):
 
         source = self.getContext().newInstance('TextBuffer')
         source.delimiter("\n").skipFirstDelimiter()
+        source.writeLine("#### Generated file\n")
         source.writeLine("from smallscript.SObject import SObject, Holder\n")
         source.writeLine(f"class {classname}(SObject):")
 
@@ -690,6 +697,8 @@ class Metaclass(SObject):
         source.writeLine(attrSource.indent("    "))
         source.writeLine(methodSource.indent("    ", true_))
         return source.text()
+
+    def asString(self): return self.toPython()
 
 class Package(SObject):
     "Package to a set of metaclass loaded from files, or created dynamically."
@@ -795,23 +804,162 @@ class Package(SObject):
         res = classes.get(metaname, nil)
         return res
 
+    def newInstance(self, metaname):
+        "Create an sobject."
+        metaclass = self.metaclassByName(metaname)
+        instance = metaclass.createEmpty()
+        return instance
+
     def isEmpty(self):
         if not self.hasKey('metaclasses'): return true_
         return self.metaclasses().isEmpty()
 
+    def setAndValidatePath(self, pathname=""):
+        "Validate and set the path to @path."
+        pathname = self.path() if pathname == "" else pathname
+        if pathname == "": return false_
+        path = Path(pathname)
+        if path.exists() and self._initPath(path).exists():
+            self.path(String(path))
+            return true_
+        self.path(String())
+        return false_
+
     def findPath(self, pkgname=""):
-        if pkgname == "":
-            pkgname = self.path()
-            if pkgname == "":
-                return String()
-        pkgpath = nil
-        for p in sys.path:
-            path = Path(p)
-            ppath = List(path.glob(f"{pkgname}/"))
-            if ppath.notEmpty():
-                pkgpath = String(ppath.head())
-                break
-        return pkgpath
+        "Find package according the sys.path. @path will be set if found and valid."
+        res = pkgpath = String()
+        if pkgname == "": pkgname = self.name()
+        if pkgname != "":
+            for p in sys.path:
+                path = Path(p)
+                ppath = List(path.glob(f"{pkgname}/"))
+                if ppath.notEmpty():
+                    pkgpath = String(ppath.head())
+                    break
+        res = self.setAndValidatePath(pkgpath)
+        return res
+
+    def _loadSObjects(self):
+        self.importSObjects()
+        self.importMethods()
+        self.initClasses()
+        return self
+
+    def loadSObjects(self):
+        self.log(f"Loading SObjects from '{self.name()}'", Logger.LevelInfo)
+        if self.path().isEmpty(): return self
+        pkgName = self.name()
+        initFile = self._initPath(self.path())
+        spec = importlib.util.spec_from_file_location(pkgName, initFile)
+        package = importlib.util.module_from_spec(spec)
+        sys.modules[pkgName] = package
+        spec.loader.exec_module(package)
+        self._loadSObjects()
+        return self
+
+    def unloadSObjects(self):
+        self.log(f"Unloading SObjects from '{self.name()}'", Logger.LevelInfo)
+        self.metaclasses(Map())
+        # self.getContext().removePackage(self.name())
+
+        ssmodules = [key for key in sys.modules.keys() if key.startswith(self.name())]
+        for ss in ssmodules:
+            if ss in sys.modules:
+                self.log(f"sys.modules['{ss}'] deleted.", Logger.LevelInfo)
+                del sys.modules[ss]
+
+        return self
+
+    def reloadSObjects(self):
+        self.unloadSObjects();
+        return self.loadSObjects()
+
+    def refreshSources(self, forced=false_):
+        self.log(f"Refreshing SmallScript package '{self.name()}'.", Logger.LevelInfo)
+        ssnames = self.listFilenames("*.ss")
+        for name in ssnames:
+            sspath = Path(self.path()) / f"{name}.ss"
+            pypath = Path(self.path()) / f"{name}.py"
+            if pypath.exists():
+                ssmtime = sspath.stat().st_mtime
+                pymtime = pypath.stat().st_mtime
+                if ssmtime < pymtime and not forced:   # ss has not been modified since last compilation.
+                    return self
+            self.log(f"Generate {name}.py by running {name}.ss.", Logger.LevelInfo)
+            closure = self.getContext().newInstance('Closure')
+            txt = self.readFile(sspath)
+            closure.compile(txt)
+            scope = self.getContext().createScope().setValue('package', self)
+            res = closure(scope)
+            txt = res.asString()
+            self.writeFile(pypath, txt)
+        return self
+
+    def load(self, forced=false_):
+        self.log(f"Loading SmallScript package '{self.name()}'.", Logger.LevelInfo)
+        self.unloadSObjects();
+        self.refreshSources(forced);
+        return self.loadSObjects()
+
+    #### Helper methods
+    def _initPath(self, pkgpath): return Path(pkgpath) / "__init__.py"
+    def isLoaded(self): return true_ if self.name() in sys.modules else false_
+    def notLoaded(self): return not self.isLoaded()
+
+    #### File I/O
+    def listFilePaths(self, pattern="*"):
+        filepaths = List()
+        if self.path().isNil():
+            return filepaths
+        path = Path(self.path())
+        for p in path.glob(pattern):
+            filepaths.append(String(p))
+        return filepaths
+
+    def listFilenames(self, pattern="*"):
+        filenames = List()
+        if self.path().isNil():
+            return filenames
+        path = Path(self.path())
+        for p in path.glob(pattern):
+            filenames.append(String(p.stem))
+        return filenames
+
+    def readFile(self, pathname):
+        output = ""
+        path = Path(self.path()) / pathname
+        if path.exists() and not path.is_dir():
+            try:
+                output = path.read_text()
+            except Exception as e:
+                stackTrace = traceback.format_exc()
+                self.log(f"Read '{path}' error: {stackTrace}", Logger.LevelWarning)
+        return String(output)
+
+    def writeFile(self, pathname, text):
+        path = Path(self.path()) / pathname
+        try:
+            path.write_text(text)
+        except Exception as e:
+            stackTrace = traceback.format_exc()
+            self.log(f"Write '{path}' error: {stackTrace}", Logger.LevelWarning)
+            return nil
+        return self
+
+    def _deleteFile(self, pathname):
+        path = Path(self.path()) / pathname
+        try:
+            path.unlink()
+        except Exception as e:
+            stackTrace = traceback.format_exc()
+            self.log(f"Delete '{path}' error: {stackTrace}", Logger.LevelWarning)
+            return nil
+        return self
+
+    def _touchFile(self, pathname):
+        path = Path(self.path()) / pathname
+        path.touch(exist_ok=True)
+        return self
 
 class Context(SObject):
     """
@@ -830,10 +978,7 @@ class Context(SObject):
     def loadPackage(self, pkgname):
         "Load metaclasses from a SObject package."
         pkg = self.getOrNewPackage(pkgname)
-        if pkg.isEmpty():
-            pkg.importSObjects()
-            pkg.importMethods()
-            pkg.initClasses()
+        if pkg.isEmpty(): pkg._loadSObjects()
         return pkg
 
     def getOrNewPackage(self, pkgname):
@@ -846,6 +991,12 @@ class Context(SObject):
         pkg = Package().name(pkgname).context(self)
         pkgs[pkg.name()] = pkg
         return pkg
+
+    def removePackage(self, pkgname):
+        pkgs = self.getValue('packages')
+        if pkgname in pkgs:
+            del pkgs[pkgname]
+        return self
 
     def metaclassByName(self, metaname):
         "Find metaclass in last-in-first-out by name. Later package can override earlier package to allow deferred implementation."
