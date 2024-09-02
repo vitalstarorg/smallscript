@@ -107,38 +107,44 @@ class Test_Diagnostics(SmallScriptTest):
         return
 
     @skipUnless('TESTALL' not in env, "disabled")
-    def test400_primitive(self):
-        # Debugging primitive generation
-        pkg = rootContext.loadPackage('tests')
-        scope = rootContext.createScope()
-        tobj = TestSObj14().attr11(100).cattr12('200')
-        scope['tobj'] = tobj
-
-        ss = f"<python: 'def hello:'>"
-        closure = Closure().name('test').interpret(ss)
-        closure.toPython().print()
-        res = closure(scope)        # running in intepreter mode
-        self.assertEqual({'python': "def hello:"}, res)
-        closure.compile()
-        res = closure(scope)        # running in compiler mode
-        self.assertEqual({'python': "def hello:"}, res)
-
-        closure = Closure().compile("<python: 'isinstance(' + tobj attr11 asString + ', SObject)' >")
-        res = closure(scope)
-        self.assertEqual({'python': "isinstance(100, SObject)"}, res)
-
-    @skipUnless('TESTALL' not in env, "disabled")
     def test900_hack(self):
         pkg = rootContext.loadPackage('tests')
         scope = rootContext.createScope()
         tobj = TestSObj14().attr11(100).cattr12('200')
         scope['tobj'] = tobj
 
-        # only SObject definitions are regconized.
-        metaclass = rootContext.metaclassByName('TestSObj15')
-        metaclass.toPython().print()
+        m = Map()
+        m['aa'] = 11
+        m.bb = 22
+        obj = SObject()
+        obj.a.b
 
-        # Read from .py and metaclass.toPython() and compare the diff
+        # ss = "<python: 'def hello:'>"
+        # ss = "<python: 'os.envron'> := 'bbb'"
+        ss = "os.envron := 'bbb'"
+        closure = Closure().interpret(ss)
+        # src = closure.toPython().split("\n")[1]
+        src = closure.toPython().print()
+        self.assertEqual('  _ = def hello:', src)
+        # self.assertEqual("  _ = isinstance(scope['tobj'].attr11().asString(), str)", src)
+        res = closure(scope)
+        self.assertEqual("def hello:", res)
+
+        ss = "<python: tobj> := 123"
+        closure = Closure().interpret(ss)
+        closure.toPython().print()
+        res = closure(scope)
+        closure.compile(ss)
+        res = closure(scope)
+        res.print()
+        return
+
+        # ss = "'isinstance(' + tobj attr11 asString + ', SObject)'"
+        closure = Closure().compile(f"<py: {ss} >")
+        # closure = Closure().compile("<py: 'os.environ' >")
+        closure.toPython().print()
+        res = closure(scope)
+        res.print()
         return
 
         closure = Closure().compile('py os environ')
@@ -146,8 +152,11 @@ class Test_Diagnostics(SmallScriptTest):
         closure = Closure().compile("py isinstance: obj attr: 'name'")
             # scope["py"].isinstance__attr__(scope["obj"], "name")
             # getattr(globals()['builtins'],'isinstance')
-        closure = Closure().compile("<py: 'isinstance(' + tobj attr11 asString + ', SObject)' >")
+
+        closure = Closure().compile("<python: tobj attr11>")
+            # scope["py"].isinstance__attr__(scope["obj"], "name")
+            # getattr(globals()['builtins'],'isinstance')
         closure.toPython().print()
         res = closure(scope)
 
-        return
+        # Fully functioning Python

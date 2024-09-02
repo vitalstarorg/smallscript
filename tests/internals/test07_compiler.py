@@ -393,13 +393,13 @@ class Test_Compiler2(SmallScriptTest):
         scope = rootContext.createScope()
         scope['tobj'] = tobj
 
-        ss = f"<python: 'def hello:'>"
+        ss = "<printf: '\"{}\"'; 'def hello:'>"
         closure = Closure().compile(ss); res = closure(scope)
-        self.assertEqual({'python': "def hello:"}, res)
+        self.assertEqual("def hello:", res)
 
-        closure = Closure().compile("<python: 'isinstance(' + tobj attr11 asString + ', SObject)' >")
-        res = closure(scope)
-        self.assertEqual({'python': "isinstance(100, SObject)"}, res)
+        ss = "<print: 'isinstance(' + tobj attr11 asString + ', SObject)' >"
+        closure = Closure().compile(ss); res = closure(scope)
+        self.assertEqual("isinstance(100, SObject)", res)
 
 
 if __name__ == '__main__':

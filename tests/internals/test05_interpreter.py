@@ -391,11 +391,11 @@ class Test_Interpreter2(SmallScriptTest):
 
         ss = f"<python: 'def hello:'>"
         closure = Closure().interpret(ss); res = closure(scope)
-        self.assertEqual({'python': "def hello:"}, res)
+        self.assertEqual("def hello:", res)
 
-        closure = Closure().compile("<python: 'isinstance(' + tobj attr11 asString + ', SObject)' >")
+        closure = Closure().interpret("<python: 'isinstance(' + tobj attr11 asString + ', SObject)' >")
         res = closure(scope)
-        self.assertEqual({'python': "isinstance(100, SObject)"}, res)
+        self.assertEqual("isinstance(100, SObject)", res)
 
     @skipUnless('TESTALL' in env, "disabled")
     def test800_parsing_errors(self):

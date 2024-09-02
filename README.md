@@ -27,7 +27,7 @@ Another side benefit for having a small script like this is to allow us to exper
 
 Amongst all languages we used in the past, we are in favor of deriving SmallScript from Smalltalk as it is an elegant language that provides pure object-oriented support. Another attractive benefit is that SmallScript can be written by SmallScript itself. In the far-reaching future, SmallScript can be run by itself without needing an OS as SmallScript can define an OS for it to run. Even though it may not be our near term objective, having this long term vision to guide the development will provide wider possibilities how we want SmallScript to be.
 
-## Install
+## Installation
 ```sh
 pip install smallscript
 ```
@@ -306,7 +306,6 @@ def test(scope, param):
   scope["outer"] = 13
   _ = scope.newInstance('Closure').takePyFunc(unnamed_296d5eab92dbf300).value() + scope["param"]
   return _
-
 
 closure = Closure().takePyFunc(test)
 res = closure(scope, 5)

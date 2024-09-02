@@ -667,7 +667,7 @@ class Metaclass(SObject):
         source = self.getContext().newInstance('TextBuffer')
         source.delimiter("\n").skipFirstDelimiter()
         source.writeLine("#### Generated file\n")
-        source.writeLine("from smallscript.SObject import SObject, Holder\n")
+        source.writeLine("from smallscript.SObject import *\n")
         source.writeLine(f"class {classname}(SObject):")
 
         attrSource = self.getContext().newInstance('TextBuffer')
@@ -1211,8 +1211,10 @@ class Number(Primitive):
             res = self.value() + val
         return res
 
-    def __radd__(self, val):
-        return self.__add__(val)
+    def __radd__(self, val): return self.__add__(val)
+    def __rsub__(self, val): return self.__sub__(val)
+    def __rmul__(self, val): return self.__mul__(val)
+    def __rtruediv__(self, val): return self.__truediv__(val)
 
     def __mul__(self, val):
         if isinstance(val, Number): val = val.value()
@@ -1269,7 +1271,6 @@ class Number(Primitive):
         else:
             res = self.value() <= val
         return res
-
 
     def __mod__(self, val):
         if isinstance(val, Number): val = val.value()
