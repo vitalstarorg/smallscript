@@ -27,7 +27,7 @@ from antlr4.error.ErrorListener import ErrorListener
 from smallscript.antlr.SmallScriptLexer import SmallScriptLexer as Lexer
 from smallscript.antlr.SmallScriptParser import SmallScriptParser as Parser
 from smallscript.antlr.SmallScriptListener import SmallScriptListener as Listener
-from smallscript.Step import Step, StepVisitor, ClosureStep
+from smallscript.Step import Step, StepVisitor, ClosureStep, TextBuffer
 from smallscript.SObject import *
 
 class ScriptErrorListener(SObject, ErrorListener):
@@ -149,6 +149,7 @@ class Script(SObject):
             self.text(text)
         self.reset()
         text = self.text()
+        if text.isEmpty(): return self
         lexer = Lexer(InputStream(text))
         stream = CommonTokenStream(lexer)
         parser = Parser(stream)
@@ -299,9 +300,12 @@ class Closure(SObject):
         smallscript = self.asSObj(smallscript)
         if smallscript.isEmpty():
             smallscript = self.smallscript()
+        else:
+            self.smallscript(smallscript)
+        if smallscript.isEmpty(): return nil
         script = self.script().parse(smallscript)
         if script.hasError():
-            self.log(script.prettyErrorMsg(), 3)
+            self.log(script.prettyErrorMsg(), Logger.LevelError)
             return nil
         smallscriptStep = script.smallscriptStep()
         interpreter = self._getInterpreter()
@@ -481,58 +485,6 @@ class Execution(SObject):
     def visitSObj(self, sobj): return self.this(sobj)
     def visitClosure(self, closure): return self.method(closure)
 
-class TextBuffer(SObject):
-    delimiter = Holder().name('delimiter').type('String')
-    useDelimiter = Holder().name('useDelimiter').type('True_')
-
-    def skipFirstDelimiter(self): self.useDelimiter(false_); return self
-
-    def textIO(self, output=''):
-        output = self._getOrSet('output', output, nil)
-        if output == nil:
-            output = io.StringIO()
-            self.setValue('output', output)
-        return output
-
-    def writeString(self, string):
-        self.textIO().write(string)
-        return self
-
-    def writeLine(self, string=""):
-        if not self.useDelimiter():
-            self.textIO().write(string)
-            self.useDelimiter(true_)
-        else:
-            self.textIO().write(self.delimiter())
-            self.textIO().write(string)
-        return self
-
-    def text(self):
-        text = self.textIO().getvalue()
-        return String(text)
-
-    def indent(self, padding, deindent=false_):
-        lines = self._deindent() if deindent else self.text().split("\n")
-        if padding != "":
-            indented = List()
-            for line in lines:
-                if len(line) == 0:
-                    indented.append("")
-                else:
-                    indented.append(f"{padding}{line}")
-            lines = indented
-        res = "\n".join(lines)
-        return String(res)
-
-    def _deindent(self):
-        noIndent = self.text()
-        if noIndent.notEmpty():
-            lines = noIndent.split("\n")
-            first = lines[0]
-            nspaces = len(first) - len(first.lstrip())
-            noIndent = lines if nspaces == 0 else [line[nspaces:] for line in lines]
-        return noIndent
-
 class PythonCoder(SObject):
     delimiter = Holder().name('delimiter').type('String')
     methodsSource = Holder().name('methodsSource').type('TextBuffer')
@@ -563,7 +515,8 @@ class PythonCoder(SObject):
             output.writeString(f"{self.firstArg()}['nil']")
         # expressions
         closureStep = closure.interpreter().currentStep()
-        exprList = closureStep.flatten()
+        exprs = closureStep.getStep('exprs')
+        exprList = closureStep.flatten(exprs)
         for step in exprList[:-1]:
             res = step if step.isRuntime() else step.runtimeRes()
             res = res.visit(self)
@@ -620,14 +573,14 @@ class PythonCoder(SObject):
         return res
 
     def visitPrimitive(self, primitive):
-        # map = primitive.compileRes()
-        # src = map.visit(self)
-        # return src
         primkey = primitive.getStep('primkey').compileRes()[:-1]
-        closure = primitive.compileRes()[primkey]
-        source = closure.toPython()
-        self.methodsSource().delimiter("\n").writeLine(source)
-        res = String(f"{self.firstArg()}.newInstance('Map').setValue('{primkey}', {self.firstArg()}.newInstance('Closure').takePyFunc({closure.name()})(scope))")
+        steps = primitive.compileRes()[primkey]
+        resLst = List()
+        for step in steps:
+            src = step.visit(self)
+            resLst.append(src)
+        func = getattr(primitive, primkey, primitive.printf)    # printf is the default function.
+        res = func(*resLst)
         return res
 
     def _visitUnaryTail(self, unarytailStep):
@@ -751,12 +704,23 @@ class PythonCoder(SObject):
 
     def visitVar(self, varStep):
         refStep = varStep.getStep('ref')
-        var = f"{self.firstArg()}[{refStep.compileRes().asString()}]"
-        return String(var)
+        res = refStep.visit(self)
+        return String(res)
 
     def visitRef(self, refStep):
-        ref = f"{self.firstArg()}[{refStep.compileRes().asString()}]"
-        return String(ref)
+        primitiveStep = refStep.getStep('primitive')
+        if primitiveStep.notNil():
+            res = primitiveStep.visit(self)
+        else:
+            varname = refStep.compileRes()
+            varnames = varname.split('.')
+            varname1 = String(varnames[0])
+            tail = ".".join(varnames[1:])
+            if tail == "":
+                res = f"{self.firstArg()}[{varname1.asString()}]"
+            else:
+                res = f"{self.firstArg()}.newInstance('ObjAdapter').object({self.firstArg()}[{varname1.asString()}]).{tail}"
+        return String(res)
 
     def visitList(self, list):
         output = TextBuffer()

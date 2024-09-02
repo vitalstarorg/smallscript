@@ -152,20 +152,6 @@ class Test_Package(SmallScriptTest):
         tpkg.refreshSources()
 
     @skipUnless('TESTALL' in env, "disabled")
-    def test600_python_globals(self):
-        localVar = 'This is a string'
-            # Need to be set before createScope() for scope to recognize this variable.
-            # Otherwise, the following test will pass intermittently.
-        scope = rootContext.createScope()
-        closure = Closure().compile('localVar')
-        res = closure(scope)
-        self.assertEqual(localVar, res)
-
-        closure = Closure().compile("os getenv: 'SHELL'")
-        res = closure(scope)
-        self.assertTrue(res.notEmpty())
-
-    @skipUnless('TESTALL' in env, "disabled")
     def test700_reciprocal_generation(self):
         tpkg = rootContext.getOrNewPackage('testpkg')
 

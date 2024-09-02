@@ -56,6 +56,10 @@ class Test_Interpreter1(SmallScriptTest):
 
     @skipUnless('TESTALL' in env, "disabled")
     def test110_empty_method(self):
+        ss = ""
+        closure = Closure().interpret(ss)
+        self.assertEqual(nil, closure)
+
         m = Closure()
         res = m()
         self.assertEqual(nil, res)

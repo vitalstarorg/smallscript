@@ -223,9 +223,9 @@ class ClosureStep(Step):
                 print(f"  {instruction}")
         return self
 
-    def flatten(self):
+    def flatten(self, exprs):
+        "Flatten exprs as a list of expression. @exprs could be Step or List"
         flattenList = List()
-        exprs = self.getStep('exprs')   # step, List
         if exprs.ruleName() != 'exprs':
             flattenList.append(exprs)
             return flattenList
@@ -265,19 +265,66 @@ class PrimitiveStep(RuntimeStep):
     def interpret(self, interpreter):
         super().interpret(interpreter)
         primkey = self.getStep('primkey').compileRes()[:-1]
-        closure = self.getStep('closure').runtimeRes()
-        pmap = Map().setValue(primkey, closure)
+        exprs = self.getStep('exprs')
+        exprLst = ClosureStep().flatten(exprs)
+        pmap = Map().setValue(primkey, exprLst)
         self.compileRes(pmap)
+
         return self
 
     def run(self, scope):
         pmap = self.compileRes()
         primkey = self.getStep('primkey').compileRes()[:-1]
-        closure = pmap[primkey]
-        res = closure(scope)
-        pmap[primkey] = res
-        self.runtimeRes(pmap)
-        return pmap
+        exprLst = pmap[primkey]
+        resLst = List()
+        for expr in exprLst:
+            resLst.append(expr.runtimeRes())
+        func = getattr(self, primkey, self.print)    # printf is the default function.
+        res = func(*resLst)
+        self.runtimeRes(res)
+        return res
+
+    def noQuote(self, strings):
+        def _noQuote(quoted):
+            res = quoted
+            if (quoted.startswith('"') and quoted.endswith('"')) or \
+               (quoted.startswith("'") and quoted.endswith("'")):
+                res = String(quoted[1:-1])
+            return res
+        if isinstance(strings, List):
+            lst = List()
+            for string in strings:
+                lst.append(_noQuote(string))
+            return lst
+        res = _noQuote(strings)
+        return res
+
+    def print(self, *args):
+        output = TextBuffer().delimiter(';').skipFirstDelimiter()
+        for arg in args:
+            output.writeLine(arg.toString())
+        res = output.text()
+        return res
+
+    def printf(self, *args):
+        args = self.noQuote(List(args))
+        if len(args) > 1:
+            format = args[0]
+            restArgs = args[1:]
+            res = str.format(format, *restArgs)
+        elif len(args) == 1:
+            res = args[0]
+        else:
+            res = ""
+        return res
+
+    def python(self, *args):
+        args = self.noQuote(List(args))
+        output = TextBuffer()
+        for arg in args:
+            output.writeLine(arg)
+        res = output.text()
+        return res
 
 class UnaryHeadStep(RuntimeStep):
     def visit(self, step): return step.visitUnaryHead(self)
@@ -542,7 +589,16 @@ class AssignStep(RuntimeStep):
         ref = self.getStep('ref')
         refObj = ref.runtimeRes()
         res = self.getStep('expr').runtimeRes()
-        refObj.setValue(ref.name(), res)
+        if not isinstance(refObj, PrimitiveStep):
+            refObj.setValue(ref.name(), res)
+        # if isinstance(refObj, SObject):
+        #     holder = refObj.metaclass().holders().getValue(ref.name())
+        #     if holder.notNil():  # only assign if var is defined by holder
+        #         refObj.setValue(ref.name(), res)
+        #     else:
+        #         refObj.locals().setValue(ref.name(), res)
+        # else:
+        #     setattr(refObj, ref.name(), res)
         self.runtimeRes(res)
         return res
 
@@ -551,23 +607,109 @@ class VarStep(RuntimeStep):
 
     def run(self, scope):
         ref = self.getStep('ref')
-        refObj = ref.runtimeRes()
+        pStep = refObj = ref.runtimeRes()
+        if isinstance(refObj, PrimitiveStep):
+            res = pStep.run(scope)
+            self.runtimeRes(res)
+            return res
         res = refObj.getValue(ref.name())
+        # if isinstance(refObj, SObject):
+        #     res = refObj.getValue(ref.name())
+        # else:
+        #     res = getattr(refObj, ref.name(), nil)
         self.runtimeRes(res)
         return res
 
-    def describe(self): return f"{self.getStep('ref').compileRes()}:{self.ruleName()}"
+    def describe(self):
+        refStep = self.getStep('ref')
+        if refStep.notNil():
+            ref = refStep.compileRes()
+            if ref.notNil():
+                return f"{self.getStep('ref').compileRes()}:{self.ruleName()}"
+        return f"primitive:{self.ruleName()}"
 
 class RefStep(RuntimeStep):
     def visit(self, step): return step.visitRef(self)
 
     def run(self, scope):
+        primitive = self.getStep('primitive')
+        if primitive.notNil():
+            self.runtimeRes(primitive)
+            return primitive
         varname = self.compileRes()
-        self.name(varname)
-        obj = scope.lookup(varname)
-        if obj.isNil(): obj = scope     # if @varname was not defined, consider it in local scope.
+        varnames = varname.split('.')
+        varname1 = varnames[0]
+        varname2 = varnames[-1]
+        self.name(varname2)
+        obj = scope.lookup(varname1)
+        if obj == nil:
+            obj = scope
+            # if @varname was not defined, consider it in local scope. obj can be Python obj
+        tail = List(varnames[:-1])
+        for name in tail:
+            obj = obj.getValue(name)
+            obj = ObjAdapter().object(obj)
+            # obj = obj.getValue(name)
+            # if isinstance(obj, SObject):
+            #     if obj.hasKey(name):
+            #         obj = obj.getValue(name)
+            # else:
+            #     if hasattr(obj, name):
+            #         obj = obj.getattr(name)
         self.runtimeRes(obj)
         return obj
+
+class TextBuffer(SObject):
+    delimiter = Holder().name('delimiter').type('String')
+    useDelimiter = Holder().name('useDelimiter').type('True_')
+
+    def skipFirstDelimiter(self): self.useDelimiter(false_); return self
+
+    def textIO(self, output=''):
+        output = self._getOrSet('output', output, nil)
+        if output == nil:
+            output = io.StringIO()
+            self.setValue('output', output)
+        return output
+
+    def writeString(self, string):
+        self.textIO().write(string)
+        return self
+
+    def writeLine(self, string=""):
+        if not self.useDelimiter():
+            self.textIO().write(string)
+            self.useDelimiter(true_)
+        else:
+            self.textIO().write(self.delimiter())
+            self.textIO().write(string)
+        return self
+
+    def text(self):
+        text = self.textIO().getvalue()
+        return String(text)
+
+    def indent(self, padding, deindent=false_):
+        lines = self._deindent() if deindent else self.text().split("\n")
+        if padding != "":
+            indented = List()
+            for line in lines:
+                if len(line) == 0:
+                    indented.append("")
+                else:
+                    indented.append(f"{padding}{line}")
+            lines = indented
+        res = "\n".join(lines)
+        return String(res)
+
+    def _deindent(self):
+        noIndent = self.text()
+        if noIndent.notEmpty():
+            lines = noIndent.split("\n")
+            first = lines[0]
+            nspaces = len(first) - len(first.lstrip())
+            noIndent = lines if nspaces == 0 else [line[nspaces:] for line in lines]
+        return noIndent
 
 class Interpreter(SObject, RuleContextVisitor):
     currentStep = Holder().name('currentStep')

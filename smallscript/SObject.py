@@ -61,6 +61,20 @@ class SObject:
             return holder.valueFunc()
         return self.unimplemented(item)
 
+    # def __setattr__(self, item, value):
+    #     """Intercept attributes and methods access not defined by holders."""
+    #     metaclass = self.metaclass()
+    #     if metaclass.isNil():
+    #         return self.unimplemented(item)
+    #
+    #     # look for the holder in this SObject only, not from parent.
+    #     holder = metaclass.holders().getValue(item)
+    #     if holder.isNil():
+    #         super().__setattr__(item, value)
+    #     else:
+    #         self.setValue(item, value)
+    #     return self
+
     def unimplemented(self, item):
         if SObject.hasKey(self, 'undefined'):
             value = self.getValue('undefined')
@@ -633,9 +647,10 @@ class Metaclass(SObject):
         context = self.context()
         for parentName in self.parentNames():
             parent = context.metaclassByName(parentName)
-            holder = parent.holderByName(name)
-            if holder.notNil():
-                return holder
+            if parent.notNil():     # parent might not be ready
+                holder = parent.holderByName(name)
+                if holder.notNil():
+                    return holder
         return nil
 
     def _parentMetaclasses(self, parentMap):
@@ -667,7 +682,7 @@ class Metaclass(SObject):
         source = self.getContext().newInstance('TextBuffer')
         source.delimiter("\n").skipFirstDelimiter()
         source.writeLine("#### Generated file\n")
-        source.writeLine("from smallscript.SObject import SObject, Holder\n")
+        source.writeLine("from smallscript.SObject import *\n")
         source.writeLine(f"class {classname}(SObject):")
 
         attrSource = self.getContext().newInstance('TextBuffer')
@@ -1211,8 +1226,10 @@ class Number(Primitive):
             res = self.value() + val
         return res
 
-    def __radd__(self, val):
-        return self.__add__(val)
+    def __radd__(self, val): return self.__add__(val)
+    def __rsub__(self, val): return self.__sub__(val)
+    def __rmul__(self, val): return self.__mul__(val)
+    def __rtruediv__(self, val): return self.__truediv__(val)
 
     def __mul__(self, val):
         if isinstance(val, Number): val = val.value()
@@ -1269,7 +1286,6 @@ class Number(Primitive):
         else:
             res = self.value() <= val
         return res
-
 
     def __mod__(self, val):
         if isinstance(val, Number): val = val.value()
@@ -1430,6 +1446,80 @@ class Logger(SObject):
             if level == self.LevelError: logging.error(msg); return self
             if level == self.LevelCritical: logging.critical(msg); return self
         return self
+
+class ObjAdapter(SObject):
+    "Make SObject follows Python protocol."
+    # object = Holder().name('object')
+    # isSObject = Holder().name('isSObject').type('True_')
+
+    def object(self, object=""):   # can be either Python or SObject object
+        res = self._getOrSet('object', object, 'Nil')
+        if object != "":
+            isSObj = true_ if isinstance(object, SObject) else false_
+            self.isSObject(isSObj)
+            return self
+        return res
+
+    def isSObject(self, isSObject=''): return self._getOrSet('isSObject', isSObject, true_)
+
+    def _getRef(self, name):
+        parts = name.split('.')
+        parts = List(parts[:-1])
+        obj = self
+        for part in parts:
+            obj = obj._getValue(part)
+            if obj == nil: return nil
+            obj = ObjAdapter().object(obj)
+        return obj
+
+    def _getValue(self, name):
+        pyobj = sobj = self.object()
+        if not self.isSObject():
+            res = getattr(pyobj, name, nil)
+            return res
+        res = sobj.getValue(name)
+        return res
+
+    def getValue(self, name):
+        obj = self
+        parts = name.split('.')
+        for part in parts[:-1]:
+            obj = obj._getValue(part)
+            obj = ObjAdapter().object(obj)
+        res = obj._getValue(parts[-1])
+        return res
+
+    def setValue(self, name, value):
+        pyobj = sobj = self.object()
+        if not self.isSObject():
+            res = setattr(pyobj, name, value)
+            return pyobj
+        res = sobj.setValue(name, value)
+        return res
+
+    def __getattr__(self, name):
+        """Intercept attributes and methods access not defined by holders."""
+        pyobj = sobj = self.object()
+        if not self.isSObject():
+            res = getattr(pyobj, name, nil)
+            return res
+        attrFunc = sobj.__getattr__(name)
+        res = attrFunc()
+        return res
+
+    def __setattr__(self, name, value):
+        """Intercept attributes and methods access not defined by holders."""
+        pyobj = sobj = self.object()
+        if not self.isSObject():
+            res = setattr(pyobj, name, value)
+            return res
+        metaclass = sobj.metaclass()
+        if metaclass.isNil():
+            return sobj
+        holder = metaclass.holderByName(name)
+        if holder.notNil() and holder.type() != "Method":
+            sobj.setValue(name, value)
+        return sobj
 
 pytypes = Map(str = String, int = Number, float = Number, dict = Map, list = List)
 
