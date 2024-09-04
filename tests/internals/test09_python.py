@@ -173,7 +173,7 @@ class TDD_PythonExt(SmallScriptTest):
         tobj = TestSObj14().attr11(100).cattr12('200')
         scope.locals()['tobj'] = tobj
 
-        # Using primitive to generate any python code
+        # Use primitive to use any python code in SmallScript
         ss = "a := <python: 'scope[\"tobj\"]'>"
         closure = Closure().interpret(ss)
         src = closure.toPython().split("\n")[1]

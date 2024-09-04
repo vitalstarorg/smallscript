@@ -270,8 +270,42 @@ tobj.attr11('100')             # set an instance attribute attr11.
 res = tobj.method16(2,3)       # accessing instance method that accesses attr11.
 self.assertEqual(305, res)
 ```
+## SmallScript Python Extension
+### Use Primitive to use any Python code in SmallScript
+```python
+# Using primitive to use any python code in SmallScript
+ss = "a := <python: 'scope[\"tobj\"]'>"
+closure = Closure().compile(ss)
+res = closure(scope)
+self.assertEqual(tobj, scope['a'])
 
-### SmallScript Diagnostics
+# Using primitive to generate any python code on the LHS.
+ss = "<python: 'scope[\"tobj\"]'> := 123"
+closure = Closure().compile(ss)
+res = closure(scope)
+self.assertEqual(123, scope['tobj'])
+```
+### SmallScript supports dot notation for attribute access
+Currently SmallScript supports dot notation for attribute access only. It doesn't address method access yet.
+```python
+sspkg = rootContext.getOrNewPackage('smallscript')
+ss = "rootContext.packages.smallscript"
+closure = Closure().compile(ss)
+res = closure(scope)
+self.assertEqual(sspkg, res)
+
+ss = "os.environ.LOG_LEVEL := 'DEBUG'"
+closure = Closure().compile(ss)
+res = closure(scope)
+self.assertEqual('DEBUG', os.environ['LOG_LEVEL'])
+
+ss = "loglevel := os.environ.LOG_LEVEL"
+closure = Closure().compile(ss)
+res = closure(scope)
+self.assertEqual(os.environ['LOG_LEVEL'], res)
+```
+
+## SmallScript Diagnostics
 Just in case, here is an example to see what Python code got generated from SmallScript.
 ```python
 ss = ":param | | outer| outer := 13; [7 + outer] value + param"
@@ -326,7 +360,7 @@ closure.irGraph()        # show the optimized Intermediate Representation
 
 # Release Note
 ### v0.3.1 SmallScript - Python Extension
-- ref: [tests/tdd_v0_3](https://github.com/vitalstarorg/smallscript/blob/dev/tests/tdd_v0_3) for details
+- ref: [tests/tdd_v0_3](https://github.com/vitalstarorg/smallscript/blob/dev/tests/tdd_v0_3/test05_tdd.py) for details
 - Change the grammar for primitive and dot notation access.
 - Reimplement primitive for generating Python source directly.
 - Extend assignment with primitive. It should cover most Python protocol.

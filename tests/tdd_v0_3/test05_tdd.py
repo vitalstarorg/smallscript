@@ -35,24 +35,13 @@ class TDD_PythonExt(SmallScriptTest):
 
         # Using primitive to generate any python code
         ss = "a := <python: 'scope[\"tobj\"]'>"
-        closure = Closure().interpret(ss)
-        src = closure.toPython().split("\n")[1]
-        self.assertEqual("  _ = scope['a'] = scope[\"tobj\"]", src)
-        res = closure(scope)
-        self.assertEqual('scope["tobj"]', res)
-        closure.compile(ss)
+        closure = Closure().compile(ss)
         res = closure(scope)
         self.assertEqual(tobj, scope['a'])
 
         # Using primitive to generate any python code on the LHS.
         ss = "<python: 'scope[\"tobj\"]'> := 123"
-        closure = Closure().interpret(ss)
-        src = closure.toPython().split("\n")[1]
-        self.assertEqual('  _ = scope["tobj"] = 123', src)
-        res = closure(scope)
-        self.assertEqual(123, res)
-        self.assertEqual(tobj, scope['tobj'])
-        closure.compile(ss)
+        closure = Closure().compile(ss)
         res = closure(scope)
         self.assertEqual(123, scope['tobj'])
 
