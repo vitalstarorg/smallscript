@@ -325,6 +325,13 @@ closure.irGraph()        # show the optimized Intermediate Representation
   - Similar to C/C++
 
 # Release Note
+### v0.3.1 SmallScript - Python Extension
+- ref: [tests/tdd_v0_3](https://github.com/vitalstarorg/smallscript/blob/dev/tests/tdd_v0_3) for details
+- Change the grammar for primitive and dot notation access.
+- Reimplement primitive for generating Python source directly.
+- Extend assignment with primitive. It should cover most Python protocol.
+- ObjAdapter to support dot notation for attribute access.
+
 ### v0.3.0 SmallScript - Package
 - ref: [tests/tdd_v0_3](https://github.com/vitalstarorg/smallscript/blob/dev/tests/tdd_v0_3) for details
 - This is non-compatible to v0.2.0 for renaming Method as Closure.

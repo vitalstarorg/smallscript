@@ -15,7 +15,7 @@
 
 from unittest import skip, skipUnless
 from os import environ as env
-env['TESTALL'] = '1'
+# env['TESTALL'] = '1'
 
 from smallscript.SObject import *
 from smallscript.Closure import Closure
@@ -111,7 +111,7 @@ class Test_Diagnostics(SmallScriptTest):
         return
 
     @skipUnless('TESTALL' not in env, "disabled")
-    def test600_hack(self):
+    def test600_python(self):
         class PyClass():
             def __init__(self):
                 self.py11 = 111
@@ -156,27 +156,42 @@ class Test_Diagnostics(SmallScriptTest):
         self.assertEqual(123, tobj.attr11())
 
     @skipUnless('TESTALL' not in env, "disabled")
+    def test700_pyusecase(self):
+        scope = rootContext.createScope()
+
+        sspkg = rootContext.getOrNewPackage('smallscript')
+        ss = "rootContext.packages.smallscript"
+        closure = Closure().compile(ss)
+        res = closure(scope)
+        self.assertEqual(sspkg, res)
+
+        ss = "os.environ.LOG_LEVEL := 'DEBUG'"
+        closure = Closure().compile(ss)
+        res = closure(scope)
+        self.assertEqual('DEBUG', os.environ['LOG_LEVEL'])
+        src = closure.toPython().split("\n")[1]
+        self.assertEqual("  _ = scope.newInstance('ObjAdapter').object(scope['os']).getRef('environ.LOG_LEVEL').LOG_LEVEL = 'DEBUG'", src)
+
+        ss = "loglevel := os.environ.LOG_LEVEL"
+        closure = Closure().compile(ss)
+        res = closure(scope)
+        self.assertEqual(os.environ['LOG_LEVEL'], res)
+
+
+    @skipUnless('TESTALL' not in env, "disabled")
     def test900_hack(self):
         pkg = rootContext.loadPackage('tests')
         scope = rootContext.createScope()
         tobj = TestSObj14().attr11(100).cattr12('200')
         scope.locals()['tobj'] = tobj
 
-        ss = "<python: tobj> := 123"
-        closure = Closure().interpret(ss)
+        ss = "os.environ.LOG_LEVEL := 'DEBUG'"
+        closure = Closure().compile(ss)
         closure.toPython().print()
         res = closure(scope)
-        closure.compile(ss)
-        res = closure(scope)
-        res.print()
-        return
 
-        # ss = "'isinstance(' + tobj attr11 asString + ', SObject)'"
-        closure = Closure().compile(f"<py: {ss} >")
-        # closure = Closure().compile("<py: 'os.environ' >")
-        closure.toPython().print()
-        res = closure(scope)
-        res.print()
+
+
         return
 
         closure = Closure().compile('py os environ')
@@ -184,11 +199,5 @@ class Test_Diagnostics(SmallScriptTest):
         closure = Closure().compile("py isinstance: obj attr: 'name'")
             # scope["py"].isinstance__attr__(scope["obj"], "name")
             # getattr(globals()['builtins'],'isinstance')
-
-        closure = Closure().compile("<python: tobj attr11>")
-            # scope["py"].isinstance__attr__(scope["obj"], "name")
-            # getattr(globals()['builtins'],'isinstance')
-        closure.toPython().print()
-        res = closure(scope)
 
         # Fully functioning Python

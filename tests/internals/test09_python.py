@@ -30,7 +30,7 @@ class PyClass():
     def __init__(self):
         self.py11 = 111
 
-class Test_Package(SmallScriptTest):
+class TDD_PythonExt(SmallScriptTest):
     @classmethod
     def setUpClass(cls):
         pkg = rootContext.getOrNewPackage('Test_Package').importSingleSObject(DebugClosure)
@@ -259,7 +259,7 @@ class Test_Package(SmallScriptTest):
         self.assertEqual(222, scope['b'])
 
     @skipUnless('TESTALL' in env, "disabled")
-    def test800_python_nested(self):
+    def test710_python_nested_attr(self):
         pkg = rootContext.loadPackage('tests')
         scope = rootContext.createScope()
 
@@ -338,3 +338,26 @@ class Test_Package(SmallScriptTest):
         res = closure(scope)
         self.assertEqual(100, res)
         self.assertEqual(100, scope['b'])
+
+    @skipUnless('TESTALL' in env, "disabled")
+    def test800_dot_notation(self):
+        scope = rootContext.createScope()
+
+        sspkg = rootContext.getOrNewPackage('smallscript')
+        ss = "rootContext.packages.smallscript"
+        closure = Closure().compile(ss)
+        res = closure(scope)
+        self.assertEqual(sspkg, res)
+
+        ss = "os.environ.LOG_LEVEL := 'DEBUG'"
+        closure = Closure().compile(ss)
+        res = closure(scope)
+        self.assertEqual('DEBUG', os.environ['LOG_LEVEL'])
+        src = closure.toPython().split("\n")[1]
+        self.assertEqual("  _ = scope.newInstance('ObjAdapter').object(scope['os']).getRef('environ.LOG_LEVEL').LOG_LEVEL = 'DEBUG'", src)
+
+        ss = "loglevel := os.environ.LOG_LEVEL"
+        closure = Closure().compile(ss)
+        res = closure(scope)
+        self.assertEqual(os.environ['LOG_LEVEL'], res)
+

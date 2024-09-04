@@ -61,20 +61,6 @@ class SObject:
             return holder.valueFunc()
         return self.unimplemented(item)
 
-    # def __setattr__(self, item, value):
-    #     """Intercept attributes and methods access not defined by holders."""
-    #     metaclass = self.metaclass()
-    #     if metaclass.isNil():
-    #         return self.unimplemented(item)
-    #
-    #     # look for the holder in this SObject only, not from parent.
-    #     holder = metaclass.holders().getValue(item)
-    #     if holder.isNil():
-    #         super().__setattr__(item, value)
-    #     else:
-    #         self.setValue(item, value)
-    #     return self
-
     def unimplemented(self, item):
         if SObject.hasKey(self, 'undefined'):
             value = self.getValue('undefined')
@@ -1448,10 +1434,7 @@ class Logger(SObject):
         return self
 
 class ObjAdapter(SObject):
-    "Make SObject follows Python protocol."
-    # object = Holder().name('object')
-    # isSObject = Holder().name('isSObject').type('True_')
-
+    "Make SObject follows Python dot notation for attribute access. Not yet supports method access."
     def object(self, object=""):   # can be either Python or SObject object
         res = self._getOrSet('object', object, 'Nil')
         if object != "":
@@ -1471,27 +1454,11 @@ class ObjAdapter(SObject):
             obj = ObjAdapter().object(obj)
         return obj
 
-    def _getValue(self, attrname):
-        pyobj = sobj = self.object()
-        if not self.isSObject():
-            res = getattr(pyobj, attrname, nil)
-            return res
-        res = sobj.getValue(attrname)
-        return res
-
     def getValue(self, attrname):
         last = attrname.rsplit('.',1)[-1]
         obj = self.getRef(attrname)
         if obj == nil: return nil
         res = obj._getValue(last)
-        return res
-
-    def _setValue(self, attrname, value):
-        pyobj = sobj = self.object()
-        if not self.isSObject():
-            res = setattr(pyobj, attrname, value)
-            return pyobj
-        res = sobj.setValue(attrname, value)
         return res
 
     def setValue(self, attrname, value):
@@ -1501,29 +1468,35 @@ class ObjAdapter(SObject):
         res = obj._setValue(last, value)
         return res
 
-    def __getattr__(self, name):
-        """Intercept attributes and methods access not defined by holders."""
+    def _getValue(self, attrname):
         pyobj = sobj = self.object()
         if not self.isSObject():
-            res = getattr(pyobj, name, nil)
+            if hasattr(pyobj, 'get'):
+                res = pyobj.get(attrname, nil)      # make it work for a dict with a default
+            else:
+                res = getattr(pyobj, attrname, nil) # access the pyobj attribute
             return res
-        attrFunc = sobj.__getattr__(name)
-        res = attrFunc()
+        res = sobj.getValue(attrname)
         return res
 
-    def __setattr__(self, name, value):
-        """Intercept attributes and methods access not defined by holders."""
+    def _setValue(self, attrname, value):
         pyobj = sobj = self.object()
         if not self.isSObject():
-            res = setattr(pyobj, name, value)
-            return res
-        metaclass = sobj.metaclass()
-        if metaclass.isNil():
-            return sobj
-        holder = metaclass.holderByName(name)
-        if holder.notNil() and holder.type() != "Method":
-            sobj.setValue(name, value)
-        return sobj
+            if hasattr(pyobj, '__setitem__'):
+                pyobj[attrname] = value             # make it work for a dict.
+            else:
+                res = setattr(pyobj, attrname, value)
+            return pyobj
+        res = sobj.setValue(attrname, value)
+        return res
+
+    def __getattr__(self, attrname):
+        """Intercept attributes and methods access not defined by holders."""
+        return self.getValue(attrname)
+
+    def __setattr__(self, attrname, value):
+        """Intercept attributes and methods access not defined by holders."""
+        return self.setValue(attrname, value)
 
 pytypes = Map(str = String, int = Number, float = Number, dict = Map, list = List)
 
