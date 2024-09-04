@@ -591,14 +591,6 @@ class AssignStep(RuntimeStep):
         res = self.getStep('expr').runtimeRes()
         if not isinstance(refObj, PrimitiveStep):
             refObj.setValue(ref.name(), res)
-        # if isinstance(refObj, SObject):
-        #     holder = refObj.metaclass().holders().getValue(ref.name())
-        #     if holder.notNil():  # only assign if var is defined by holder
-        #         refObj.setValue(ref.name(), res)
-        #     else:
-        #         refObj.locals().setValue(ref.name(), res)
-        # else:
-        #     setattr(refObj, ref.name(), res)
         self.runtimeRes(res)
         return res
 
@@ -613,10 +605,6 @@ class VarStep(RuntimeStep):
             self.runtimeRes(res)
             return res
         res = refObj.getValue(ref.name())
-        # if isinstance(refObj, SObject):
-        #     res = refObj.getValue(ref.name())
-        # else:
-        #     res = getattr(refObj, ref.name(), nil)
         self.runtimeRes(res)
         return res
 
@@ -637,25 +625,21 @@ class RefStep(RuntimeStep):
             self.runtimeRes(primitive)
             return primitive
         varname = self.compileRes()
-        varnames = varname.split('.')
-        varname1 = varnames[0]
-        varname2 = varnames[-1]
-        self.name(varname2)
-        obj = scope.lookup(varname1)
+        varnames = List(varname.split('.'))
+        head = varnames[0]
+        last = varnames[-1]
+        self.name(last)
+        obj = scope.lookup(head)
         if obj == nil:
             obj = scope
             # if @varname was not defined, consider it in local scope. obj can be Python obj
-        tail = List(varnames[:-1])
-        for name in tail:
-            obj = obj.getValue(name)
+        if varnames.len() > 1:
+            # varname is a dot notation, use ObjAdaptor instead of obj for attribute assignment and
+            # retrival only. Need more work for full generalizations to make Python obj and SObject
+            # work seamlessly e.g. method invocation and isinstance().
+            tail = varname
             obj = ObjAdapter().object(obj)
-            # obj = obj.getValue(name)
-            # if isinstance(obj, SObject):
-            #     if obj.hasKey(name):
-            #         obj = obj.getValue(name)
-            # else:
-            #     if hasattr(obj, name):
-            #         obj = obj.getattr(name)
+            obj = obj.getRef(tail)
         self.runtimeRes(obj)
         return obj
 

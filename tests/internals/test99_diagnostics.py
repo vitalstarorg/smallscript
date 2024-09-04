@@ -111,135 +111,49 @@ class Test_Diagnostics(SmallScriptTest):
         return
 
     @skipUnless('TESTALL' not in env, "disabled")
-    def test500_hack(self):
+    def test600_hack(self):
         class PyClass():
             def __init__(self):
                 self.py11 = 111
 
         pkg = rootContext.loadPackage('tests')
         scope = rootContext.createScope()
-        tobj = TestSObj14().attr11(100).cattr12('200')
 
+        tobj = TestSObj14().attr11(100).cattr12('200')
         pyobj = PyClass()
         scope.locals()['tobj'] = tobj
         scope.locals()['pyobj'] = pyobj
         tobj.attr11(pyobj)
-        ss = "tobj.attr11.py11 := 123"       # this is an optinal case, it should be tobj attr11: 123
+        ss = "tobj.attr11.py11 := 123"
         closure = Closure().interpret(ss)
         res = closure(scope)
         self.assertEqual(123, res)
-        ObjAdapter().object(scope['tobj']).attr11.py11 = 0
+        self.assertEqual(123, pyobj.py11)
+        ObjAdapter().object(scope['tobj']).getRef('attr11.py11').py11 = 0
+        self.assertEqual(0, pyobj.py11)
+        src = closure.toPython().split("\n")[1]
+        self.assertEqual("  _ = scope.newInstance('ObjAdapter').object(scope['tobj']).getRef('attr11.py11').py11 = 123", src)
+        res = closure(scope)
+        self.assertEqual(123, res)
+        self.assertEqual(123, pyobj.py11)
 
+        tobj = TestSObj14().attr11(100).cattr12('200')
         pyobj = PyClass()
         scope.locals()['tobj'] = tobj
         scope.locals()['pyobj'] = pyobj
         pyobj.py11 = tobj
-        ss = "pyobj.py11.attr11 := 123"       # this is an optinal case, it should be tobj attr11: 123
-        closure = Closure().interpret(ss)
-        res = closure(scope)
-        self.assertEqual(123, res)
-        ObjAdapter().object(scope['pyobj']).py11.attr11 = 0
-
-
-        self.assertEqual(123, tobj.attr11())
-        src = closure.toPython().split("\n")[1]
-        self.assertEqual("  _ = scope.newInstance('ObjAdapter').object(scope['tobj']).attr11 = 123", src)
-        ObjAdapter().object(scope['tobj']).attr11 = 0
-        closure.compile()
-        res = closure(scope)
-        self.assertEqual(123, res)
-        self.assertEqual(123, tobj.attr11())
-
-        return
-
-
-    # @skipUnless('TESTALL' not in env, "disabled")
-    def test700_hack(self):
-        pkg = rootContext.loadPackage('tests')
-        scope = rootContext.createScope()
-        tobj = TestSObj14().attr11(100).cattr12('200')
-        scope.locals()['tobj'] = tobj
-
-        ss = "a := <python: 'scope[\"tobj\"]'>"
-        closure = Closure().interpret(ss)
-        src = closure.toPython().split("\n")[1]
-        self.assertEqual("  _ = scope['a'] = scope[\"tobj\"]", src)
-        res = closure(scope)
-        self.assertEqual('scope["tobj"]', res)
-        closure.compile(ss)
-        res = closure(scope)
-        self.assertEqual(tobj, scope['a'])
-
-        ss = "<python: 'scope[\"tobj\"]'> := 123"
-        closure = Closure().interpret(ss)
-        src = closure.toPython().split("\n")[1]
-        self.assertEqual('  _ = scope["tobj"] = 123', src)
-        res = closure(scope)
-        closure.compile(ss)
-        res = closure(scope)
-        self.assertEqual(123, scope['tobj'])
-
-    # @skipUnless('TESTALL' not in env, "disabled")
-    def test800_hack(self):
-        pkg = rootContext.loadPackage('tests')
-        scope = rootContext.createScope()
-        tobj = TestSObj14().attr11(100).cattr12('200')
-        pyobj = PyClass()
-        scope.locals()['tobj'] = tobj
-        scope.locals()['pyobj'] = pyobj
-
-        ss = "tobj.attr11 := 123"       # this is an optinal case, it should be tobj attr11: 123
+        ss = "pyobj.py11.attr11 := 123"
         closure = Closure().interpret(ss)
         res = closure(scope)
         self.assertEqual(123, res)
         self.assertEqual(123, tobj.attr11())
+        ObjAdapter().object(scope['pyobj']).getRef('py11.attr11').attr11 = 0
+        self.assertEqual(0, tobj.attr11())
         src = closure.toPython().split("\n")[1]
-        self.assertEqual("  _ = scope.newInstance('ObjAdapter').object(scope['tobj']).attr11 = 123", src)
-        ObjAdapter().object(scope['tobj']).attr11 = 0
-        closure.compile()
+        self.assertEqual("  _ = scope.newInstance('ObjAdapter').object(scope['pyobj']).getRef('py11.attr11').attr11 = 123", src)
         res = closure(scope)
         self.assertEqual(123, res)
         self.assertEqual(123, tobj.attr11())
-
-        ss = "pyobj.py11 := 222"        # for Python protocol
-        closure = Closure().interpret(ss)
-        res = closure(scope)
-        self.assertEqual(222, res)
-        self.assertEqual(222, pyobj.py11)
-        src = closure.toPython().split("\n")[1]
-        self.assertEqual("  _ = scope.newInstance('ObjAdapter').object(scope['pyobj']).py11 = 222", src)
-        ObjAdapter().object(scope['pyobj']).py11 = 0
-        closure.compile()
-        res = closure(scope)
-        self.assertEqual(222, res)
-        self.assertEqual(222, pyobj.py11)
-
-        ss = "a := tobj.attr11"
-        closure = Closure().interpret(ss)
-        res = closure(scope)
-        self.assertEqual(123, res)
-        self.assertEqual(123, scope['a'])
-        src = closure.toPython().split("\n")[1]
-        self.assertEqual("  _ = scope['a'] = scope.newInstance('ObjAdapter').object(scope['tobj']).attr11", src)
-        scope['a'] = 0
-        closure.compile()
-        res = closure(scope)
-        self.assertEqual(123, res)
-        self.assertEqual(123, scope['a'])
-
-        ss = "b := pyobj.py11"
-        closure = Closure().interpret(ss)
-        res = closure(scope)
-        self.assertEqual(222, res)
-        self.assertEqual(222, scope['b'])
-        src = closure.toPython().split("\n")[1]
-        self.assertEqual("  _ = scope['b'] = scope.newInstance('ObjAdapter').object(scope['pyobj']).py11", src)
-        # src = closure.toPython().print()
-        scope['b'] = 0
-        closure.compile()
-        res = closure(scope)
-        self.assertEqual(222, res)
-        self.assertEqual(222, scope['b'])
 
     @skipUnless('TESTALL' not in env, "disabled")
     def test900_hack(self):
@@ -247,15 +161,6 @@ class Test_Diagnostics(SmallScriptTest):
         scope = rootContext.createScope()
         tobj = TestSObj14().attr11(100).cattr12('200')
         scope.locals()['tobj'] = tobj
-
-        ss = ""
-        closure = Closure().interpret(ss)
-        src = closure.toPython().print()
-        # test to set obj other than SObject
-        self.assertEqual('  _ = def hello:', src)
-        # self.assertEqual("  _ = isinstance(scope['tobj'].attr11().asString(), str)", src)
-        res = closure(scope)
-        self.assertEqual("def hello:", res)
 
         ss = "<python: tobj> := 123"
         closure = Closure().interpret(ss)

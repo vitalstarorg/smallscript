@@ -1462,39 +1462,43 @@ class ObjAdapter(SObject):
 
     def isSObject(self, isSObject=''): return self._getOrSet('isSObject', isSObject, true_)
 
-    def _getRef(self, name):
-        parts = name.split('.')
-        parts = List(parts[:-1])
+    def getRef(self, attrname):
         obj = self
-        for part in parts:
+        parts = attrname.split('.')
+        for part in parts[:-1]:
             obj = obj._getValue(part)
             if obj == nil: return nil
             obj = ObjAdapter().object(obj)
         return obj
 
-    def _getValue(self, name):
+    def _getValue(self, attrname):
         pyobj = sobj = self.object()
         if not self.isSObject():
-            res = getattr(pyobj, name, nil)
+            res = getattr(pyobj, attrname, nil)
             return res
-        res = sobj.getValue(name)
+        res = sobj.getValue(attrname)
         return res
 
-    def getValue(self, name):
-        obj = self
-        parts = name.split('.')
-        for part in parts[:-1]:
-            obj = obj._getValue(part)
-            obj = ObjAdapter().object(obj)
-        res = obj._getValue(parts[-1])
+    def getValue(self, attrname):
+        last = attrname.rsplit('.',1)[-1]
+        obj = self.getRef(attrname)
+        if obj == nil: return nil
+        res = obj._getValue(last)
         return res
 
-    def setValue(self, name, value):
+    def _setValue(self, attrname, value):
         pyobj = sobj = self.object()
         if not self.isSObject():
-            res = setattr(pyobj, name, value)
+            res = setattr(pyobj, attrname, value)
             return pyobj
-        res = sobj.setValue(name, value)
+        res = sobj.setValue(attrname, value)
+        return res
+
+    def setValue(self, attrname, value):
+        last = attrname.rsplit('.',1)[-1]
+        obj = self.getRef(attrname)
+        if obj == nil: return nil
+        res = obj._setValue(last, value)
         return res
 
     def __getattr__(self, name):

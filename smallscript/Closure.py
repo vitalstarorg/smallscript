@@ -713,13 +713,14 @@ class PythonCoder(SObject):
             res = primitiveStep.visit(self)
         else:
             varname = refStep.compileRes()
-            varnames = varname.split('.')
-            varname1 = String(varnames[0])
-            tail = ".".join(varnames[1:])
-            if tail == "":
-                res = f"{self.firstArg()}[{varname1.asString()}]"
+            varnames = List(varname.split('.'))
+            head = String(varnames[0])
+            tail = varname.split('.', 1)[-1]
+            last = varnames[-1]
+            if varnames.len() == 1:
+                res = f"{self.firstArg()}[{head.asString()}]"
             else:
-                res = f"{self.firstArg()}.newInstance('ObjAdapter').object({self.firstArg()}[{varname1.asString()}]).{tail}"
+                res = f"{self.firstArg()}.newInstance('ObjAdapter').object({self.firstArg()}[{head.asString()}]).getRef('{tail}').{last}"
         return String(res)
 
     def visitList(self, list):
