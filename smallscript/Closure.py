@@ -13,11 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
 import re
-import inspect
-import io
-import traceback
 import tempfile
 from graphviz import Digraph
 
@@ -481,6 +477,11 @@ class Execution(SObject):
         scope.objs().append(self.this())
         scope.locals().setValue('self', self.this())
         return scope
+
+    def visitString(self, string):
+        closure = Closure().compile(string)
+        self.method(closure)
+        return self
 
     def visitSObj(self, sobj): return self.this(sobj)
     def visitClosure(self, closure): return self.method(closure)

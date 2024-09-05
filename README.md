@@ -29,6 +29,7 @@ pip install smallscript
 # Sample Use Cases
 ## Basic SObject use cases  
 ### SObject attributes are created on demand.
+All SObjects need an empty constructor `__init__()`. Python provides this by default. In case we need a parameterized constructor, we may define as it as `__init__(*args, **kwargs)` or provide default parameters for all arguments. 
 ```python
 from smallscript.SObject import *
 

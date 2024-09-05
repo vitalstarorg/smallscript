@@ -23,6 +23,7 @@ import importlib
 import hashlib
 import logging
 import traceback
+import types
 from pathlib import Path
 
 loglevel = os.environ.get('LOG_LEVEL', 'WARNING')
@@ -123,12 +124,14 @@ class SObject:
         metaclass = rootContext.metaclassByName(metaname)
         return metaclass
 
-    def runThis(self, thisObj):
-        obj = self.asSObj(thisObj)
-        execution = self.getContext().newInstance('Execution')
-        # execution.localGlobals()
-        execution.this(self)
-        # self.visit(execution)
+    def runss(self, thisObj):
+        this = self
+        if not isinstance(self, SObject):
+            from smallscript.core.PythonExt import ObjAdapter
+            this = ObjAdapter().object(self)
+        obj = this.asSObj(thisObj)
+        execution = this.getContext().newInstance('Execution')
+        execution.this(this)
         res = obj.visit(execution)
         return res
 
@@ -286,11 +289,19 @@ class SObject:
         if stype in pytypes:
             pClass = pytypes[stype]
             value = pClass(pyobj)
+            return value
+        elif value.__class__.__module__ == 'builtins': return value
+        elif hasattr(value, SObject.runss.__name__): return value
+        else:
+            # This is a pure Python object
+            value.runss = types.MethodType(SObject.runss, value)
         return value
 
     def lastDigits(self, n=4): return hex(id(self)).upper()[-n:]
     def isNil(self): return false_
     def notNil(self): return not self.isNil()
+    def isDefined(self): return true_
+    def notDefined(self): return not self.isDefined()
     def isEmpty(self): return false_
     def notEmpty(self): return not self.isEmpty()
     def toString(self): return String(self)
@@ -391,16 +402,16 @@ class Holder(SObject):
             if obj is not None:
                 if self.instanceType():
                     # Instance method
-                    res = obj.runThis(method)
+                    res = obj.runss(method)
                 else:
                     # Class method invoked from sobject
-                    res = obj.metaclass().attrs().runThis(method)
+                    res = obj.metaclass().attrs().runss(method)
             elif owner is not None:
                 if not self.instanceType():
                     # Class method invoked from Python class
                     metaclass = self.getContext().metaclassByName(self._metaname(owner))
                     attrs = metaclass.attrs()
-                    res = attrs.runThis(method)
+                    res = attrs.runss(method)
         return res
 
     #### Private helper methods
@@ -438,7 +449,6 @@ class String(str, Primitive):
     def isEmpty(self): return self.len() == 0
     def sha256(self, digits=16): return hashlib.sha256(self.encode()).hexdigest()[0:digits]
     def isSymbol(self): return false_ if self.isEmpty() or self[0] != '#' else true_
-    # def asString(self): return String(f"\"{self[1:]}\"") if self.isSymbol() else String(f"\"{self}\"")
     def asString(self): return String(f"'{self[1:]}'") if self.isSymbol() else String(f"'{self}'")
     def toString(self): return self
 
@@ -476,17 +486,15 @@ true_ = True_()
 false_ = False_()
 
 class Nil(Primitive):
-    """nil is a singleton from this class represents nothing."""
+    "@nil is a singleton from this class represents nothing."
     def __new__(cls):
         global nil
         if not 'nil' in globals():
             nil = super().__new__(cls)
-            nil.name('nil')
+            # nil.name('nil')
         return nil
 
-    def __call__(self, *args, **kwargs):
-        return nil
-
+    def __call__(self, *args, **kwargs): return nil
     def visit(self, visitor): return visitor.visitNil(self)
     def createEmpty(self): return self
     def isNil(self): return true_
@@ -496,8 +504,23 @@ class Nil(Primitive):
     def _set(self, keyname, value): return self
     def _del(self, keyname): return self
     def asString(self): return "nil"
+    def describe(self): return self.asString()
 
 nil = Nil()
+
+class Undefined(SObject):
+    "@undefined is a singleton for default argument."
+    def __new__(cls):
+        global undefined
+        if not 'undefined' in globals():
+            undefined = super().__new__(cls)
+        return undefined
+
+    def __call__(self, *args, **kwargs): return undefined
+    def isDefined(self): return false_
+    def describe(self): return "undefined"
+
+undefined = Undefined()
 
 class List(list, Primitive):
     """SObject list class."""
@@ -727,7 +750,7 @@ class Package(SObject):
         holder = metaclass.holderByName('metaInit')
         if holder.isNil(): return self
         method = holder.method()
-        exeContext = metaclass.attrs().runThis(method)
+        exeContext = metaclass.attrs().runss(method)
         res = exeContext()
         return self
 
@@ -773,7 +796,7 @@ class Package(SObject):
             holder = metaclass.holderByName('metaInit')
             if holder.isNil(): continue
             method = holder.method()
-            exeContext = metaclass.attrs().runThis(method)
+            exeContext = metaclass.attrs().runss(method)
             res = exeContext()
         return self
 
@@ -1012,6 +1035,16 @@ class Context(SObject):
                 break
         return res
 
+    def packageByMetaname(self, metaname):
+        "Find the containing package for a metaclass name."
+        res = nil
+        for pkg in self.packages().values()[::-1]:
+            metaclass = pkg.metaclassByName(metaname)
+            if metaclass.notNil():
+                res = pkg
+                break
+        return res
+
     def newInstance(self, metaname):
         "Create an sobject."
         metaclass = self.metaclassByName(metaname)
@@ -1023,6 +1056,7 @@ class Context(SObject):
         return self
 
     def createScope(self):
+        from smallscript.core.PythonExt import PyGlobals
         rootScope = self.rootScope()
         if not rootScope.locals().hasKey('root'):
             rootScope.name('rootScope')
@@ -1031,6 +1065,8 @@ class Context(SObject):
             rootScope['nil'] = nil
             rootScope['context'] = self.getContext()
             rootScope['root'] = rootScope
+            pyscope = PyGlobals().name("pybuiltins").locals(vars(builtins))
+            rootScope.addScope(pyscope)
         scope = Scope()
         scope.setValue('scope', scope)
         scope.parent(rootScope)
@@ -1086,13 +1122,13 @@ class Scope(SObject):
 
     def getValue(self, attname, default=nil):
         ref = self.lookup(attname)
-        if ref.isNil(): return default
+        if ref == undefined: return default
         return ref.getValue(attname)
         # return self.locals().getValue(attname, default)
 
     def setValue(self, attname, value):
         ref = self.lookup(attname)
-        if ref.isNil():
+        if ref == undefined:
             self.locals().setValue(attname, self.asSObj(value))
         else:
             ref.setValue(attname, self.asSObj(value))
@@ -1107,7 +1143,7 @@ class Scope(SObject):
         instance = self.getContext().newInstance(type)
         return instance
 
-    def lookup(self, key, default=nil):
+    def lookup(self, key, default=undefined):
         "Return a sobject contains the @key from self, scopes and parent scope."
         # if self.hasKey(key): return self
         if self.locals().hasKey(key): return self.locals()
@@ -1120,10 +1156,16 @@ class Scope(SObject):
         obj = self.parent()
         while obj.notNil():
             # if obj.hasKey(key): return obj
-            if obj.locals().hasKey(key): return obj
+            # if obj.locals().hasKey(key): return obj
+            obj1 = obj.lookup(key, undefined)
+            if obj1 != undefined: return obj1
             obj = obj.parent()
         for scope in self.scopes():
             if scope.hasKey(key): return scope
+        if self == self.getContext().rootScope():
+            # If this is a rootScope(), try to find it as Metaclass name.
+            pkg = self.getContext().packageByMetaname(key)
+            if pkg.notNil(): return pkg.metaclasses()
         return default
 
     #### Helpers
@@ -1144,31 +1186,6 @@ class Scope(SObject):
             buffer.write(f"{padding}parent = {self.parent().toString()}\n")
         output = buffer.getvalue()
         return String(output)
-
-class PyGlobals(Scope):
-    "Interfacing scope on Python global dictionary which keeps track of global namespace at realtime."
-
-    # Disable the following scope protocol.
-    def scopes(self, scopes=''): return self if scopes != '' else List()
-    def objs(self, objs=''):  return self if objs != '' else List()
-    def parent(self, parent=''):  return self if parent != '' else nil
-    def setSelf(self, obj): return self
-    def addScope(self, scope): return self
-
-    # Redefine these protocols.
-    def keys(self): return self.locals().keys()
-    def hasKey(self, attname): return attname in self.locals()
-
-    def delValue(self, attname):
-        if self.hasKey(attname):
-            del self.locals()[attname]
-        return self
-
-    def getValue(self, attname, default=nil):
-        return self.locals()[attname] if self.hasKey(attname) else default
-
-    def setValue(self, attname, value): self.locals()[attname] = value; return self
-    def lookup(self, key, default=nil): return self if self.hasKey(key) else default
 
 class Number(Primitive):
     def value(self, value=''):
@@ -1432,71 +1449,6 @@ class Logger(SObject):
             if level == self.LevelError: logging.error(msg); return self
             if level == self.LevelCritical: logging.critical(msg); return self
         return self
-
-class ObjAdapter(SObject):
-    "Make SObject follows Python dot notation for attribute access. Not yet supports method access."
-    def object(self, object=""):   # can be either Python or SObject object
-        res = self._getOrSet('object', object, 'Nil')
-        if object != "":
-            isSObj = true_ if isinstance(object, SObject) else false_
-            self.isSObject(isSObj)
-            return self
-        return res
-
-    def isSObject(self, isSObject=''): return self._getOrSet('isSObject', isSObject, true_)
-
-    def getRef(self, attrname):
-        obj = self
-        parts = attrname.split('.')
-        for part in parts[:-1]:
-            obj = obj._getValue(part)
-            if obj == nil: return nil
-            obj = ObjAdapter().object(obj)
-        return obj
-
-    def getValue(self, attrname):
-        last = attrname.rsplit('.',1)[-1]
-        obj = self.getRef(attrname)
-        if obj == nil: return nil
-        res = obj._getValue(last)
-        return res
-
-    def setValue(self, attrname, value):
-        last = attrname.rsplit('.',1)[-1]
-        obj = self.getRef(attrname)
-        if obj == nil: return nil
-        res = obj._setValue(last, value)
-        return res
-
-    def _getValue(self, attrname):
-        pyobj = sobj = self.object()
-        if not self.isSObject():
-            if hasattr(pyobj, 'get'):
-                res = pyobj.get(attrname, nil)      # make it work for a dict with a default
-            else:
-                res = getattr(pyobj, attrname, nil) # access the pyobj attribute
-            return res
-        res = sobj.getValue(attrname)
-        return res
-
-    def _setValue(self, attrname, value):
-        pyobj = sobj = self.object()
-        if not self.isSObject():
-            if hasattr(pyobj, '__setitem__'):
-                pyobj[attrname] = value             # make it work for a dict.
-            else:
-                res = setattr(pyobj, attrname, value)
-            return pyobj
-        res = sobj.setValue(attrname, value)
-        return res
-
-    def __getattr__(self, attrname):
-        """Intercept attributes and methods access not defined by holders."""
-        return self.getValue(attrname)
-
-    def __setattr__(self, attrname, value):
-        """Intercept attributes and methods access not defined by holders."""
-        return self.setValue(attrname, value)
 
 pytypes = Map(str = String, int = Number, float = Number, dict = Map, list = List)
 

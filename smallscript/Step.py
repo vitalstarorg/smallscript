@@ -13,76 +13,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from smallscript.antlr.SmallScriptParser import SmallScriptParser as Parser
-from smallscript.antlr.SmallScriptListener import SmallScriptListener as Listener
-from smallscript.SObject import Metaclass
-from antlr4.tree.Tree import TerminalNode
-
-import re
-import io
-import inspect
-import copy
-
 from smallscript.SObject import *
-from smallscript.antlr.SmallScriptVisitor import SmallScriptVisitor
-from smallscript.antlr.SmallScriptParser import SmallScriptParser
+from smallscript.core.PythonExt import ObjAdapter
+from smallscript.core.PythonExt import RuleContextVisitor
 from antlr4 import RuleContext
 
-class RuleContextVisitor(SmallScriptVisitor):
-    def visitCommon(self, cxt): return cxt.getText()
-    def visitSmallscript(self, cxt): return self.visitCommon(cxt)
-    def visitClosure(self, cxt): return self.visitCommon(cxt)
-    def visitTemps(self, cxt): return self.visitCommon(cxt)
-    def visitTempvar(self, cxt): return self.visitCommon(cxt)
-    def visitBlkparamlst(self, cxt): return self.visitCommon(cxt)
-    def visitBlkparam(self, cxt): return self.visitCommon(cxt)
-    def visitExpr(self, cxt): return self.visitCommon(cxt)
-    def visitExprs(self, cxt): return self.visitCommon(cxt)
-    def visitUnaryhead(self, cxt): return self.visitCommon(cxt)
-    def visitUnarytail(self, cxt): return self.visitCommon(cxt)
-    def visitUnarymsg(self, cxt): return self.visitCommon(cxt)
-    def visitUnaryop(self, cxt): return self.visitCommon(cxt)
-    def visitOperand(self, cxt): return self.visitCommon(cxt)
-    def visitKwhead(self, cxt): return self.visitCommon(cxt)
-    def visitKwmsg(self, cxt): return self.visitCommon(cxt)
-    def visitKwpair(self, cxt): return self.visitCommon(cxt)
-    def visitBinhead(self, cxt): return self.visitCommon(cxt)
-    def visitBintail(self, cxt): return self.visitCommon(cxt)
-    def visitBinmsg(self, cxt): return self.visitCommon(cxt)
-    def visitBinop(self, cxt): return self.visitCommon(cxt)
-    def visitChain(self, cxt): return self.visitCommon(cxt)
-    def visitPtfin(self, cxt): return self.visitCommon(cxt)
-    def visitMsg(self, cxt): return self.visitCommon(cxt)
-    def visitSubexpr(self, cxt): return self.visitCommon(cxt)
-    def visitChar(self, cxt): return self.visitCommon(cxt)
-    def visitBaresym(self, cxt): return self.visitCommon(cxt)
-    def visitPrimitive(self, cxt): return self.visitCommon(cxt)
-    def visitAssign(self, cxt): return self.visitCommon(cxt)
-    def visitVar(self, cxt): return self.visitCommon(cxt)
-    def visitRef(self, cxt): return self.visitCommon(cxt)
-    def visitString(self, cxt): return self.visitCommon(cxt)
-    def visitWs(self, cxt): return self.visitCommon(cxt)
-    def visitTerminal(self, tnode): return self.visitCommon(tnode)
-    def visitNum(self, cxt): return self.visitCommon(cxt)
-    def visitSsFloat(self, cxt): return self.visitCommon(cxt)
-    def visitSsHex(self, cxt): return self.visitCommon(cxt)
-    def visitSsInt(self, cxt):return self.visitCommon(cxt)
-    def visitExprlst(self, cxt): return self.visitCommon(cxt)
-    def visitBlk(self, cxt): return self.visitCommon(cxt)
-    def visitPtkey(self, cxt): return self.visitCommon(cxt)
-    def visitLiteral(self, cxt): return self.visitCommon(cxt)
-    def visitRtlit(self, cxt): return self.visitCommon(cxt)
-    def visitDyndict(self, cxt): return self.visitCommon(cxt)
-    def visitDynarr(self, cxt): return self.visitCommon(cxt)
-    def visitParselit(self, cxt): return self.visitCommon(cxt)
-    def visitPrimkey(self, cxt): return self.visitCommon(cxt)
-    def visitPrimtxt(self, cxt): return self.visitCommon(cxt)
-    def visitSymbol(self, cxt): return self.visitCommon(cxt)
-    def visitLitarr(self, cxt): return self.visitCommon(cxt)
-    def visitLitarrcnt(self, cxt): return self.visitCommon(cxt)
-    def visitBarelitarr(self, cxt): return self.visitCommon(cxt)
-    def visitKeywords(self, cxt): return self.visitCommon(cxt)
-    def visitErrorNode(self, errnode): return self.visitCommon(errnode)
 
 class StepVisitor(SObject):
     def __getattr__(self, item):
@@ -630,7 +565,7 @@ class RefStep(RuntimeStep):
         last = varnames[-1]
         self.name(last)
         obj = scope.lookup(head)
-        if obj == nil:
+        if obj == undefined:
             obj = scope
             # if @varname was not defined, consider it in local scope. obj can be Python obj
         if varnames.len() > 1:

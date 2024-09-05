@@ -15,11 +15,11 @@
 
 from unittest import skip, skipUnless
 from os import environ as env
-# env['TESTALL'] = '1'
+env['TESTALL'] = '1'
 
 from smallscript.SObject import *
+from smallscript.core.PythonExt import ObjAdapter
 from smallscript.Closure import Closure
-# from smallscript.Step import *
 from tests.TestBase import SmallScriptTest, DebugClosure
 from tests.TestSObj14 import TestSObj14
 
@@ -30,6 +30,9 @@ from tests.TestSObj14 import TestSObj14
 class PyClass():
     def __init__(self):
         self.py11 = 111
+
+    def addPy11(self, number=1):
+        return number + self.py11
 
 # @skip
 class Test_Diagnostics(SmallScriptTest):
@@ -111,7 +114,7 @@ class Test_Diagnostics(SmallScriptTest):
         return
 
     @skipUnless('TESTALL' not in env, "disabled")
-    def test600_python(self):
+    def test310_python(self):
         class PyClass():
             def __init__(self):
                 self.py11 = 111
@@ -156,7 +159,7 @@ class Test_Diagnostics(SmallScriptTest):
         self.assertEqual(123, tobj.attr11())
 
     @skipUnless('TESTALL' not in env, "disabled")
-    def test700_pyusecase(self):
+    def test320_dot_notation(self):
         scope = rootContext.createScope()
 
         sspkg = rootContext.getOrNewPackage('smallscript')
@@ -183,13 +186,14 @@ class Test_Diagnostics(SmallScriptTest):
         pkg = rootContext.loadPackage('tests')
         scope = rootContext.createScope()
         tobj = TestSObj14().attr11(100).cattr12('200')
+        pyobj = PyClass()
         scope.locals()['tobj'] = tobj
+        scope.locals()['pyobj'] = pyobj
+        tobj.attr11(pyobj)
 
-        ss = "os.environ.LOG_LEVEL := 'DEBUG'"
-        closure = Closure().compile(ss)
-        closure.toPython().print()
-        res = closure(scope)
-
+        execxt = pyobj.runSS("self.py11")
+        res = execxt()
+        self.assertEqual(111, res)
 
 
         return
