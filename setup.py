@@ -4,7 +4,10 @@ setup(
     name='smallscript',
     version='0.3.2',
     packages=find_packages(),
-    install_requires=[],
+    install_requires=[
+        'antlr4-python3-runtime',
+        'graphviz'
+    ],
     author='Man Chan',
     author_email='man.chan@gmail.com',
     description='smallscript',

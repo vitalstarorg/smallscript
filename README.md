@@ -360,6 +360,15 @@ closure.irGraph()        # show the optimized Intermediate Representation
   - Similar to C/C++
 
 # Release Note
+### v0.3.2 - Python Extensions
+- Fix setup.py for missing dependent libraries.
+- Create 2nd core level library
+- Ability to access Python builtins through scope.
+- Create @undefined for key lookup.
+- Extend Scope.lookup() to metaclasses.
+- Python instance injection with SObject.runSS().
+- Basic direct Python access through runSS().
+
 ### v0.3.1 SmallScript - Python Extension
 - ref: [tests/tdd_v0_3](https://github.com/vitalstarorg/smallscript/blob/dev/tests/tdd_v0_3/test05_tdd.py) for details
 - Change the grammar for primitive and dot notation access.

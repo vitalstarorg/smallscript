@@ -15,7 +15,6 @@
 
 import re
 import tempfile
-from graphviz import Digraph
 
 from antlr4 import InputStream, CommonTokenStream, ParseTreeWalker
 from antlr4.error.ErrorListener import ErrorListener
@@ -38,7 +37,14 @@ class ScriptErrorListener(SObject, ErrorListener):
 
 class ASTGrapher(Listener):
     def __init__(self):
+        from graphviz import Digraph
         self.graph = Digraph('G', format='png')
+        # try:
+        #     module = importlib.import_module('graphviz')
+        #     Digraph = getattr(module, 'Digraph')
+        #     self.graph = Digraph('G', format='png')
+        # except ImportError:
+        #     pass
 
     def enterEveryRule(self, ctx):
         rule_name = Parser.ruleNames[ctx.getRuleIndex()]
@@ -64,7 +70,14 @@ class IRGrapher(StepVisitor):
     instructionIdx = Holder().name('instructionIdx').type('Map')
 
     def __init__(self):
+        from graphviz import Digraph
         self.graph = Digraph('G', format='png')
+        # try:
+        #     module = importlib.import_module('graphviz')
+        #     Digraph = getattr(module, 'Digraph')
+        #     self.graph = Digraph('G', format='png')
+        # except ImportError:
+        #     pass
 
     def __getattr__(self, item):
         def defaultVisit(step):
