@@ -17,17 +17,17 @@ class Test_Compiler1(SmallScriptTest):
 
     @classmethod
     def setUpClass(cls):
-        pkg = rootContext.getOrNewPackage('Test_Interpreter2').importSingleSObject(DebugClosure)
+        pkg = sscontext.getOrNewPackage('Test_Interpreter2').importSingleSObject(DebugClosure)
 
     @skipUnless('TESTALL' in env, "disabled")
     def test100_smoke(self):
         # A series of simple smoke tests to help the development.
-        pkg = rootContext.loadPackage('tests')
+        pkg = sscontext.loadPackage('tests')
         tobj = TestSObj14()
         tobj.attr11(100)
         tobj.cattr12('200')
         metaclass = tobj.metaclass()
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         scope['tobj'] = tobj
 
         # Testing basic code gen for closure require only visitClosure and visitNumber.
@@ -112,7 +112,7 @@ class Test_Compiler1(SmallScriptTest):
 
     @skipUnless('TESTALL' in env, "disabled")
     def test520_param_access(self):
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         ss = ":param1 | param1"
         closure = Closure().compile(ss)
         res = closure(scope, 'aString')
@@ -121,7 +121,7 @@ class Test_Compiler1(SmallScriptTest):
         res = closure(scope, 123)
         self.assertEqual(123, res)
 
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         ss = ":param1 :param2| param2"
         closure = Closure().compile(ss)
         res = closure(scope, nil, nil)
@@ -136,7 +136,7 @@ class Test_Compiler1(SmallScriptTest):
 
     @skipUnless('TESTALL' in env, "disabled")
     def test530_assignment(self):
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         ss = "obj1 := 123"
         closure = Closure().compile(ss)
         res = closure(scope)
@@ -149,7 +149,7 @@ class Test_Compiler1(SmallScriptTest):
         res = closure(scope)
         self.assertEqual('str1', res)
 
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         ss = "_ := obj1 := 123"
         closure = Closure().compile(ss)
         res = closure(scope)
@@ -157,7 +157,7 @@ class Test_Compiler1(SmallScriptTest):
         self.assertEqual(123, scope.getValue('obj1'))
         self.assertEqual(123, scope.getValue('_'))
 
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         ss = ":param1 :param2| |tmp1| tmp1 := param2"
         closure = Closure().compile(ss)
         res = closure(scope, 'str1', 'str2')
@@ -173,11 +173,11 @@ class Test_Compiler1(SmallScriptTest):
 
     @skipUnless('TESTALL' in env, "disabled")
     def test600_sobject(self):
-        pkg = rootContext.loadPackage('tests')
+        pkg = sscontext.loadPackage('tests')
         tobj = TestSObj14().attr11(123)
         tobj.cattr12('cvalue12')
 
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         scope.addObj(tobj)
         ss = "attr11"
         closure = Closure().compile(ss)
@@ -228,7 +228,7 @@ class Test_Compiler1(SmallScriptTest):
         res = scope.info()  # smoke test, ignore output
         # res.print()
 
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         root = scope['root']
         root['global1'] = nil
         ss = "global1 := 'global value'"

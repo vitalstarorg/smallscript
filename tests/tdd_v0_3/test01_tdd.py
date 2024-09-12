@@ -27,7 +27,7 @@ from smallscript.Closure import Closure
 class TDD_Closure(SmallScriptTest):
     @classmethod
     def setUpClass(cls):
-        pkg = rootContext.loadPackage('tests')
+        pkg = sscontext.loadPackage('tests')
         pass
 
     @skipUnless('TESTALL' in env, "disabled")
@@ -58,7 +58,7 @@ class TDD_Closure(SmallScriptTest):
 
         ### Instantiate the same obj through name defined by ss_metas, instead of class name.
         # Same tests as above.
-        tobj2 = rootContext.newInstance('TestSObj15')
+        tobj2 = sscontext.newInstance('TestSObj15')
         meta2 = tobj2.metaclass()
         res = tobj2.method14(2, 3)
         self.assertEqual(5, res)
@@ -90,8 +90,8 @@ class TDD_Closure(SmallScriptTest):
     def test600_Dynamic_Invocation(self):
         #### SObject attributes protocol, not through Python
         # Same as Test_Closure.test500_method(), but totally SObject protocol.
-        pkg = rootContext.loadPackage('tests')
-        meta = rootContext.metaclassByName('TestSObj15')
+        pkg = sscontext.loadPackage('tests')
+        meta = sscontext.metaclassByName('TestSObj15')
         tobj = SObject().metaclass(meta)
 
         meta.attrs().delValue('cattr12')          # clean up this attribute just in case.
@@ -192,11 +192,11 @@ class TDD_Closure(SmallScriptTest):
                         | addMethod: #cmethod17 method: [:m17 :arg2 | m17 * arg2 + self cattr12 asNumber] classType: true
         """
 
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         closure = Closure().interpret(ss)
         meta = closure(scope)
 
-        tobj = rootContext.newInstance('AnotherMeta').name('tobj')
+        tobj = sscontext.newInstance('AnotherMeta').name('tobj')
         self.assertEqual(SObject, type(tobj))
         self.assertEqual('AnotherMeta', tobj.metaname())
 

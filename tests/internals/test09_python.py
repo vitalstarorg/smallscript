@@ -34,18 +34,24 @@ class PyClass():
     def addPy11(self, number=1):
         return number + self.py11
 
+class PyClass2(PyClass):
+    pass
+
+class PyClass3(PyClass):
+    pass
+
 class TDD_PythonExt(SmallScriptTest):
     @classmethod
     def setUpClass(cls):
-        pkg = rootContext.getOrNewPackage('Test_Package').importSingleSObject(DebugClosure)
+        pkg = sscontext.getOrNewPackage('Test_Package').importSingleSObject(DebugClosure)
 
     def setUp(self):
-        self.pkg = rootContext.loadPackage('tests')
+        self.pkg = sscontext.loadPackage('tests')
 
     @skipUnless('TESTALL' in env, "disabled")
     def test100_smoke(self):
         tobj = TestSObj14().attr11(100).cattr12('200')
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         scope['tobj'] = tobj
 
     @skipUnless('TESTALL' in env, "disabled")
@@ -53,7 +59,7 @@ class TDD_PythonExt(SmallScriptTest):
         localVar = 'This is a string'
             # Need to be set before createScope() for scope to recognize this variable.
             # Otherwise, the following test will pass intermittently.
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         closure = Closure().compile('localVar')
         res = closure(scope)
         self.assertEqual(localVar, res)
@@ -69,7 +75,7 @@ class TDD_PythonExt(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test300_primitive_print(self):
         tobj = TestSObj14().attr11(100).cattr12('200')
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         scope['tobj'] = tobj
 
         closure = Closure().compile("<python: tobj attr11>")
@@ -108,8 +114,8 @@ class TDD_PythonExt(SmallScriptTest):
 
     @skipUnless('TESTALL' in env, "disabled")
     def test310_primitive_printf(self):
-        pkg = rootContext.loadPackage('tests')
-        scope = rootContext.createScope()
+        pkg = sscontext.loadPackage('tests')
+        scope = sscontext.createScope()
         tobj = TestSObj14().attr11(100).cattr12('200')
         scope['tobj'] = tobj
 
@@ -159,8 +165,8 @@ class TDD_PythonExt(SmallScriptTest):
 
     @skipUnless('TESTALL' in env, "disabled")
     def test320_primitive_printf(self):
-        pkg = rootContext.loadPackage('tests')
-        scope = rootContext.createScope()
+        pkg = sscontext.loadPackage('tests')
+        scope = sscontext.createScope()
         tobj = TestSObj14().attr11(100).cattr12('200')
         scope['tobj'] = tobj
 
@@ -176,8 +182,8 @@ class TDD_PythonExt(SmallScriptTest):
 
     @skipUnless('TESTALL' in env, "disabled")
     def test330_primitive_LHS(self):
-        pkg = rootContext.loadPackage('tests')
-        scope = rootContext.createScope()
+        pkg = sscontext.loadPackage('tests')
+        scope = sscontext.createScope()
         tobj = TestSObj14().attr11(100).cattr12('200')
         scope.locals()['tobj'] = tobj
 
@@ -206,8 +212,8 @@ class TDD_PythonExt(SmallScriptTest):
 
     @skipUnless('TESTALL' in env, "disabled")
     def test340_python_attributes(self):
-        pkg = rootContext.loadPackage('tests')
-        scope = rootContext.createScope()
+        pkg = sscontext.loadPackage('tests')
+        scope = sscontext.createScope()
         tobj = TestSObj14().attr11(100).cattr12('200')
         pyobj = PyClass()
         scope.locals()['tobj'] = tobj
@@ -268,8 +274,8 @@ class TDD_PythonExt(SmallScriptTest):
 
     @skipUnless('TESTALL' in env, "disabled")
     def test350_python_nested_attr(self):
-        pkg = rootContext.loadPackage('tests')
-        scope = rootContext.createScope()
+        pkg = sscontext.loadPackage('tests')
+        scope = sscontext.createScope()
 
         tobj = TestSObj14().attr11(100).cattr12('200')
         pyobj = PyClass()
@@ -349,10 +355,10 @@ class TDD_PythonExt(SmallScriptTest):
 
     @skipUnless('TESTALL' in env, "disabled")
     def test360_dot_notation(self):
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
 
-        sspkg = rootContext.getOrNewPackage('smallscript')
-        ss = "rootContext.packages.smallscript"
+        sspkg = sscontext.getOrNewPackage('smallscript')
+        ss = "sscontext.packages.smallscript"
         closure = Closure().compile(ss)
         res = closure(scope)
         self.assertEqual(sspkg, res)
@@ -372,23 +378,23 @@ class TDD_PythonExt(SmallScriptTest):
         ss = "class := TestSObj15"
         closure = Closure().compile(ss)
         res = closure(scope)
-        meta15 = rootContext.metaclassByName('TestSObj15')
+        meta15 = sscontext.metaclassByName('TestSObj15')
         self.assertEqual(meta15, res)
 
-        ss = "PyClass"
+        ss = "PyClass2"
         closure = Closure().compile(ss)
         res = closure(scope)
-        self.assertEqual(PyClass, res)
+        self.assertEqual(PyClass2, res)
 
-        ss = "PyClass __call__"
+        ss = "PyClass2 __call__"
         closure = Closure().compile(ss)
         res = closure(scope)
         self.assertEqual(111, res.py11)
-        self.assertEqual(PyClass, type(res))
+        self.assertEqual(PyClass2, type(res))
 
     @skipUnless('TESTALL' in env, "disabled")
     def test370_asObj(self):
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
 
         #### SObject.asObj(pyobj) will add runSS() to pyobj
         tobj = TestSObj14().attr11(100).cattr12('200')
@@ -397,30 +403,58 @@ class TDD_PythonExt(SmallScriptTest):
         scope.locals()['pyobj'] = pyobj
 
         # This shows that a Python obj has method runSS() added.
-        self.assertTrue(not hasattr(pyobj, SObject.runss.__name__))
-        tobj.attr11(pyobj)          # This will get the pyobj added runSS() method
-        self.assertTrue(hasattr(pyobj, SObject.runss.__name__))
+        self.assertTrue(not hasattr(pyobj, SObject.ssrun.__name__))
+        tobj.attr11(pyobj)          # ssrun() method is injected into pyobj
+        self.assertTrue(hasattr(pyobj, SObject.ssrun.__name__))
         ss = "a := tobj.attr11"
         closure = Closure().interpret(ss)
         res = closure(scope)
-        self.assertTrue(hasattr(pyobj, SObject.runss.__name__))
+        self.assertTrue(hasattr(pyobj, SObject.ssrun.__name__))
 
         # Access a Python instance variable.
-        execxt = pyobj.runss("self.py11")
-        res = execxt()
+        res = pyobj.ssrun("self.py11")
         self.assertEqual(111, res)
-        execxt = pyobj.runss("self.py11 := 222")
-        res = execxt()
+        res = pyobj.ssrun("self.py11 := 222")
         self.assertEqual(222, pyobj.py11)
 
         # Invoke a Python method with argument and without.
-        execxt = pyobj.runss("self addPy11")
-        res = execxt()
+        res = pyobj.ssrun("self addPy11")
         self.assertEqual(223, res)
-        execxt = pyobj.runss("self addPy11: 100")
-        res = execxt()
+        res = pyobj.ssrun("self addPy11: 100")
         self.assertEqual(322, res)
+
+        # Inject SObject.ssrun() to Python class
+        klass = sscontext.asSObj(str)
+        self.assertTrue(not hasattr(klass, SObject.ssrun.__name__))
+        klass = sscontext.asSObj(PyClass)
+        self.assertTrue(hasattr(klass, SObject.ssrun.__name__))
+        pyobj1 = klass()
+        self.assertTrue(hasattr(pyobj1, SObject.ssrun.__name__))
+        pyobj3 = PyClass3()
+        self.assertTrue(hasattr(pyobj3, SObject.ssrun.__name__)) # PyClass3 also inherits from PyClass.
+
+        # Invoke a closure with argument.
+        res = sscontext.ssrun(":param | param + 1", 100)
+        self.assertEqual(101, res)
+
+        # Invoke a closure like a pyobj method with argument.
+        # ssrun() can be with compiled closure.
+        ss = ":param | self.py11 + param"
+        res = pyobj.ssrun(ss, 12)
+        self.assertEqual(234, res)
+        closure = sscontext.compile(ss)
+        res = pyobj.ssrun(closure, 12)
+        self.assertEqual(234, res)
+
+        # Returning the scope object used in Execution.
+        ss= "| a | a := 'hello'; scope"
+        res = sscontext.ssrun(ss)
+        self.assertEqual('hello', res['a'])
+        closure = sscontext.compile(ss)
+        res = sscontext.ssrun(closure)
+        self.assertEqual('hello', res['a'])
+
 
     @skipUnless('TESTALL' in env, "disabled")
     def test490_next(self):
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()

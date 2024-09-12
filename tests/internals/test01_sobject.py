@@ -50,68 +50,68 @@ class Test_SObject(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test120_primitive(self):
         ### Make sure no one can set value or metaclass for primitives.
-        obj = rootContext.newInstance('String')
+        obj = sscontext.newInstance('String')
         obj.metaclass(nil)
         self.assertTrue(len(obj.__dict__) == 0)
-        obj = rootContext.newInstance('True_')
+        obj = sscontext.newInstance('True_')
         obj.metaclass(nil)
         self.assertTrue(len(obj.__dict__) == 0)
-        obj = rootContext.newInstance('False_')
+        obj = sscontext.newInstance('False_')
         obj.metaclass(nil)
         self.assertTrue(len(obj.__dict__) == 0)
-        obj = rootContext.newInstance('Map')
+        obj = sscontext.newInstance('Map')
         obj.metaclass(nil)
         self.assertTrue(len(obj) == 0)
         self.assertTrue(len(obj.__dict__) == 0)
-        obj = rootContext.newInstance('List')
+        obj = sscontext.newInstance('List')
         obj.metaclass(nil)
         self.assertTrue(len(obj.__dict__) == 0)
-        obj = rootContext.newInstance('Integer')
+        obj = sscontext.newInstance('Integer')
         obj.metaclass(nil)
         self.assertTrue(len(obj.__dict__) == 0)
-        obj = rootContext.newInstance('Float')
+        obj = sscontext.newInstance('Float')
         obj.metaclass(nil)
         self.assertTrue(len(obj.__dict__) == 0)
         return
 
     @skipUnless('TESTALL' in env, "disabled")
     def test130_asSObj(self):
-        obj = rootContext.asSObj("abc")
+        obj = sscontext.asSObj("abc")
         self.assertEqual('String', obj.metaname())
-        obj = rootContext.asSObj(True)
+        obj = sscontext.asSObj(True)
         self.assertEqual('True_', obj.metaname())
-        obj = rootContext.asSObj(False)
+        obj = sscontext.asSObj(False)
         self.assertEqual('False_', obj.metaname())
-        obj = rootContext.asSObj([1, 2, 3])
+        obj = sscontext.asSObj([1, 2, 3])
         self.assertEqual('List', obj.metaname())
         self.assertEqual([1,2,3], obj)
-        obj = rootContext.asSObj({'a':1, 'b':2, 'c':3})
+        obj = sscontext.asSObj({'a':1, 'b':2, 'c':3})
         self.assertEqual('Map', obj.metaname())
         self.assertEqual({'a':1,'b':2,'c':3}, obj)
-        obj = rootContext.asSObj(123)
+        obj = sscontext.asSObj(123)
         self.assertEqual('Number', obj.metaname())
         self.assertEqual('Integer', obj.value().metaname())
-        obj = rootContext.asSObj(0.123)
+        obj = sscontext.asSObj(0.123)
         self.assertEqual('Number', obj.metaname())
         self.assertEqual('Float', obj.value().metaname())
-        obj = rootContext.asSObj(None)
+        obj = sscontext.asSObj(None)
         self.assertEqual(nil, obj)
 
-        obj = rootContext.asSObj(self)     # no conversion
+        obj = sscontext.asSObj(self)     # no conversion
         self.assertTrue(obj, self)
 
     @skipUnless('TESTALL' in env, "disabled")
     def test210_package(self):
         ### Loading all SObject from tests
-        pkg1 = rootContext.loadPackage('tests')
-        testobj1 = rootContext.metaclassByName('TestSObj1').createEmpty()
+        pkg1 = sscontext.loadPackage('tests')
+        testobj1 = sscontext.metaclassByName('TestSObj1').createEmpty()
         res = testobj1.var1()
         self.assertEqual('', testobj1.var1())
         res = testobj1.var1('value1')
         self.assertEqual(res, testobj1)
         res = testobj1.var1()
         self.assertEqual('value1', res)
-        meta1 = rootContext.metaclassByName('TestSObj11')
+        meta1 = sscontext.metaclassByName('TestSObj11')
         self.assertEqual(pkg1, meta1.package())
 
         # All SObject can print itself obj info to describe itself.
@@ -120,7 +120,7 @@ class Test_SObject(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test220_packages(self):
         # Reset the context will wipe out all packages and metaclasses and return nil.
-        rootContext.reset().loadPackage('smallscript')
+        sscontext.reset().loadPackage('smallscript')
         tobj1 = TestSObj1()
         self.assertTrue(tobj1.metaclass().isNil())
 
@@ -128,11 +128,11 @@ class Test_SObject(SmallScriptTest):
         # sobj will always use root context, and don't need @metaclass object but through @metaname lookup.
         sobj = SObject()
         context = sobj.getContext()
-        self.assertEqual(rootContext, context)   # new instance by SObject() will always use root context.
+        self.assertEqual(sscontext, context)   # new instance by SObject() will always use root context.
         self.assertTrue(not sobj.hasKey('metaclass'))
 
         # Reload the same package is a noop
-        rootContext.loadPackage('smallscript')
+        sscontext.loadPackage('smallscript')
 
         # sobj1 will have @metaclass
         sobj1 = context.newInstance('SObject')
@@ -141,7 +141,7 @@ class Test_SObject(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test230_sobject(self):
         # Test SObject.copyFrom
-        pkg = rootContext.loadPackage('tests')
+        pkg = sscontext.loadPackage('tests')
         tobj1 = TestSObj14()            # Python way to instantiate sobject.
         tobj1.attr11('value11')
         tobj2 = TestSObj14()
@@ -149,6 +149,32 @@ class Test_SObject(SmallScriptTest):
         tobj2.copyFrom(tobj1)
         self.assertTrue(tobj2.hasKey('attr11'))
         self.assertTrue('value11', tobj2.attr11())
+
+    @skipUnless('TESTALL' in env, "disabled")
+    def test240_sobject(self):
+        # SObject.getAsNumber()
+        tobj = TestSObj14()
+        tobj.attr11(Number(123))
+        attr11 = tobj.attr11()
+        self.assertEqual(Number, attr11.__class__)
+        attr11 = tobj.getValue('attr11')
+        self.assertEqual(Number, attr11.__class__)
+        attr11 = tobj.getAsNumber('attr11')
+        self.assertEqual(Integer, attr11.__class__)
+
+        tobj.attr11(Number(1.23))
+        attr11 = tobj.getValue('attr11')
+        self.assertEqual(Number, attr11.__class__)
+        attr11 = tobj.getAsNumber('attr11')
+        self.assertEqual(Float, attr11.__class__)
+
+        tobj.attr11("123")
+        attr11 = tobj.getAsNumber('attr11')
+        self.assertEqual(Integer, attr11.__class__)
+
+        tobj.attr11("1.23")
+        attr11 = tobj.getAsNumber('attr11')
+        self.assertEqual(Float, attr11.__class__)
 
 if __name__ == '__main__':
     unittest.main()

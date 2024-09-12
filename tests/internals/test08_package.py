@@ -29,13 +29,13 @@ from tests.TestSObj14 import TestSObj14
 class Test_Package(SmallScriptTest):
     @classmethod
     def setUpClass(cls):
-        pkg = rootContext.getOrNewPackage('Test_Package').importSingleSObject(DebugClosure)
+        pkg = sscontext.getOrNewPackage('Test_Package').importSingleSObject(DebugClosure)
 
     def setUp(self):
-        self.pkg = rootContext.loadPackage('tests')
+        self.pkg = sscontext.loadPackage('tests')
         self.tobj = TestSObj14().attr11(100).cattr12('200')
         self.metaclass = self.tobj.metaclass()
-        self.scope = rootContext.createScope()
+        self.scope = sscontext.createScope()
         self.scope['tobj'] = self.tobj
 
     def sysModulesByName(self, moduleName):
@@ -44,14 +44,14 @@ class Test_Package(SmallScriptTest):
 
     @skipUnless('TESTALL' in env, "disabled")
     def test100_smoke(self):
-        pkg = rootContext.loadPackage('tests')
+        pkg = sscontext.loadPackage('tests')
         tobj = TestSObj14().attr11(100).cattr12('200')
         metaclass = tobj.metaclass()    # Real metaname is TestSObj15. TestSObj14 is Python name.
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         scope['tobj'] = tobj
 
         # Closure.getBody() remove decorator and method signature from method source.
-        c17 = rootContext.metaclassByName('TestSObj15').holderByName('cmethod17').method()
+        c17 = sscontext.metaclassByName('TestSObj15').holderByName('cmethod17').method()
         pysource = c17.pysource()
         self.assertTrue("@Holder" in pysource)
         self.assertTrue("def " in pysource)
@@ -66,7 +66,7 @@ class Test_Package(SmallScriptTest):
         self.assertTrue(self.sysModulesByName('internals').notEmpty())  # loaded
         self.assertTrue(self.sysModulesByName('testpkg').isEmpty())     # not loaded
 
-        pkg = rootContext.getOrNewPackage('testpkg')
+        pkg = sscontext.getOrNewPackage('testpkg')
         self.assertTrue(not pkg.findPath("NoSuchPath"))           # not found
         self.assertTrue(not pkg.findPath("not_a_pkg"))            # not a package
         self.assertTrue(pkg.findPath("tests"))                    # found
@@ -77,7 +77,7 @@ class Test_Package(SmallScriptTest):
 
     @skipUnless('TESTALL' in env, "disabled")
     def test510_load(self):
-        tpkg = rootContext.getOrNewPackage('testpkg')
+        tpkg = sscontext.getOrNewPackage('testpkg')
         tpkg.findPath("not_a_pkg/testpkg")
             # Python wouldn't be able to find testpkg as it is out of PYTHONPATH unless specified.
             # Otherwise Python will help us to discover package so we can't really test Package class.
@@ -99,14 +99,14 @@ class Test_Package(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test520_readSS_writePy(self):
         #### Based on TDD_Closure.test710_Dynamic_Creation_in_SS() from tdd_0_2/test01_tdd.py
-        tpkg = rootContext.getOrNewPackage('testpkg')
+        tpkg = sscontext.getOrNewPackage('testpkg')
         tpkg.findPath("not_a_pkg/testpkg")
         self.assertTrue(tpkg.path().notEmpty())         # tpkg is a validate package
 
         # Read and compile the class definition in ss file.
         filename = "TestObj"
         ss = tpkg.readFile(f"{filename}.ss")
-        scope = rootContext.createScope().setValue('package', tpkg)
+        scope = sscontext.createScope().setValue('package', tpkg)
         closure = Closure().compile(ss)
         # closure.pysource().print()
         meta = closure(scope)
@@ -146,14 +146,14 @@ class Test_Package(SmallScriptTest):
 
     @skipUnless('TESTALL' in env, "disabled")
     def test530_refresh(self):
-        tpkg = rootContext.getOrNewPackage('testpkg')
+        tpkg = sscontext.getOrNewPackage('testpkg')
         tpkg.findPath("not_a_pkg/testpkg")
         tpkg._touchFile("TestObj.ss")
         tpkg.refreshSources()
 
     @skipUnless('TESTALL' in env, "disabled")
     def test700_reciprocal_generation(self):
-        tpkg = rootContext.getOrNewPackage('testpkg')
+        tpkg = sscontext.getOrNewPackage('testpkg')
 
         # Both TestSObj15.py and TestObj.py are generated source based on tests/TestSObj14.py
         # 1. TestSbj15.py was generated based on the metaclass imported from SObject TestSObj14.py.
@@ -162,6 +162,6 @@ class Test_Package(SmallScriptTest):
         # 4. TestObj.py was generated based on the metaclass defined in TestObj.ss.
         # 5. TestObj.py contains Python equivalence to TestSObj14 implementation.
         filename = 'TestSObj15'
-        metaclass = rootContext.metaclassByName(filename)
+        metaclass = sscontext.metaclassByName(filename)
         source = metaclass.toPython()
         tpkg.writeFile(f"{filename}.py", source)

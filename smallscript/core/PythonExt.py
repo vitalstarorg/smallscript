@@ -33,21 +33,21 @@ class ObjAdapter(SObject):
         parts = attrname.split('.')
         for part in parts[:-1]:
             obj = obj._getValue(part)
-            if obj == nil: return nil
+            if obj is nil: return nil
             obj = ObjAdapter().object(obj)
         return obj
 
     def getValue(self, attrname):
         last = attrname.rsplit('.',1)[-1]
         obj = self.getRef(attrname)
-        if obj == nil: return nil
+        if obj is nil: return nil
         res = obj._getValue(last)
         return res
 
     def setValue(self, attrname, value):
         last = attrname.rsplit('.',1)[-1]
         obj = self.getRef(attrname)
-        if obj == nil: return nil
+        if obj is nil: return nil
         res = obj._setValue(last, value)
         return res
 

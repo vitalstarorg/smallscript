@@ -29,12 +29,12 @@ from tests.TestSObj14 import TestSObj14
 class Test_Interpreter2(SmallScriptTest):
     @classmethod
     def setUpClass(cls):
-        pkg = rootContext.getOrNewPackage('Test_Interpreter2').importSingleSObject(DebugClosure)
+        pkg = sscontext.getOrNewPackage('Test_Interpreter2').importSingleSObject(DebugClosure)
 
     @skipUnless('TESTALL' in env, "disabled")
     def test500_exprs(self):
         # Multiple expressions test
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         ss = "obj2 := 222; obj1 := 111; obj3 := 333"
         closure = Closure().interpret(ss)
         res = closure(scope)
@@ -46,11 +46,11 @@ class Test_Interpreter2(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test510_unaryhead(self):
         # Unary Head tests
-        pkg = rootContext.loadPackage('tests')
+        pkg = sscontext.loadPackage('tests')
         tobj = TestSObj14().attr11(123)
         tobj.cattr12('cvalue12')
 
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         scope['tobj'] = tobj
         ss = "tobj sobj11"              # sobj11 is a SObject defined attribute
         closure = Closure().interpret(ss)
@@ -75,13 +75,13 @@ class Test_Interpreter2(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test520_kwhead(self):
         # Keyword Head tests
-        pkg = rootContext.loadPackage('tests')
+        pkg = sscontext.loadPackage('tests')
         tobj = TestSObj14().attr11(123)
         tobj.attr11('100')
         tobj.cattr12('200')
 
         # Simple python method invocation setting name
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         scope['tobj'] = tobj
         ss = "tobj name: 'aaa'"
         closure = Closure().interpret(ss)
@@ -141,13 +141,13 @@ class Test_Interpreter2(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test530_binhead(self):
         # Binary Head Test
-        pkg = rootContext.loadPackage('tests')
+        pkg = sscontext.loadPackage('tests')
         tobj = TestSObj14()
         tobj.attr11(100)
         tobj.cattr12('200')
         metaclass = tobj.metaclass()
 
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         scope['tobj'] = tobj
 
         ss = "11 + 2 - 3 / 5 * 4"
@@ -183,12 +183,12 @@ class Test_Interpreter2(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test540_chain(self):
         # Chain test
-        pkg = rootContext.loadPackage('tests')
+        pkg = sscontext.loadPackage('tests')
         tobj = TestSObj14()
         tobj.attr11(100)
         tobj.cattr12('200')
         metaclass = tobj.metaclass()
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         scope['tobj'] = tobj
 
         ss = "7 |"
@@ -238,10 +238,10 @@ class Test_Interpreter2(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test550_subexpr(self):
         # Subexpression test
-        pkg = rootContext.loadPackage('tests')
+        pkg = sscontext.loadPackage('tests')
         tobj = TestSObj14(); tobj.attr11(100); tobj.cattr12('200')
         metaclass = tobj.metaclass()
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         scope['tobj'] = tobj
 
         ss = "(7 + 3)"
@@ -261,12 +261,12 @@ class Test_Interpreter2(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test600_block_closure(self):
         # block closure test
-        pkg = rootContext.loadPackage('tests')
+        pkg = sscontext.loadPackage('tests')
         tobj = TestSObj14()
         tobj.attr11(100)
         tobj.cattr12('200')
         metaclass = tobj.metaclass()
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         scope['tobj'] = tobj
 
         ss = "| tmp1 tmp2 | tmp1 := tobj attr11; tmp2 := tmp1 + 3; tobj cattr12: tmp2 + 5; tobj cattr12"
@@ -323,12 +323,12 @@ class Test_Interpreter2(SmallScriptTest):
 
     @skipUnless('TESTALL' in env, "disabled")
     def test700_array(self):
-        pkg = rootContext.loadPackage('tests')
+        pkg = sscontext.loadPackage('tests')
         tobj = TestSObj14()
         tobj.attr11(100)
         tobj.cattr12('200')
         metaclass = tobj.metaclass()
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         scope['tobj'] = tobj
 
         ss = 'obj1 := $F'       # Char
@@ -360,7 +360,7 @@ class Test_Interpreter2(SmallScriptTest):
         ss = "#{ 'a' 12 $F true 'root' #(1 2) #{1 #root} root }"   # DynArray
         closure = Closure().interpret(ss); res = closure(scope)
         expect = List().append('a').append(12).append('$F').append(true_).append('root')\
-                .append([1,2]).append([1,'root']).append(rootContext.rootScope())
+                .append([1,2]).append([1,'root']).append(sscontext.rootScope())
         self.assertEqual(expect, res)
 
         ss = "#(-123 1.2 1.0e-1 0x123)"
@@ -384,9 +384,9 @@ class Test_Interpreter2(SmallScriptTest):
 
     @skipUnless('TESTALL' in env, "disabled")
     def test710_primitive(self):
-        pkg = rootContext.loadPackage('tests')
+        pkg = sscontext.loadPackage('tests')
         tobj = TestSObj14().attr11(100).cattr12('200')
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         scope['tobj'] = tobj
 
         ss = f"<python: 'def hello:'>"
@@ -400,10 +400,10 @@ class Test_Interpreter2(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test800_parsing_errors(self):
         # Parsing errors
-        pkg = rootContext.loadPackage('tests')
+        pkg = sscontext.loadPackage('tests')
         tobj = TestSObj14(); tobj.attr11(100); tobj.cattr12('200')
         metaclass = tobj.metaclass()
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         scope['tobj'] = tobj
 
         ss = "1+2-3"                            # need to fix the grammar

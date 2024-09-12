@@ -66,7 +66,7 @@ class LocalSObj14(SObject):
 class Test_Closure(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test500_method(self):
-        pkg = rootContext.loadPackage('tests')
+        pkg = sscontext.loadPackage('tests')
         tobj = TestSObj14()
         meta = tobj.metaclass()
 
@@ -90,7 +90,7 @@ class Test_Closure(SmallScriptTest):
 
     @skipUnless('TESTALL' in env, "disabled")
     def test550_metaInit(self):
-        pkg = rootContext.loadPackage('tests')
+        pkg = sscontext.loadPackage('tests')
         tobj = TestSObj14()
         meta = tobj.metaclass()
 
@@ -105,7 +105,7 @@ class Test_Closure(SmallScriptTest):
     # Originate from Test_Closure.test500_method() test02_method.py.
     @skipUnless('TESTALL' in env, "disabled")
     def test700_localSObj(self):
-        pkg = rootContext.getOrNewPackage('test02_method').importSingleSObject(LocalSObj14)
+        pkg = sscontext.getOrNewPackage('test02_method').importSingleSObject(LocalSObj14)
         tobj = LocalSObj14()
         meta = tobj.metaclass()
 
@@ -158,7 +158,7 @@ class Test_Closure(SmallScriptTest):
 
         ### Instantiate the same obj through name defined by ss_metas, instead of class name.
         # Same tests as above.
-        tobj2 = rootContext.newInstance('LocalSObj15')
+        tobj2 = sscontext.newInstance('LocalSObj15')
         meta2 = tobj2.metaclass()
         res = tobj2.method14(2, 3)
         self.assertEqual(5, res)

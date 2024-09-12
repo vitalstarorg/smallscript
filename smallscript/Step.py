@@ -283,11 +283,11 @@ class UnaryHeadStep(RuntimeStep):
             op = unarymsg.compileRes()
             if op.notNil():             # op.isNil() for case like "7;"
                 method = getattr(res, op, nil)  # Holder.valueFunc
-                if method == nil and isinstance(res, SObject):
+                if method is nil and isinstance(res, SObject):
                     holder = res.metaclass().holderByName(op)
                     if holder.notNil():
                         method = holder.__get__(res)
-                if method == nil: return nil
+                if method is nil: return nil
                 if op == "value":           # value() should only be called from within ss.
                     res = method(scope)
                 else:
@@ -342,11 +342,11 @@ class BinHeadStep(RuntimeStep):
             binop = binmsg.getStep('binop').compileRes()
             unaryhead = binmsg.getStep('unaryhead').runtimeRes()
             method = getattr(res, binop, nil)
-            if method == nil:
+            if method is nil:
                 if binop in operators:
                     binop = operators[binop]
                 method = getattr(res, binop, nil)
-                if method == nil: return nil
+                if method is nil: return nil
             res = method(unaryhead)
             bintail = bintail.getStep('bintail')
         return res
@@ -409,7 +409,7 @@ class KwHeadStep(RuntimeStep):
 
         method = nil
         # Invoke method through SObject protocol
-        if method == nil and isinstance(obj, SObject):
+        if method is nil and isinstance(obj, SObject):
             holder = obj.metaclass().holderByName(fullname)
             if holder.notNil():
                 method = holder.__get__(obj)
@@ -420,12 +420,12 @@ class KwHeadStep(RuntimeStep):
                     method = holder.__get__(obj)
 
         # Invoke method through Python protocol
-        if method == nil:
+        if method is nil:
             res = nil
             nArgs = kwMap.len()
             method = self._methodLookup(obj, prefix, fullname, nArgs)
 
-        if method != nil:
+        if method is not nil:
             res = method(*kwMap.values())
         return res
 
@@ -586,7 +586,7 @@ class TextBuffer(SObject):
 
     def textIO(self, output=''):
         output = self._getOrSet('output', output, nil)
-        if output == nil:
+        if output is nil:
             output = io.StringIO()
             self.setValue('output', output)
         return output

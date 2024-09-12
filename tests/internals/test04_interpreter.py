@@ -69,14 +69,14 @@ class Test_Interpreter1(SmallScriptTest):
         #### local variable access
         # Variables first introduced will be created in local scope.
         # However, such update might be defined else where, so it is better to be predefined.
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         ss = "obj := 'aString'"
         res = Closure().interpret(ss)(scope)
         self.assertEqual('aString', res)
         self.assertEqual('aString', scope.getValue('obj'))
 
         # Local variable can be predefined.
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         ss = "|obj| obj := 'aString'"
         res = Closure().interpret(ss)(scope)
         self.assertEqual('aString', res)
@@ -84,7 +84,7 @@ class Test_Interpreter1(SmallScriptTest):
 
     @skipUnless('TESTALL' in env, "disabled")
     def test520_param_access(self):
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         ss = ":param1 | param1"
         closure = Closure().interpret(ss)
         res = closure(scope)
@@ -100,7 +100,7 @@ class Test_Interpreter1(SmallScriptTest):
         res = Closure().interpret(ss)(scope)
         self.assertEqual(123, res)  # res is not nil as scope already have param1 assigned
 
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         ss = ":param1 :param2| param2"
         closure = Closure().interpret(ss)
         res = closure(scope)
@@ -120,7 +120,7 @@ class Test_Interpreter1(SmallScriptTest):
 
     @skipUnless('TESTALL' in env, "disabled")
     def test530_assignment(self):
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         ss = "obj1 := 123"
         res = Closure().interpret(ss)(scope)
         self.assertEqual(123, res)
@@ -131,14 +131,14 @@ class Test_Interpreter1(SmallScriptTest):
         res = Closure().interpret(ss)(scope)
         self.assertEqual('str1', res)
 
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         ss = "_ := obj1 := 123"
         res = Closure().interpret(ss)(scope)
         self.assertEqual(123, res)
         self.assertEqual(123, scope.getValue('obj1'))
         self.assertEqual(123, scope.getValue('_'))
 
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         ss = ":param1 :param2| |tmp1| tmp1 := param2"
         closure = Closure().interpret(ss)
         res = closure(scope, 'str1', 'str2')
@@ -154,11 +154,11 @@ class Test_Interpreter1(SmallScriptTest):
 
     @skipUnless('TESTALL' in env, "disabled")
     def test600_sobject(self):
-        pkg = rootContext.loadPackage('tests')
+        pkg = sscontext.loadPackage('tests')
         tobj = TestSObj14().attr11(123)
         tobj.cattr12('cvalue12')
 
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         scope.addObj(tobj)
         ss = "attr11"
         res = Closure().interpret(ss)(scope)
@@ -205,7 +205,7 @@ class Test_Interpreter1(SmallScriptTest):
         res = scope.info()  # smoke test, ignore output
         # res.print()
 
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         root = scope['root']
         root['global1'] = nil
         ss = "global1 := 'global value'"

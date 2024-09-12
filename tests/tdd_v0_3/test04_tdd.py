@@ -42,14 +42,14 @@ class TDD_Package(SmallScriptTest):
         # So Package.load() will always keep .ss and .py in sync, almost work like Python "import".
         # Package.setAndValidatePath(...) can be any path other than sys.path.
 
-        tpkg = rootContext.getOrNewPackage('testpkg')
+        tpkg = sscontext.getOrNewPackage('testpkg')
         tpkg.findPath("not_a_pkg/testpkg")
         tpkg.load()
             # We move the SmallScript to not_a_pkg/testpkg/TestObj.ss.
             # Package.load() will compile and save output to TestObj.py;
             # then it load the metaclass defined in AnotherMeta SObject.
 
-        tobj = rootContext.newInstance('AnotherMeta').name('tobj')
+        tobj = sscontext.newInstance('AnotherMeta').name('tobj')
         self.assertEqual('AnotherMeta', tobj.metaname())
 
         res = tobj.method14(2,3)       # accessing instance method method14().

@@ -28,8 +28,8 @@ from smallscript.Closure import Script, Closure
 class TDD_PythonExt(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test100_primitive_LHS(self):
-        pkg = rootContext.loadPackage('tests')
-        scope = rootContext.createScope()
+        pkg = sscontext.loadPackage('tests')
+        scope = sscontext.createScope()
         tobj = TestSObj14().attr11(100).cattr12('200')
         scope.locals()['tobj'] = tobj
 
@@ -47,10 +47,10 @@ class TDD_PythonExt(SmallScriptTest):
 
     @skipUnless('TESTALL' in env, "disabled")
     def test200_dot_notation(self):
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
 
-        sspkg = rootContext.getOrNewPackage('smallscript')
-        ss = "rootContext.packages.smallscript"
+        sspkg = sscontext.getOrNewPackage('smallscript')
+        ss = "sscontext.packages.smallscript"
         closure = Closure().compile(ss)
         res = closure(scope)
         self.assertEqual(sspkg, res)

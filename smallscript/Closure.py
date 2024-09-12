@@ -72,12 +72,6 @@ class IRGrapher(StepVisitor):
     def __init__(self):
         from graphviz import Digraph
         self.graph = Digraph('G', format='png')
-        # try:
-        #     module = importlib.import_module('graphviz')
-        #     Digraph = getattr(module, 'Digraph')
-        #     self.graph = Digraph('G', format='png')
-        # except ImportError:
-        #     pass
 
     def __getattr__(self, item):
         def defaultVisit(step):
@@ -132,7 +126,7 @@ class IRGrapher(StepVisitor):
             self.graph.edge(currentStepId, stepId, label=label)
             # print(f"{currentStepId} --{childName}--> {stepId}")
         index = self.instructionIdx().get(stepId, nil)
-        nodeName = f"{ruleName}Step" if index == nil else f"#{index}\n{ruleName}Step"
+        nodeName = f"{ruleName}Step" if index is nil else f"#{index}\n{ruleName}Step"
         if compileRes.isNil() or ruleName == 'blk':
             self.graph.node(stepId, f"{nodeName}", shape=shape)
         else:
@@ -152,7 +146,7 @@ class Script(SObject):
     def reset(self): return self.errorHandler(ScriptErrorListener())
 
     def parse(self, text=""):
-        if text == nil:
+        if text is nil:
             text = self.text()
         else:
             self.text(text)
@@ -265,7 +259,7 @@ class Closure(SObject):
         return self.run(scope, *arglst)
 
     def run(self, scope, *params):
-        if self.pyfunc() == nil:
+        if self.pyfunc() is nil:
             res = self._runSteps(scope, *params)
         else:
             res = self._runPy(scope, *params)
@@ -327,13 +321,14 @@ class Closure(SObject):
 
     def compile(self, smallscript=""):
         if smallscript == "":
-            if self.pyfunc() != nil: return self
+            if self.pyfunc() is not nil: return self
             if self.pysource().notNil() and self.pysource().notEmpty(): return self._compile()
             if self.smallscript().isNil() or self.smallscript().isEmpty():
-                self.log("Warning: smallscript() is empty and has nothing to compile.", Logger.LevelWarning)
+                self.log("Info: smallscript() is empty and has nothing to compile.", Logger.LevelInfo)
                 return self
             smallscript = self.smallscript()
         self.interpret(smallscript)
+        if self.script().hasError(): return nil
         self.toPython()
         return self._compile()
 
@@ -381,7 +376,7 @@ class Closure(SObject):
             source = inspect.getsource(pyfunc)
         except Exception as e:
             source = nil
-        if source != nil:
+        if source is not nil:
             self.pysource(source)
         signature = inspect.signature(pyfunc)
         funcargs = List([String(param.name) for param in signature.parameters.values()])
@@ -415,7 +410,7 @@ class Closure(SObject):
         pyfunc = self.pyfunc()
         signature = name = String(name)
         if params.len() == 0:
-            if pyfunc != nil: signature = pyfunc.__name__
+            if pyfunc is not nil: signature = pyfunc.__name__
         elif params.len() == 1:
             if name.notEmpty():
                 signature = f"{name}__{params[0]}__"
@@ -428,7 +423,7 @@ class Closure(SObject):
         return String(signature)
 
     def unname(self, body=nil):
-        if body == nil:
+        if body is nil:
             body = self.getBody("")
         if body == "":
             name = "unnamed_0"
@@ -467,6 +462,7 @@ class Execution(SObject):
         method = self.method()
         params = List([self.asSObj(arg) for arg in args])
         scope = self.prepareScope()
+        if method.isNil(): return nil
         res = method.run(scope, *params)
         return res
 
@@ -489,6 +485,7 @@ class Execution(SObject):
             scope = scopeVar.createScope()
         scope.objs().append(self.this())
         scope.locals().setValue('self', self.this())
+        scope.locals().setValue('closure', self.method())
         return scope
 
     def visitString(self, string):
@@ -498,6 +495,7 @@ class Execution(SObject):
 
     def visitSObj(self, sobj): return self.this(sobj)
     def visitClosure(self, closure): return self.method(closure)
+
 
 class PythonCoder(SObject):
     delimiter = Holder().name('delimiter').type('String')

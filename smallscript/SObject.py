@@ -26,9 +26,7 @@ import traceback
 import types
 from pathlib import Path
 
-loglevel = os.environ.get('LOG_LEVEL', 'WARNING')
-logging.basicConfig(level=getattr(logging, loglevel.upper()),
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger('smallscript')
 
 class SObject:
     """
@@ -121,10 +119,37 @@ class SObject:
         if self._has(_metaclass):
             return self._get(_metaclass,nil)
         metaname = self.metaname()
-        metaclass = rootContext.metaclassByName(metaname)
+        metaclass = sscontext.metaclassByName(metaname)
         return metaclass
 
-    def runss(self, thisObj):
+    def asSObj(self, pyobj):
+        if isinstance(pyobj, SObject): return pyobj
+        if isinstance(pyobj, bool): return true_ if pyobj else false_
+        if pyobj is None: return nil
+        stype = type(pyobj).__name__
+        value = pyobj
+        ignoreModules = {'builtins', 'numpy'}
+        if stype in pytypes:
+            pClass = pytypes[stype]
+            value = pClass(pyobj)
+
+        # Python class object
+        elif isinstance(value, type) and value.__module__ != 'builtins':
+            value.ssrun = SObject.ssrun
+        elif isinstance(value, type) and value.__module__ == 'builtins': pass
+
+        # Python object
+        elif value.__class__.__module__ in ignoreModules: pass     # ignore object from these modules
+        elif hasattr(value, SObject.ssrun.__name__): pass
+        else:
+            try:
+                value.ssrun = types.MethodType(SObject.ssrun, value)
+            except Exception as e:
+                self.log(f"fail to set ssrun() to instance of {value.__class__.__module__}: {e}", Logger.LevelWarning)
+        return value
+
+    def runThis(self, thisObj):
+        "Return an Execution object for apply @thisObj with @self."
         this = self
         if not isinstance(self, SObject):
             from smallscript.core.PythonExt import ObjAdapter
@@ -133,6 +158,16 @@ class SObject:
         execution = this.getContext().newInstance('Execution')
         execution.this(this)
         res = obj.visit(execution)
+        return res
+
+    def ssrun(self, thisObj, *args, **kwargs):
+        "Execute the Execution object from runThis(). @self might not be SObject."
+        this = self
+        if not isinstance(self, SObject):
+            from smallscript.core.PythonExt import ObjAdapter
+            this = ObjAdapter().object(self)
+        execution = this.runThis(thisObj)
+        res = execution(*args, **kwargs)
         return res
 
     def visit(self, visitor): return visitor.visitSObj(self)
@@ -173,10 +208,12 @@ class SObject:
     def toDebug(self, toDebug=''): return self._getOrSet('toDebug', toDebug, false_)
 
     def logger(self, logger=''):
-        logger = self._getOrSet('logger', logger, nil)
+        # logger at class level
+        metaattrs = self.metaclass().attrs()
+        logger = metaattrs._getOrSet('logger', logger, nil)
         if logger.isNil():
             logger = Logger()
-            self.setValue('logger', logger)
+            metaattrs.setValue('logger', logger)
         return logger
 
     def loglevel(self, loglevel=''):
@@ -216,6 +253,14 @@ class SObject:
         # nil at runtime in a call has already initialized.
         if default is None: default = nil
         return obj._get(obj._keyName(attname), default)
+
+    def getAsNumber(self, attname, default=0):
+        res = self.getValue(attname)
+        if res.isNil(): return default
+        if isinstance(res, Number): return res.value()
+        string = res.toString()
+        res = string.asNumber().value()
+        return res
 
     def setValue(self, attname, value):
         masq = self._keyName('masquerade')
@@ -279,24 +324,6 @@ class SObject:
     #### Helper methods
     def __call__(self, *args, **kwargs): return self.createEmpty()
     def createEmpty(self): return type(self)()
-
-    def asSObj(self, pyobj):
-        if isinstance(pyobj, SObject): return pyobj
-        if isinstance(pyobj, bool): return true_ if pyobj else false_
-        if pyobj is None: return nil
-        stype = type(pyobj).__name__
-        value = pyobj
-        if stype in pytypes:
-            pClass = pytypes[stype]
-            value = pClass(pyobj)
-            return value
-        elif value.__class__.__module__ == 'builtins': return value
-        elif hasattr(value, SObject.runss.__name__): return value
-        else:
-            # This is a pure Python object
-            value.runss = types.MethodType(SObject.runss, value)
-        return value
-
     def lastDigits(self, n=4): return hex(id(self)).upper()[-n:]
     def isNil(self): return false_
     def notNil(self): return not self.isNil()
@@ -308,6 +335,11 @@ class SObject:
     def print(self, suppressed=''):
         if suppressed == '': print(self.info())
         # return self
+
+    def _isNil(self, pyobj):
+        "This is used deal with heavily customized Python object e.g. numpy array. Or we can use 'pyobj is nil' for identity comparison."
+        if not isinstance(pyobj, SObject): return false_
+        return pyobj.isNil()
 
     def info(self, offset=0):
         buffer = io.StringIO()
@@ -371,11 +403,11 @@ class Holder(SObject):
                     type = self.type()
                     if metaclass.notNil():
                         res = metaclass.context().metaclassByName(type).createEmpty()
-                        if res == nil or type == 'True_' or type == 'False_':  # don't need to save these default values.
+                        if res is nil or type == 'True_' or type == 'False_':  # don't need to save these default values.
                             return res
                         value = res
                     else:
-                        logging.warning(f"Found no metaclass for type '{type}' defined by {sobj.metaname()}.{self.name()}")
+                        logger.warning(f"Found no metaclass for type '{type}' defined by {sobj.metaname()}.{self.name()}")
                         return nil
             if sobj.mutable():
                 sobj.setValue(attname, value)
@@ -402,16 +434,16 @@ class Holder(SObject):
             if obj is not None:
                 if self.instanceType():
                     # Instance method
-                    res = obj.runss(method)
+                    res = obj.runThis(method)
                 else:
                     # Class method invoked from sobject
-                    res = obj.metaclass().attrs().runss(method)
+                    res = obj.metaclass().attrs().runThis(method)
             elif owner is not None:
                 if not self.instanceType():
                     # Class method invoked from Python class
                     metaclass = self.getContext().metaclassByName(self._metaname(owner))
                     attrs = metaclass.attrs()
-                    res = attrs.runss(method)
+                    res = attrs.runThis(method)
         return res
 
     #### Private helper methods
@@ -740,7 +772,7 @@ class Package(SObject):
 
         # from importMethods()
         for holder in metaclass.holders().values():
-            if holder.type() == 'Closure' and holder.pyfunc() != nil:
+            if holder.type() == 'Closure' and holder.pyfunc() is not nil:
                 method = self.context().newInstance('Closure')
                 holder.method(method)
                 pyfunc = holder.pyfunc()
@@ -750,7 +782,7 @@ class Package(SObject):
         holder = metaclass.holderByName('metaInit')
         if holder.isNil(): return self
         method = holder.method()
-        exeContext = metaclass.attrs().runss(method)
+        exeContext = metaclass.attrs().runThis(method)
         res = exeContext()
         return self
 
@@ -783,7 +815,7 @@ class Package(SObject):
         "Import Method definitions from SObject class."
         for metaclass in self.metaclasses().values():
             for holder in metaclass.holders().values():
-                if holder.type() == 'Closure' and holder.pyfunc() != nil:
+                if holder.type() == 'Closure' and holder.pyfunc() is not nil:
                     method = self.context().newInstance('Closure')
                     holder.method(method)
                     pyfunc = holder.pyfunc()
@@ -796,7 +828,7 @@ class Package(SObject):
             holder = metaclass.holderByName('metaInit')
             if holder.isNil(): continue
             method = holder.method()
-            exeContext = metaclass.attrs().runss(method)
+            exeContext = metaclass.attrs().runThis(method)
             res = exeContext()
         return self
 
@@ -865,6 +897,8 @@ class Package(SObject):
                     pkgpath = String(ppath.head())
                     break
         res = self.setAndValidatePath(pkgpath)
+        if not res:
+            self.log(f"Validation failed for path '{pkgpath}', probably __init__.py not found.", Logger.LevelInfo)
         return res
 
     def _loadSObjects(self):
@@ -1080,6 +1114,18 @@ class Context(SObject):
         scope.addScope(pyscope)
         return scope
 
+    def interpret(self, smallscript):
+        closure = self.newInstance('Closure')
+        closure.interpret(smallscript)
+        if closure.script().hasError(): return nil
+        return closure
+
+    def compile(self, smallscript):
+        closure = self.newInstance('Closure')
+        closure.compile(smallscript)
+        if closure.script().hasError(): return nil
+        return closure
+
 class Scope(SObject):
     """
     Scope object defines the variable lookup.
@@ -1137,6 +1183,7 @@ class Scope(SObject):
     #### Scope behavior
     def createScope(self):
         scope = Scope().parent(self)
+        scope.locals().setValue('scope', scope)
         return scope
 
     def newInstance(self, type):
@@ -1443,14 +1490,14 @@ class Logger(SObject):
             msg = f"{msg} - {filename} line {lineno}"
 
         if level >= self.level():
-            if level == self.LevelDebug: logging.debug(msg); return self
-            if level == self.LevelInfo: logging.info(msg); return self
-            if level == self.LevelWarning: logging.warning(msg); return self
-            if level == self.LevelError: logging.error(msg); return self
-            if level == self.LevelCritical: logging.critical(msg); return self
+            if level == self.LevelDebug: logger.debug(msg); return self
+            if level == self.LevelInfo: logger.info(msg); return self
+            if level == self.LevelWarning: logger.warning(msg); return self
+            if level == self.LevelError: logger.error(msg); return self
+            if level == self.LevelCritical: logger.critical(msg); return self
         return self
 
 pytypes = Map(str = String, int = Number, float = Number, dict = Map, list = List)
 
-rootContext = Context().name('root').reset()
-rootContext.loadPackage('smallscript') # This global root context is the first Context object got created.
+sscontext = Context().name('sscontext').reset()
+sscontext.loadPackage('smallscript') # This global root context is the first Context object got created.

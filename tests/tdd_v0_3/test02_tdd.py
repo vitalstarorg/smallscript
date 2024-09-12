@@ -42,10 +42,10 @@ class TDD_Interpreter(SmallScriptTest):
         self.assertEqual(expect, Closure().interpret(ss)())
         ss = "nil"; expect = nil
         self.assertEqual(expect, Closure().interpret(ss)())
-        ss = "context"; expect = rootContext
+        ss = "context"; expect = sscontext
         context = Closure().interpret(ss)()
         self.assertEqual(expect, context)
-        ss = "root"; expect = rootContext
+        ss = "root"; expect = sscontext
         rootScope = Closure().interpret(ss)()
         self.assertEqual(expect, rootScope['context'])
 
@@ -53,11 +53,11 @@ class TDD_Interpreter(SmallScriptTest):
     def test600_smallscript(self):
         #### SmallScript basic syntax
         # Combine some test cases from TDD_Interpreter test04_interpreter.py
-        pkg = rootContext.loadPackage('tests')
+        pkg = sscontext.loadPackage('tests')
         tobj = TestSObj14()
         tobj.attr11(100).cattr12('200')
         metaclass = tobj.metaclass()
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         scope['tobj'] = tobj
 
         ss = """
@@ -102,11 +102,11 @@ class TDD_Interpreter(SmallScriptTest):
     def test700_smallscript(self):
         #### SmallScript advance syntax
         # Combine some test cases from TDD_Interpreter test05_interpreter.py
-        pkg = rootContext.loadPackage('tests')
+        pkg = sscontext.loadPackage('tests')
         tobj = TestSObj14()
         tobj.attr11(20).cattr12('Mr.')
         metaclass = tobj.metaclass()
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         scope['tobj'] = tobj
 
         ss = """
@@ -134,11 +134,11 @@ class TDD_Interpreter(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test710_smallscript(self):
         #### SmallScript block
-        pkg = rootContext.loadPackage('tests')
+        pkg = sscontext.loadPackage('tests')
         tobj = TestSObj14()
         tobj.attr11(20).cattr12('Mr.')
         metaclass = tobj.metaclass()
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         scope['tobj'] = tobj
 
         ss = """
@@ -159,11 +159,11 @@ class TDD_Interpreter(SmallScriptTest):
     @skipUnless('TESTALL' in env, "disabled")
     def test720_smallscript(self):
         #### SmallScript Literal and Dynamic Array
-        pkg = rootContext.loadPackage('tests')
+        pkg = sscontext.loadPackage('tests')
         tobj = TestSObj14()
         tobj.attr11(20).cattr12('Mr.')
         metaclass = tobj.metaclass()
-        scope = rootContext.createScope()
+        scope = sscontext.createScope()
         scope['tobj'] = tobj
 
         ss = """
