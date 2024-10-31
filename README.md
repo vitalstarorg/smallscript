@@ -360,6 +360,17 @@ closure.irGraph()        # show the optimized Intermediate Representation
   - Similar to C/C++
 
 # Release Note
+### v0.3.4 - Fix the installation
+- Add antlr into the installation.
+
+### v0.3.3 - Python Extensions
+- Rename rootContext as a more generic name sscontext
+- Simplify initial import by accessing sscontext alone.
+- Python class level injection with SObject.ssrun(). Only sscontext.asSObj() will inject ssrun().
+- SObject.getAsNumber(), may need further refactor.
+- Switch from 'pyobj == nil' to 'pyobj is nil' to avoid heavily customized pyobj object e.g. numpy array.
+- Improve the scope variable lookup through calling stacks.
+
 ### v0.3.2 - Python Extensions
 - Fix setup.py for missing dependent libraries.
 - Create 2nd core level library
