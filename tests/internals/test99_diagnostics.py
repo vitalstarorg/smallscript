@@ -190,6 +190,7 @@ class Test_Diagnostics(SmallScriptTest):
         scope.locals()['tobj'] = tobj
         scope.locals()['pyobj'] = pyobj
         tobj.attr11(pyobj)
+        sscontext.asSObj(pyobj)
 
         ss = "self wte wpe lnorm1: 0 | attn: 0 | sum lnorm2: 0 | ffn: 0 | sum x"
         closure = sscontext.interpret(ss)

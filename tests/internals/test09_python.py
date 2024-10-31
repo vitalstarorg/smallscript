@@ -404,7 +404,8 @@ class TDD_PythonExt(SmallScriptTest):
 
         # This shows that a Python obj has method runSS() added.
         self.assertTrue(not hasattr(pyobj, SObject.ssrun.__name__))
-        tobj.attr11(pyobj)          # ssrun() method is injected into pyobj
+        tobj.attr11(pyobj)
+        sscontext.asSObj(pyobj)     # ssrun() method is injected into pyobj
         self.assertTrue(hasattr(pyobj, SObject.ssrun.__name__))
         ss = "a := tobj.attr11"
         closure = Closure().interpret(ss)
@@ -424,7 +425,7 @@ class TDD_PythonExt(SmallScriptTest):
         self.assertEqual(322, res)
 
         # Inject SObject.ssrun() to Python class
-        klass = sscontext.asSObj(str)
+        klass = sscontext.asSObj(str)           # wouldn't inject ssrun() as str is builtins
         self.assertTrue(not hasattr(klass, SObject.ssrun.__name__))
         klass = sscontext.asSObj(PyClass)
         self.assertTrue(hasattr(klass, SObject.ssrun.__name__))

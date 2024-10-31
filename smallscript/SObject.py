@@ -27,6 +27,7 @@ import types
 from pathlib import Path
 
 logger = logging.getLogger('smallscript')
+# print(f"=== {logger.getEffectiveLevel()}")
 
 class SObject:
     """
@@ -53,11 +54,21 @@ class SObject:
             if hasattr(self, name):
                 return getattr(self, name)
 
-        # consider it as an attribute retrieval
+        # consider it as an SObject attribute retrieval
         if SObject.hasKey(self, item):
             value = self.getValue(item)
             holder = Holder().obj(value)
             return holder.valueFunc()
+
+        # consider it as an python attribute retrieval
+        if item in self.__dict__:
+            value = getattr(self, item)
+            return value
+        elif type(self) is not type:
+            klass = type(self)
+            if item in klass.__dict__:
+                return getattr(klass, item)
+            
         return self.unimplemented(item)
 
     def unimplemented(self, item):
@@ -128,24 +139,25 @@ class SObject:
         if pyobj is None: return nil
         stype = type(pyobj).__name__
         value = pyobj
-        ignoreModules = {'builtins', 'numpy'}
+        # ignoreModules = {'builtins', 'numpy'}
+        # ignoreModules = {'builtins'}
         if stype in pytypes:
             pClass = pytypes[stype]
             value = pClass(pyobj)
 
-        # Python class object
-        elif isinstance(value, type) and value.__module__ != 'builtins':
-            value.ssrun = SObject.ssrun
-        elif isinstance(value, type) and value.__module__ == 'builtins': pass
-
-        # Python object
-        elif value.__class__.__module__ in ignoreModules: pass     # ignore object from these modules
-        elif hasattr(value, SObject.ssrun.__name__): pass
-        else:
-            try:
-                value.ssrun = types.MethodType(SObject.ssrun, value)
-            except Exception as e:
-                self.log(f"fail to set ssrun() to instance of {value.__class__.__module__}: {e}", Logger.LevelWarning)
+        # # Python class object
+        # elif isinstance(value, type) and value.__module__ not in ignoreModules:
+        #     value.ssrun = SObject.ssrun
+        # elif isinstance(value, type) and value.__module__ in ignoreModules: pass
+        #
+        # # Python object
+        # elif value.__class__.__module__ in ignoreModules: pass     # ignore object from these modules
+        # elif hasattr(value, SObject.ssrun.__name__): pass
+        # else:
+        #     try:
+        #         value.ssrun = types.MethodType(SObject.ssrun, value)
+        #     except Exception as e:
+        #         self.log(f"fail to set ssrun() to instance of {value.__class__.__module__}: {e}", Logger.LevelWarning)
         return value
 
     def runThis(self, thisObj):
@@ -276,6 +288,11 @@ class SObject:
             self.setValue(name, another.getValue(name))
         return
 
+    def clone(self):
+        instance = self.createEmpty()
+        instance.copyFrom(self)
+        return instance
+
     def _keys(self): return List(self.__dict__.keys())
     def _has(self, keyname): return keyname in self.__dict__    # slightly faster than vars(self)
     def _get(self, keyname, default): return self.__dict__.get(keyname, default)
@@ -324,7 +341,7 @@ class SObject:
     #### Helper methods
     def __call__(self, *args, **kwargs): return self.createEmpty()
     def createEmpty(self): return type(self)()
-    def lastDigits(self, n=4): return hex(id(self)).upper()[-n:]
+    def idDigits(self, n=4): return hex(id(self)).upper()[-n:]
     def isNil(self): return false_
     def notNil(self): return not self.isNil()
     def isDefined(self): return true_
@@ -360,7 +377,7 @@ class SObject:
             return String(f"a {self.metaname()}")
         return self.name()
 
-    def __repr__(self): return f"{self.describe()}:{self.metaname()} {self.lastDigits()}"
+    def __repr__(self): return f"{self.describe()}:{self.metaname()} {self.idDigits()}"
 
 class Holder(SObject):
     """
@@ -582,12 +599,15 @@ class Map(dict, Primitive):
     def len(self): return len(self)
     def isEmpty(self): return self.len() == 0
     def notEmpty(self): return not self.isEmpty()
+    def values(self): return List(super().values())
+    def head(self): return nil if self.isEmpty() else self.values().head()
     def keys(self): return List(super().keys())
     def hasKey(self, name): found = name in self; return found
     def setValue(self, name, value): self[name] = self.asSObj(value); return self
     def getValue(self, name, default=nil): res = self.get(name, default); return res
-    def values(self): return List(super().values())
-    def head(self): return nil if self.isEmpty() else self.values().head()
+    def delValue(self, name): 
+        if self.hasKey(name): del self[name]
+        return self
 
 class Metaclass(SObject):
     "Metaclass defines a SObject structure."
@@ -829,6 +849,7 @@ class Package(SObject):
             if holder.isNil(): continue
             method = holder.method()
             exeContext = metaclass.attrs().runThis(method)
+            scope = nil # defined here to stop Execution._findScopeFromFrames() beyond this point.
             res = exeContext()
         return self
 
@@ -1079,6 +1100,29 @@ class Context(SObject):
                 break
         return res
 
+    def asSObj(self, pyobj):
+        "Overriden SObject.asSObj() to injects ssrun() into pyobj"
+        sobj = super().asSObj(pyobj)
+        if isinstance(sobj, SObject): return sobj
+
+        value = sobj
+        ignoreModules = {'builtins', 'numpy'}
+
+        # Python class object
+        if isinstance(value, type) and value.__module__ not in ignoreModules:
+            value.ssrun = SObject.ssrun
+        elif isinstance(value, type) and value.__module__ in ignoreModules: pass
+
+        # Python object
+        elif value.__class__.__module__ in ignoreModules: pass     # ignore object from these modules
+        elif hasattr(value, SObject.ssrun.__name__): pass
+        else:
+            try:
+                value.ssrun = types.MethodType(SObject.ssrun, value)
+            except Exception as e:
+                self.log(f"fail to set ssrun() to instance of {value.__class__.__module__}: {e}", Logger.LevelWarning)
+        return value
+
     def newInstance(self, metaname):
         "Create an sobject."
         metaclass = self.metaclassByName(metaname)
@@ -1258,7 +1302,9 @@ class Number(Primitive):
 
     def visit(self, visitor): return visitor.visitNumber(self)
     def __int__(self): return int(self.value())
+    def __index__(self): return int(self.value())
     def __float__(self): return float(self.value())
+    def __abs__(self): return abs(self.value())
 
     def __floordiv__(self, val):
         if isinstance(val, Number): val = val.value()
@@ -1365,6 +1411,8 @@ class Number(Primitive):
     def __str__(self): return self.toString()
     def asSObj(self, pyobj): return Number(pyobj)
     def asNumber(self): return self
+    def asFloat(self): return float(self.value())
+    def asInt(self): return int(self.value())
     def asString(self): return self.toString()
     def toString(self): return String(self.value())
     def __repr__(self): return self.toString()

@@ -471,15 +471,15 @@ class Execution(SObject):
         outer_frame = frame.f_back
         scope = nil
         while outer_frame is not None:
-            scope = outer_frame.f_locals.get('scope', nil)
-            if scope.notNil():
+            if 'scope' in outer_frame.f_locals:
+                scope = outer_frame.f_locals.get('scope')
                 break
             outer_frame = outer_frame.f_back
         return scope
 
     def prepareScope(self):
         scopeVar = self._findScopeFromFrames()
-        if scopeVar.isNil():
+        if scopeVar is nil:
             scope = self.getContext().createScope().context(self.context())
         else:
             scope = scopeVar.createScope()
