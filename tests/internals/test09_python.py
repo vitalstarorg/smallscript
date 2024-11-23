@@ -455,7 +455,13 @@ class TDD_PythonExt(SmallScriptTest):
         res = sscontext.ssrun(closure)
         self.assertEqual('hello', res['a'])
 
-
     @skipUnless('TESTALL' in env, "disabled")
-    def test490_next(self):
+    def test490_deepcopy(self):
         scope = sscontext.createScope()
+        tobj = TestSObj14().attr11(100).cattr12('200')
+        res = tobj.method16(2,3)
+        self.assertEqual(305, res)
+
+        tobj1 = tobj.deepcopy()
+        res = tobj1.method16(2,3)
+        self.assertEqual(305, res)

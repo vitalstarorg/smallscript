@@ -24,6 +24,7 @@ import hashlib
 import logging
 import traceback
 import types
+import copy
 from pathlib import Path
 
 logger = logging.getLogger('smallscript')
@@ -292,6 +293,8 @@ class SObject:
         instance = self.createEmpty()
         instance.copyFrom(self)
         return instance
+
+    def deepcopy(self): return copy.deepcopy(self)
 
     def _keys(self): return List(self.__dict__.keys())
     def _has(self, keyname): return keyname in self.__dict__    # slightly faster than vars(self)
